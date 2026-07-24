@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { AlertCircle, Plus, Power, PowerOff, Trash2 } from "lucide-react";
+import AppLayout from "../components/AppLayout.jsx";
 import {
   activateOrgUnit,
   createOrgUnit,
@@ -13,11 +15,13 @@ const UNIT_TYPES = [
   { value: "XA", label: "Xã" },
 ];
 
+const EMPTY_FORM = { code: "", name: "", unit_type: "SO", parent_id: "" };
+
 export default function OrgUnitsPage() {
   const [units, setUnits] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ code: "", name: "", unit_type: "SO", parent_id: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   async function reload() {
     setLoading(true);
@@ -45,7 +49,7 @@ export default function OrgUnitsPage() {
         unit_type: form.unit_type,
         parent_id: form.parent_id ? Number(form.parent_id) : null,
       });
-      setForm({ code: "", name: "", unit_type: "SO", parent_id: "" });
+      setForm(EMPTY_FORM);
       await reload();
     } catch (e) {
       setError(e?.response?.data?.detail?.message || e.message);
@@ -75,79 +79,133 @@ export default function OrgUnitsPage() {
   }
 
   return (
-    <div style={{ padding: 24, fontFamily: "sans-serif" }}>
-      <h1>UC-01: Quản lý cơ cấu tổ chức</h1>
-
-      {error && <div style={{ color: "red", marginBottom: 12 }}>Lỗi: {error}</div>}
-
-      <form onSubmit={handleSubmit} style={{ marginBottom: 24, display: "flex", gap: 8 }}>
-        <input
-          placeholder="Mã đơn vị"
-          value={form.code}
-          onChange={(e) => setForm({ ...form, code: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Tên đơn vị"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <select
-          value={form.unit_type}
-          onChange={(e) => setForm({ ...form, unit_type: e.target.value })}
-        >
-          {UNIT_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="ID đơn vị cha (tuỳ chọn)"
-          value={form.parent_id}
-          onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-        />
-        <button type="submit">Thêm đơn vị</button>
-      </form>
-
-      {loading ? (
-        <p>Đang tải...</p>
-      ) : (
-        <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mã</th>
-              <th>Tên</th>
-              <th>Loại</th>
-              <th>Đơn vị cha</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {units.map((u) => (
-              <tr key={u.id}>
-                <td>{u.id}</td>
-                <td>{u.code}</td>
-                <td>{u.name}</td>
-                <td>{u.unit_type}</td>
-                <td>{u.parent_id ?? "-"}</td>
-                <td>{u.is_active ? "Hoạt động" : "Đã vô hiệu hoá"}</td>
-                <td>
-                  <button onClick={() => handleToggleActive(u)}>
-                    {u.is_active ? "Vô hiệu hoá" : "Kích hoạt"}
-                  </button>
-                  <button onClick={() => handleDelete(u)} style={{ marginLeft: 8 }}>
-                    Xoá
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <AppLayout
+      title="Cơ cấu tổ chức"
+      subtitle="UC-01 — Quản lý danh mục đơn vị tổ chức dạng cây (Sở / Phòng / Xã)."
+    >
+      {error && (
+        <div className="alert alert-error">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
       )}
-    </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="card-header">
+          <h2>Thêm đơn vị mới</h2>
+        </div>
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="code">Mã đơn vị</label>
+                <input
+                  id="code"
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="name">Tên đơn vị</label>
+                <input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="unit_type">Loại đơn vị</label>
+                <select
+                  id="unit_type"
+                  value={form.unit_type}
+                  onChange={(e) => setForm({ ...form, unit_type: e.target.value })}
+                >
+                  {UNIT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="parent_id">Đơn vị cha (ID, tuỳ chọn)</label>
+                <input
+                  id="parent_id"
+                  value={form.parent_id}
+                  onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary">
+                <Plus size={15} />
+                Thêm đơn vị
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Danh sách đơn vị ({units.length})</h2>
+        </div>
+        <div className="card-body" style={{ padding: 0 }}>
+          {loading ? (
+            <div className="empty-state">Đang tải dữ liệu...</div>
+          ) : units.length === 0 ? (
+            <div className="empty-state">Chưa có đơn vị nào. Thêm đơn vị đầu tiên ở trên.</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mã</th>
+                  <th>Tên đơn vị</th>
+                  <th>Loại</th>
+                  <th>Đơn vị cha</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {units.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.id}</td>
+                    <td>{u.code}</td>
+                    <td>{u.name}</td>
+                    <td>{UNIT_TYPES.find((t) => t.value === u.unit_type)?.label || u.unit_type}</td>
+                    <td>{u.parent_id ?? "—"}</td>
+                    <td>
+                      <span className={`badge ${u.is_active ? "badge-success" : "badge-neutral"}`}>
+                        {u.is_active ? "Hoạt động" : "Đã vô hiệu hoá"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="icon-btn"
+                          title={u.is_active ? "Vô hiệu hoá" : "Kích hoạt"}
+                          onClick={() => handleToggleActive(u)}
+                        >
+                          {u.is_active ? <PowerOff size={15} /> : <Power size={15} />}
+                        </button>
+                        <button
+                          className="icon-btn"
+                          title="Xoá"
+                          onClick={() => handleDelete(u)}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </AppLayout>
   );
 }
