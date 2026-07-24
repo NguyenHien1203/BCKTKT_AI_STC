@@ -1,0 +1,737 @@
+[
+  {
+    "id": 1,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý cơ cấu tổ chức",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem danh sách cơ cấu tổ chức.\nHệ thống truy vấn CSDL và hiển thị\nThêm mới đơn vị cấp cha/con.\nHệ thống kiểm tra hợp lệ và lưu\nSửa thông tin đơn vị.\nHệ thống lưu và hiển thị\nXoá đơn vị (xoá mềm).\nHệ thống đánh dấu ngừng hoạt động + ghi nhật ký"
+  },
+  {
+    "id": 2,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý người dùng (CRUD)",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem danh sách người dùng.\nHệ thống truy vấn và hiển thị\nThêm mới người dùng + gán đơn vị + vai trò.\nHệ thống tạo trong Keycloak + ghi ánh xạ\nSửa thông tin người dùng.\nHệ thống đồng bộ với Keycloak\nXoá người dùng (xoá mềm).\nHệ thống ghi nhật ký"
+  },
+  {
+    "id": 3,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý vòng đời người dùng",
+    "actor": "Quản trị hệ thống",
+    "flow": "Khoá / Mở khoá người dùng.\nHệ thống cập nhật trạng thái Keycloak\nBuộc đăng xuất người dùng.\nHệ thống vô hiệu hoá tất cả phiên\nĐồng bộ thủ công từ Keycloak.\nHệ thống kéo dữ liệu + đối soát\nChuyển người dùng sang đơn vị khác.\nHệ thống lưu lịch sử + cập nhật permission_context"
+  },
+  {
+    "id": 4,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý quyền người dùng",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem thông tin quyền của người dùng.\nHệ thống truy vấn và hiển thị\nPhân quyền theo vai trò.\nHệ thống lưu permission_context\nCấu hình permitted_domains + unit cho người dùng.\nHệ thống lưu\nCấu hình mức nhạy cảm cho người dùng.\nHệ thống lưu"
+  },
+  {
+    "id": 5,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý vai trò người dùng",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem danh sách vai trò.\nHệ thống hiển thị\nThêm mới vai trò + gán bộ quyền.\nHệ thống lưu\nSửa vai trò.\nHệ thống lưu phiên bản mới\nXoá vai trò.\nHệ thống kiểm tra ràng buộc trước khi xoá"
+  },
+  {
+    "id": 6,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý cấu hình hệ thống chung",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem cấu hình chung (thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định).\nHệ thống hiển thị\nSửa cấu hình.\nHệ thống lưu và áp dụng (nạp lại nóng)"
+  },
+  {
+    "id": 7,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý cấu hình tích hợp",
+    "actor": "Quản trị hệ thống",
+    "flow": "Cấu hình điểm cuối Keycloak.\nHệ thống lưu + kiểm tra kết nối\nCấu hình điểm cuối LGSP.\nHệ thống lưu + kiểm tra giao thức kết nối"
+  },
+  {
+    "id": 8,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý cấu hình kênh thông báo",
+    "actor": "Quản trị hệ thống",
+    "flow": "Cấu hình máy chủ SMTP.\nHệ thống lưu + gửi email kiểm thử\nCấu hình cổng SMS.\nHệ thống lưu + gửi SMS kiểm thử\nCấu hình Webhook / kênh Slack.\nHệ thống lưu + gửi tin nhắn kiểm thử"
+  },
+  {
+    "id": 9,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý nhật ký truy cập và thao tác",
+    "actor": "Quản trị hệ thống, Kiểm toán viên",
+    "flow": "Xem nhật ký toàn bộ.\nHệ thống truy vấn audit.audit_log và hiển thị\nLọc nhật ký theo tài khoản.\nHệ thống lọc và hiển thị\nLọc nhật ký theo thời gian.\nHệ thống lọc và hiển thị\nXuất báo cáo ATTT định kỳ.\nHệ thống sinh PDF"
+  },
+  {
+    "id": 10,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản trị AI Audit Log",
+    "actor": "Kiểm toán viên, AI Rà soát",
+    "flow": "Xem danh sách AI query theo khoảng thời gian.\nHệ thống truy vấn audit.ai_audit_log và hiển thị\nXem AI Audit Log theo trace_id.\nHệ thống hiển thị toàn bộ chuỗi (prompt + phản hồi + nguồn + ảnh chụp quyền + mô hình + phiên bản mẫu)\nLọc AI audit theo user_id.\nHệ thống lọc và hiển thị\nXuất báo cáo AI Audit định kỳ tuần/tháng.\nHệ thống sinh báo cáo"
+  },
+  {
+    "id": 11,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản trị tài liệu hướng dẫn sử dụng",
+    "actor": "Quản trị hệ thống",
+    "flow": "Thêm tài liệu mới.\nHệ thống lưu tệp vào MinIO\nSửa tài liệu.\nHệ thống quản lý phiên bản\nXoá tài liệu.\nHệ thống xoá mềm\nXem danh sách tài liệu.\nHệ thống hiển thị"
+  },
+  {
+    "id": 12,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Đăng nhập / Đăng xuất hệ thống (SSO)",
+    "actor": "Tất cả người dùng",
+    "flow": "Đăng nhập qua SSO Keycloak.\nHệ thống xác thực OIDC và thiết lập phiên (access 5 phút, refresh 30 phút)\nThử thách MFA cho vai trò quản trị.\nHệ thống xác thực TOTP\nĐăng xuất một lần (single sign-out).\nHệ thống vô hiệu hoá phiên ở tất cả ứng dụng"
+  },
+  {
+    "id": 13,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Đổi mật khẩu / Cấp lại mật khẩu",
+    "actor": "Tất cả người dùng, Quản trị hệ thống",
+    "flow": "Người dùng đổi mật khẩu của mình.\nHệ thống kiểm tra password policy + cập nhật\nNgười dùng yêu cầu cấp lại mật khẩu (quên mật khẩu).\nHệ thống gửi link reset qua email\nQuản trị hệ thống cấp lại mật khẩu cho người dùng.\nHệ thống tạo mật khẩu tạm + gửi email"
+  },
+  {
+    "id": 14,
+    "group": "QUẢN TRỊ HỆ THỐNG",
+    "name": "Quản lý phiên đăng nhập",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem danh sách phiên active.\nHệ thống truy vấn Keycloak\nBuộc đăng xuất phiên cụ thể.\nHệ thống vô hiệu hoá phiên\nCấu hình số phiên đồng thời tối đa / người dùng.\nHệ thống lưu chính sách"
+  },
+  {
+    "id": 15,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Đăng ký và quản lý nguồn dữ liệu",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Đăng ký nguồn mới (1 trong 5: TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).\nHệ thống lưu vào ingestion.sources\nXem danh sách nguồn.\nHệ thống hiển thị\nSửa thông tin nguồn (nhà cung cấp, chủ sở hữu, mức nhạy cảm).\nHệ thống lưu\nVô hiệu hoá nguồn.\nHệ thống cập nhật trạng thái"
+  },
+  {
+    "id": 16,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Quản lý thư viện bộ kết nối",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Xem danh sách bộ kết nối có sẵn (tệp/REST API/JDBC/SOAP).\nHệ thống hiển thị\nĐăng ký bộ kết nối mới (plugin).\nHệ thống nạp mô-đun + kiểm tra giao diện\nCập nhật phiên bản bộ kết nối.\nHệ thống khởi động lại luân phiên tiến trình nhận sự kiện"
+  },
+  {
+    "id": 17,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Cấu hình kết nối nguồn (credentials/cert)",
+    "actor": "Quản trị Tích hợp, DBA",
+    "flow": "Cấu hình connection (API/DB/File).\nHệ thống lưu thông tin xác thực đã mã hoá\nKiểm thử kết nối.\nHệ thống gọi thử và trả kết quả\nQuản lý certificate / API key của bộ kết nối.\nHệ thống lưu lịch luân chuyển\nNhận cảnh báo trước khi thông tin xác thực hết hạn.\nHệ thống Alertmanager gửi cảnh báo"
+  },
+  {
+    "id": 18,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Định nghĩa tập dữ liệu của nguồn",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Định nghĩa tập dữ liệu + lược đồ.\nHệ thống lưu vào metadata.dataset_catalog\nKhai báo khoá chính + chiến lược phân mảnh.\nHệ thống lưu\nKhai báo trường bắt buộc (NOT NULL).\nHệ thống lưu vào metadata.critical_fields\nĐăng ký vào Schema Registry.\nHệ thống quản lý phiên bản lược đồ"
+  },
+  {
+    "id": 19,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Cấu hình tác vụ điều phối",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Cấu hình tác vụ điều phối (lịch cron, đầy đủ/tăng dần, chính sách thử lại).\nHệ thống lưu\nBật / tắt tác vụ điều phối.\nHệ thống cập nhật trạng thái tác vụ điều phối"
+  },
+  {
+    "id": 20,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Xem lịch đầy đủ dữ liệu + lịch sử chạy",
+    "actor": "Quản trị Tích hợp, Phụ trách Dữ liệu",
+    "flow": "Xem lịch sử chạy.\nHệ thống truy vấn ingestion.runs và hiển thị\nXem lịch đầy đủ dữ liệu (kỳ thiếu dữ liệu).\nHệ thống hiển thị heatmap\nXem chi tiết phiên cụ thể.\nHệ thống hiển thị log + tổng kiểm soát"
+  },
+  {
+    "id": 21,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Chạy lại phiên ingest lỗi",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Chọn phiên bị lỗi.\nHệ thống hiển thị nguyên nhân\nKích hoạt Bộ điều phối chạy lại với khoá chống trùng.\nHệ thống chạy lại + ghi lịch sử\nCập nhật trạng thái sau khi chạy lại.\nHệ thống ghi vào ingestion.runs"
+  },
+  {
+    "id": 22,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Tiếp nhận file thủ công TABMIS (upload)",
+    "actor": "Cán bộ nộp file",
+    "flow": "Tải biểu mẫu Excel.\nHệ thống trả về tệp biểu mẫu chuẩn\nTải tệp lên.\nHệ thống lưu raw vào MinIO + validate template + tổng kiểm soát\nHệ thống tạo phiên tiếp nhận mới.\nHệ thống ghi vào ingestion.runs"
+  },
+  {
+    "id": 23,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Xem trạng thái + sửa lỗi intake TABMIS",
+    "actor": "Cán bộ nộp file",
+    "flow": "Xem trạng thái tiếp nhận.\nHệ thống hiển thị máy trạng thái\nXem chi tiết lỗi dòng.\nHệ thống hiển thị các dòng sai\nSửa và tải lại tệp đã chỉnh.\nHệ thống kiểm tra lại"
+  },
+  {
+    "id": 24,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Tiếp nhận thủ công văn bản từ QLVBĐH (upload định kỳ)",
+    "actor": "Cán bộ nộp văn bản",
+    "flow": "Cán bộ tải biểu mẫu chuẩn và nhập/đính kèm siêu dữ liệu văn bản từ QLVBĐH theo định kỳ.\nHệ thống lưu vào staging.stg_van_ban\nTải tệp PDF/bản quét đính kèm.\nHệ thống lưu vào MinIO (raw-documents)\nKhử trùng lặp theo so_ky_hieu.\nHệ thống bỏ qua bản trùng\nKích hoạt sự kiện ocr.requested.\nHệ thống đẩy sự kiện"
+  },
+  {
+    "id": 25,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Đồng bộ tăng dần từ API/DB",
+    "actor": "Hệ thống tự động (Bộ điều phối)",
+    "flow": "Áp dụng cho MISA (nếu nhà cung cấp cho phép kết nối API), QL Giá, PMSTT.\nTác vụ điều phối đọc điểm kiểm tra từ ingestion.runs\nTruy vấn tăng dần theo updated_at.\nBộ kết nối lấy dữ liệu mới/thay đổi\nLưu dữ liệu thô vào MinIO + cập nhật điểm kiểm tra.\nHệ thống lưu\nKích hoạt sự kiện parsing.requested.\nHệ thống đẩy sự kiện"
+  },
+  {
+    "id": 26,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Kiểm tra Schema Registry",
+    "actor": "Hệ thống tự động",
+    "flow": "Trước khi phân tích, kiểm tra lược đồ nguồn so với lược đồ đã đăng ký.\nHệ thống so sánh\nNếu lược đồ thay đổi (phá vỡ tương thích).\nHệ thống DỪNG quy trình xử lý + cảnh báo Quản trị Tích hợp\nNếu lược đồ tương thích (bổ sung).\nHệ thống chuyển tiếp + ghi nhận thay đổi"
+  },
+  {
+    "id": 27,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Đối soát phiên intake",
+    "actor": "Quản trị Tích hợp, Phụ trách Dữ liệu",
+    "flow": "Chọn phiên cần đối soát.\nHệ thống hiển thị tổng kiểm soát\nĐánh dấu phát hiện thiếu/sai.\nHệ thống lưu\nĐóng phiên đối soát đạt yêu cầu.\nHệ thống cập nhật trạng thái"
+  },
+  {
+    "id": 28,
+    "group": "TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU",
+    "name": "Xử lý ticket đối soát với chủ quản nguồn",
+    "actor": "Quản trị Tích hợp",
+    "flow": "Mở ticket xử lý với chủ quản nguồn.\nHệ thống lưu ticket + thông báo\nCập nhật tiến độ xử lý ticket.\nHệ thống lưu lịch sử\nĐóng ticket khi resolved.\nHệ thống cập nhật + ghi nhật ký"
+  },
+  {
+    "id": 29,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Phân tích dữ liệu có cấu trúc",
+    "actor": "Hệ thống tự động (Bộ phân tích cú pháp)",
+    "flow": "Nhận sự kiện parsing.requested.\nHệ thống đọc dữ liệu thô -> stg_*\nPhân tích Excel/CSV/JSON/XML theo lược đồ.\nHệ thống ánh xạ tên trường + ép kiểu\nKích hoạt sự kiện mapping.requested.\nHệ thống đẩy sự kiện"
+  },
+  {
+    "id": 30,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Phân tích PDF/bản quét + OCR",
+    "actor": "Hệ thống tự động (OCR Quy trình xử lý)",
+    "flow": "Nhận sự kiện ocr.requested.\nHệ thống đọc file PDF/scan Chạy OCR PaddleOCR/olmOCR. Hệ thống trích xuất văn bản\nTrích xuất bảng.\nHệ thống lưu dữ liệu có cấu trúc\nKích hoạt sự kiện ocr.completed + parsing.requested.\nHệ thống đẩy sự kiện"
+  },
+  {
+    "id": 31,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Ánh xạ trường sang dạng chuẩn",
+    "actor": "Hệ thống tự động (Bộ ánh xạ dữ liệu)",
+    "flow": "Tra cứu quy tắc ánh xạ (có phiên bản).\nHệ thống đọc metadata.mapping_rules. Áp dụng quy tắc + tra cứu danh mục chuẩn. Hệ thống chuẩn hóa field\nTừ chối trường bắt buộc bị NULL.\nHệ thống ghi vào metadata.mapping_rejections\nĐẩy giá trị chưa ánh xạ vào hàng đợi.\nHệ thống đẩy vào hàng đợi chưa ánh xạ cho Phụ trách Dữ liệu"
+  },
+  {
+    "id": 32,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Xử lý hàng đợi chưa ánh xạ",
+    "actor": "Phụ trách Dữ liệu",
+    "flow": "Xem hàng đợi chưa ánh xạ.\nHệ thống hiển thị\nXử lý giá trị (ánh xạ / tạo mục mới / từ chối).\nHệ thống lưu mapping mới\nÁnh xạ hàng loạt các giá trị tương tự.\nHệ thống áp dụng đồng loạt"
+  },
+  {
+    "id": 33,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Quản lý danh mục đơn vị",
+    "actor": "Quản trị Danh mục",
+    "flow": "Xem danh mục đơn vị (cây phân cấp).\nHệ thống hiển thị\nThêm đơn vị mới.\nHệ thống kiểm tra trùng mã + lưu phiên bản\nSửa thông tin đơn vị.\nHệ thống lưu\nĐóng / Tách / Sáp nhập đơn vị (lifecycle).\nHệ thống lưu effective_from/to"
+  },
+  {
+    "id": 34,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Quản lý danh mục khoản mục NSNN",
+    "actor": "Quản trị Danh mục",
+    "flow": "Xem cây khoản mục NSNN (Chương / Loại / Khoản / Mục / Tiểu mục).\nHệ thống hiển thị\nThêm / Sửa entry.\nHệ thống quản lý phiên bản theo năm ngân sách\nĐề nghị thay đổi khoản mục nhạy cảm.\nHệ thống lưu yêu cầu chờ duyệt"
+  },
+  {
+    "id": 35,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Quản lý danh mục nhóm tài sản",
+    "actor": "Quản trị Danh mục",
+    "flow": "Xem danh mục nhóm tài sản (TT 48 / TT 162).\nHệ thống hiển thị\nThêm / Sửa entry.\nHệ thống quản lý phiên bản\nKhai báo tỉ lệ khấu hao theo nhóm.\nHệ thống lưu"
+  },
+  {
+    "id": 36,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn",
+    "actor": "Quản trị Danh mục",
+    "flow": "Xem từng danh mục (mặt hàng / loại văn bản / nguồn vốn).\nHệ thống hiển thị\nThêm / Sửa entry.\nHệ thống quản lý phiên bản\nĐề nghị thay đổi danh mục nhạy cảm.\nHệ thống lưu yêu cầu chờ duyệt"
+  },
+  {
+    "id": 37,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Phê duyệt thay đổi danh mục nhạy cảm",
+    "actor": "Lãnh đạo Phòng nghiệp vụ Sở Tài chính",
+    "flow": "Xem các yêu cầu chờ duyệt.\nHệ thống hiển thị diff\nPhê duyệt / từ chối.\nHệ thống cập nhật và áp dụng thay đổi\nGhi lý do phê duyệt.\nHệ thống lưu vào nhật ký"
+  },
+  {
+    "id": 38,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Quản lý quy tắc kiểm tra chất lượng",
+    "actor": "Phụ trách Dữ liệu, Quản trị Dữ liệu",
+    "flow": "Xem danh sách quy tắc chất lượng (đầy đủ / hợp lệ / duy nhất / nhất quán).\nHệ thống hiển thị\nThêm / Sửa quy tắc.\nHệ thống lưu vào metadata.quality_rules + version\nCấu hình ngưỡng + trọng số cho điểm.\nHệ thống lưu"
+  },
+  {
+    "id": 39,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Chạy kiểm tra chất lượng dữ liệu",
+    "actor": "Hệ thống tự động (Quality Service)",
+    "flow": "Tra cứu quy tắc chất lượng.\nHệ thống đọc metadata.quality_rules\nChạy quy tắc.\nHệ thống tính điểm\nĐạt ngưỡng -> công bố.\nHệ thống đẩy vào kho chuẩn hoá\nDưới ngưỡng -> hàng đợi ngoại lệ.\nHệ thống đẩy vào hàng đợi cho Phụ trách Dữ liệu"
+  },
+  {
+    "id": 40,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Xử lý ngoại lệ chất lượng",
+    "actor": "Phụ trách Dữ liệu",
+    "flow": "Xem hàng đợi ngoại lệ.\nHệ thống hiển thị\nXử lý từng ngoại lệ (sửa / từ chối / yêu cầu nguồn).\nHệ thống lưu quyết định\nXử lý hàng loạt ngoại lệ cùng loại.\nHệ thống áp dụng"
+  },
+  {
+    "id": 41,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Công bố vào kho chuẩn hoá + batch_summary",
+    "actor": "Hệ thống tự động (Curated Service)",
+    "flow": "Chèn/Cập nhật vào dm_*.\nHệ thống lưu\nĐặt publish_status=approved.\nHệ thống cập nhật\nTạo batch_summary + cập nhật độ mới dữ liệu.\nHệ thống ghi metadata\nKích hoạt sự kiện curated.published.\nHệ thống phát sự kiện"
+  },
+  {
+    "id": 42,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Đăng ký siêu dữ liệu tập dữ liệu",
+    "actor": "Quản trị Dữ liệu",
+    "flow": "Đăng ký siêu dữ liệu tập dữ liệu (chủ sở hữu, mô tả, mức nhạy cảm).\nHệ thống lưu vào metadata.dataset_catalog\nCập nhật siêu dữ liệu.\nHệ thống lưu phiên bản mới\nTra cứu siêu dữ liệu tập dữ liệu.\nHệ thống hiển thị"
+  },
+  {
+    "id": 43,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa",
+    "actor": "Quản trị Dữ liệu",
+    "flow": "Tạo chỉ tiêu mới (tên, mô tả, biểu thức, lĩnh vực).\nHệ thống lưu vào PostgreSQL. Kiểm thử chỉ tiêu trên truy vấn mẫu. Hệ thống chạy và hiển thị kết quả Quản lý phiên bản chỉ tiêu. Hệ thống lưu version + audit"
+  },
+  {
+    "id": 44,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Phê duyệt chỉ tiêu",
+    "actor": "Chủ quản Nghiệp vụ",
+    "flow": "Xem chỉ tiêu chờ phê duyệt.\nHệ thống hiển thị\nXem kết quả kiểm thử + so sánh với số liệu hiện tại.\nHệ thống hiển thị\nPhê duyệt / từ chối chỉ tiêu.\nHệ thống công bố hoặc trả về cho Quản trị Dữ liệu"
+  },
+  {
+    "id": 45,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Truy vết nguồn gốc bản ghi",
+    "actor": "Kiểm toán viên",
+    "flow": "Chọn bản ghi curated.\nHệ thống hiển thị\nXem nguồn gốc dữ liệu qua các bước (thô -> phân tích -> ánh xạ -> chất lượng -> công bố).\nHệ thống hiển thị chuỗi\nXem chi tiết từng bước.\nHệ thống hiển thị dữ liệu vào/ra + phép biến đổi"
+  },
+  {
+    "id": 46,
+    "group": "CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU",
+    "name": "Xuất báo cáo nguồn gốc dữ liệu",
+    "actor": "Kiểm toán viên",
+    "flow": "Chọn phạm vi (tập dữ liệu / bản ghi / nguồn).\nHệ thống hiển thị\nSinh báo cáo nguồn gốc dữ liệu.\nHệ thống kết xuất PDF\nKết xuất PDF.\nHệ thống trả file"
+  },
+  {
+    "id": 47,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Xem Bảng điều khiển điều hành",
+    "actor": "Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC",
+    "flow": "Chọn Bảng điều khiển từ danh mục.\nHệ thống hiển thị danh sách\nXem Bảng điều khiển.\nHệ thống hiển thị từ Superset. Ghim bảng điều khiển yêu thích. Hệ thống lưu vào tùy chọn cá nhân"
+  },
+  {
+    "id": 48,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Áp bộ lọc + xem chi tiết Bảng điều khiển",
+    "actor": "Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC",
+    "flow": "Áp bộ lọc Bảng điều khiển (năm, đơn vị, lĩnh vực).\nHệ thống truy vấn lại qua Superset. Xem chi tiết KPI. Hệ thống hiển thị phân rã chi tiết. So sánh cùng kỳ năm trước. Hệ thống truy thêm metric so sánh\nYêu cầu AI giải thích KPI.\nHệ thống gọi AI Bộ điều phối"
+  },
+  {
+    "id": 49,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Chọn báo cáo theo mẫu + cấu hình bộ lọc",
+    "actor": "Cán bộ tổng hợp Sở Tài chính",
+    "flow": "Xem danh mục mẫu báo cáo.\nHệ thống hiển thị\nChọn mẫu báo cáo.\nHệ thống hiển thị xem trước\nCấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ).\nHệ thống lưu trạng thái"
+  },
+  {
+    "id": 50,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Sinh + kết xuất báo cáo",
+    "actor": "Cán bộ tổng hợp Sở Tài chính",
+    "flow": "Sinh báo cáo theo mẫu + bộ lọc.\nHệ thống truy vấn Lớp ngữ nghĩa + kết xuất\nKết xuất PDF.\nHệ thống trả file\nKết xuất Excel.\nHệ thống trả file"
+  },
+  {
+    "id": 51,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Cấu hình báo cáo theo lịch",
+    "actor": "Cán bộ tổng hợp Sở Tài chính",
+    "flow": "Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng).\nHệ thống lưu lịch\nCấu hình người nhận (email).\nHệ thống lưu\nHệ thống tự động sinh + gửi email báo cáo theo lịch.\nTác vụ định kỳ (cron)"
+  },
+  {
+    "id": 52,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Đăng ký nhận cảnh báo dashboard",
+    "actor": "Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC",
+    "flow": "Cấu hình ngưỡng cảnh báo trên KPI.\nHệ thống lưu\nChọn kênh nhận (email / Slack / Webhook).\nHệ thống lưu\nKhi vượt ngưỡng.\nHệ thống gửi cảnh báo qua kênh đã chọn"
+  },
+  {
+    "id": 53,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Tra cứu dữ liệu văn bản",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản).\nHệ thống truy vấn OpenSearch + lọc theo quyền\nHiển thị kết quả thuộc phạm vi quyền.\nHệ thống hiển thị\nXem chi tiết văn bản.\nHệ thống hiển thị metadata + file PDF"
+  },
+  {
+    "id": 54,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Tra cứu dữ liệu tài sản",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Nhập bộ lọc (đơn vị, nhóm, trạng thái).\nHệ thống truy vấn curated.dm_tai_san\nHiển thị danh sách tài sản.\nHệ thống hiển thị\nXem chi tiết tài"
+  },
+  {
+    "id": 55,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Tra cứu dữ liệu giá",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Nhập bộ lọc (mặt hàng, địa bàn, kỳ).\nHệ thống truy vấn curated.dm_gia\nHiển thị giá theo bảng.\nHệ thống hiển thị\nHiển thị biểu đồ xu hướng giá theo thời gian.\nHệ thống hiển thị line chart"
+  },
+  {
+    "id": 56,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Tra cứu dữ liệu ngân sách",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Nhập bộ lọc (đơn vị, khoản mục, kỳ).\nHệ thống truy vấn curated.dm_ngan_sach\nHiển thị số liệu thu/chi/tạm ứng.\nHệ thống hiển thị\nXem chi tiết theo đơn vị/khoản mục.\nHệ thống re-query"
+  },
+  {
+    "id": 57,
+    "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
+    "name": "Hiển thị độ mới dữ liệu",
+    "actor": "Tất cả người dùng",
+    "flow": "Xem ô thông tin độ mới dữ liệu trên Bảng điều khiển.\nHệ thống truy vấn view curated.data_freshness\nXem chi tiết last_sync + độ đầy đủ theo nguồn.\nHệ thống hiển thị bảng"
+  },
+  {
+    "id": 58,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Quản lý danh mục API",
+    "actor": "Quản trị API",
+    "flow": "Publish API mới (Search / QA / Data / Metadata).\nHệ thống cập nhật danh mục\nGỡ công bố API.\nHệ thống vô hiệu hoá điểm cuối\nCấu hình quản lý phiên bản + ngày ngừng hỗ trợ.\nHệ thống lưu"
+  },
+  {
+    "id": 59,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Quản lý API key",
+    "actor": "Quản trị API",
+    "flow": "Tạo khoá API cho đơn vị khai thác.\nHệ thống sinh khoá + phạm vi\nThu hồi khoá API.\nHệ thống thu hồi\nLuân chuyển khoá API (tự động / thủ công).\nHệ thống tạo khoá mới + thời gian ân hạn\nGhi nhật ký sử dụng khoá API.\nHệ thống ghi nhật ký"
+  },
+  {
+    "id": 60,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Quản lý giới hạn tần suất + gói dịch vụ",
+    "actor": "Quản trị API",
+    "flow": "Cấu hình gói (miễn phí / tiêu chuẩn / cao cấp).\nHệ thống lưu\nCấu hình giới hạn tần suất / gói (req/giây, req/ngày).\nHệ thống áp dụng tại Cổng API\nCấu hình giới hạn đột biến + chính sách điều tiết.\nHệ thống lưu"
+  },
+  {
+    "id": 61,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Theo dõi mức sử dụng API + chỉ số",
+    "actor": "Quản trị API",
+    "flow": "Xem bảng điều khiển mức sử dụng API (req/giây, độ trễ, tỉ lệ lỗi).\nHệ thống hiển thị từ Prometheus\nXem chi tiết theo đơn vị khai thác.\nHệ thống hiển thị\nCảnh báo khi API có bất thường.\nAlertmanager gửi cảnh báo"
+  },
+  {
+    "id": 62,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Quản lý chứng thư / mTLS cho đơn vị khai thác",
+    "actor": "Quản trị API",
+    "flow": "Đăng ký chứng thư của đơn vị khai thác.\nHệ thống lưu vào kho tin cậy\nLuân chuyển chứng thư.\nHệ thống cập nhật\nThu hồi chứng thư.\nHệ thống thêm vào CRL"
+  },
+  {
+    "id": 63,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp cổng tài liệu API",
+    "actor": "QLVBĐH, IOC, LGSP (đơn vị khai thác)",
+    "flow": "Đơn vị khai thác truy cập cổng Swagger/Redoc.\nHệ thống hiển thị UI\nXem"
+  },
+  {
+    "id": 64,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp Data API cho IOC",
+    "actor": "IOC (đơn vị khai thác)",
+    "flow": "IOC gọi Data API tổng hợp.\nHệ thống trả dữ liệu qua Lớp ngữ nghĩa\nCổng API kiểm tra khoá API + phạm vi + giới hạn tần suất.\nHệ thống thực thi\nGhi nhật ký lời gọi API.\nHệ thống ghi vào audit.audit_log"
+  },
+  {
+    "id": 65,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp API qua LGSP",
+    "actor": "LGSP (đơn vị khai thác)",
+    "flow": "Cổng LGSP chuyển tiếp yêu cầu.\nHệ thống nhận\nCổng API kiểm tra chứng thư m\nTLS.\nHệ thống thực thi\nTrả phản hồi theo chuẩn LGSP.\nHệ thống response"
+  },
+  {
+    "id": 66,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp Search API cho QLVBĐH/cổng nội bộ",
+    "actor": "QLVBĐH, portal nội bộ",
+    "flow": "QLVBĐH gọi Search API.\nHệ thống tìm kiếm vector + BM25\nLọc theo quyền.\nHệ thống lọc theo phạm vi của người dùng đến từ QLVBĐH\nTrả kết quả + dẫn nguồn.\nHệ thống phản hồi JSON"
+  },
+  {
+    "id": 67,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp QA API có dẫn nguồn",
+    "actor": "QLVBĐH, portal nội bộ",
+    "flow": "QLVBĐH gọi QA API.\nHệ thống AI Bộ điều phối + RAG\nDựng ngữ cảnh + gọi LLM.\nHệ thống phản hồi theo luồng\nTrả phản hồi + dẫn nguồn.\nHệ thống response"
+  },
+  {
+    "id": 68,
+    "group": "API VÀ TÍCH HỢP",
+    "name": "Cung cấp API siêu dữ liệu / tài liệu liên quan",
+    "actor": "QLVBĐH, portal nội bộ",
+    "flow": "QLVBĐH gọi API siêu dữ liệu.\nHệ thống truy vấn curated.dm_van_ban + nguồn gốc dữ liệu\nQLVBĐH gọi API tài liệu liên quan.\nHệ thống truy vấn quan hệ văn bản\nQLVBĐH gọi API tóm tắt.\nHệ thống dùng LLM tóm tắt và lưu đệm"
+  },
+  {
+    "id": 69,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Tra cứu ngữ nghĩa văn bản",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Nhập từ khoá / câu hỏi.\nHệ thống tìm kiếm vector + BM25 + lọc theo quyền\nHiển thị danh sách kết quả.\nHệ thống hiển thị\nSắp xếp theo độ liên quan / thời gian.\nHệ thống sắp xếp lại"
+  },
+  {
+    "id": 70,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Xem dẫn nguồn chi tiết + ngữ cảnh trích dẫn",
+    "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
+    "flow": "Click vào kết quả.\nHệ thống mở chi tiết\nXem dẫn nguồn cụ thể (số ký hiệu, điều khoản, trang).\nHệ thống hiển thị\nXem ngữ cảnh trích dẫn (đoạn văn xung quanh).\nHệ thống hiển thị"
+  },
+  {
+    "id": 71,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI hỏi đáp văn bản có dẫn nguồn (RAG)",
+    "actor": "Lãnh đạo Sở Tài chính, Cán bộ nghiệp vụ Sở TC",
+    "flow": "Người dùng hỏi AI bằng ngôn ngữ tự nhiên.\nHệ thống phân loại -> định tuyến tài liệu -> truy hồi RAG -> LLM\nNgười dùng xem phản hồi kèm trích dẫn.\nHệ thống phản hồi theo luồng SSE\nNgười dùng xem chi tiết trích dẫn.\nHệ thống hiển thị nguồn"
+  },
+  {
+    "id": 72,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI hỏi đáp số liệu (NLQ)",
+    "actor": "Cán bộ tổng hợp Sở TC, Lãnh đạo Sở Tài chính",
+    "flow": "Người dùng hỏi AI về số liệu.\nHệ thống phân loại -> định tuyến dữ liệu -> truy vấn Lớp ngữ nghĩa\nNgười dùng xem phản hồi kèm nguồn chỉ tiêu.\nHệ thống hiển thị\nNgười dùng xem câu lệnh SQL được sinh ra (minh bạch).\nHệ thống hiển thị"
+  },
+  {
+    "id": 73,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI hỏi đáp đa nguồn (hybrid)",
+    "actor": "Cán bộ tổng hợp Sở TC, Lãnh đạo Sở Tài chính",
+    "flow": "Người dùng hỏi cần cả số liệu + văn bản.\nHệ thống phân loại -> định tuyến kết hợp -> xử lý song song dữ liệu + tài liệu\nNgười dùng xem phản hồi với 2 nguồn trích dẫn.\nHệ thống hiển thị"
+  },
+  {
+    "id": 74,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Xem lịch sử phiên AI của cá nhân",
+    "actor": "Tất cả người dùng",
+    "flow": "Xem danh sách phiên AI đã hỏi.\nHệ thống truy vấn audit.ai_audit_log lọc theo user_id\nMở lại phiên cũ.\nHệ thống hiển thị hội thoại\nXoá phiên cũ.\nHệ thống xoá mềm (vẫn giữ nhật ký)"
+  },
+  {
+    "id": 75,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI sinh báo cáo liên ngành",
+    "actor": "Cán bộ tổng hợp Sở Tài chính",
+    "flow": "Yêu cầu sinh báo cáo.\nHệ thống truy vấn đa lĩnh vực + AI soạn thảo\nHệ thống watermark \"BẢN NHÁP - CẦN XEM XÉT\".\nHệ thống hiển thị\nChỉnh sửa bản nháp.\nHệ thống lưu bản nháp\nHoàn thiện và kết xuất.\nHệ thống kết xuất PDF"
+  },
+  {
+    "id": 76,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI giải thích KPI trên Bảng điều khiển",
+    "actor": "Lãnh đạo Sở Tài chính",
+    "flow": "Click \"Giải thích\" trên KPI.\nHệ thống truy vấn phân rã chỉ tiêu + RAG + LLM\nXem giải thích AI ngay trên Bảng điều khiển.\nHệ thống hiển thị\nTham chiếu văn bản chỉ đạo liên quan.\nHệ thống hiển thị dẫn nguồn"
+  },
+  {
+    "id": 77,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Rà soát hiệu lực văn bản",
+    "actor": "Cán bộ pháp chế Sở Tài chính",
+    "flow": "Chọn văn bản.\nHệ thống hiển thị hieu_luc_status\nXem lịch sử trạng thái hiệu lực.\nHệ thống hiển thị timeline\nXác nhận / cập nhật trạng thái.\nHệ thống lưu"
+  },
+  {
+    "id": 78,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Xem quan hệ giữa các văn bản",
+    "actor": "Cán bộ pháp chế Sở Tài chính",
+    "flow": "Chọn văn bản.\nHệ thống truy vấn quan hệ (sửa đổi / thay thế / bãi bỏ / dẫn chiếu)\nVẽ đồ thị quan hệ.\nHệ thống hiển thị sơ đồ\nXem chi tiết từng quan hệ.\nHệ thống hiển thị chi tiết"
+  },
+  {
+    "id": 79,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Tóm tắt văn bản",
+    "actor": "Lãnh đạo Sở Tài chính, Cán bộ nghiệp vụ Sở TC",
+    "flow": "Yêu cầu tóm tắt văn bản.\nHệ thống dùng LLM tóm tắt\nXem tóm tắt kèm dẫn nguồn.\nHệ thống hiển thị\nCấu hình độ dài tóm tắt (ngắn / vừa / dài).\nHệ thống tóm tắt lại"
+  },
+  {
+    "id": 80,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "So sánh 2 văn bản",
+    "actor": "Cán bộ pháp chế Sở Tài chính",
+    "flow": "Chọn 2 văn bản.\nHệ thống diff\nAI phân tích điểm mới / sửa đổi / bãi bỏ.\nHệ thống hiển thị\nXem so sánh side-by-side.\nHệ thống hiển thị"
+  },
+  {
+    "id": 81,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Người dùng đánh giá câu trả lời AI",
+    "actor": "Tất cả người dùng",
+    "flow": "Người dùng đánh giá (hữu ích / không hữu ích / sai).\nHệ thống lưu phản hồi + thông báo người rà soát\nNgười dùng nhập nội dung chi tiết (tuỳ chọn).\nHệ thống lưu"
+  },
+  {
+    "id": 82,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "AI Rà soát phân loại phản hồi",
+    "actor": "AI Rà soát",
+    "flow": "Xem hàng đợi phản hồi.\nHệ thống hiển thị\nPhân loại nguyên nhân (thông tin bịa đặt / truy hồi thiếu / rò rỉ quyền / khác).\nHệ thống lưu\nGán hành động (sửa prompt / sửa dữ liệu / cải thiện truy hồi).\nHệ thống lưu"
+  },
+  {
+    "id": 83,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Kiểm duyệt đầu ra AI hàng tuần",
+    "actor": "AI Rà soát",
+    "flow": "Xem bảng điều khiển Kiểm toán AI.\nHệ thống hiển thị thống kê tuần\nLấy mẫu 5% truy vấn để rà soát chi tiết.\nHệ thống chọn ngẫu nhiên\nGhi phát hiện + hành động.\nHệ thống lưu vào báo cáo tuần"
+  },
+  {
+    "id": 84,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Thêm/Sửa/Xoá mẫu prompt",
+    "actor": "Quản trị AI",
+    "flow": "Xem danh sách mẫu prompt.\nHệ thống hiển thị\nTạo mẫu prompt mới (bản nháp).\nHệ thống lưu\nSửa mẫu prompt (tạo phiên bản mới).\nHệ thống lưu bản nháp\nXoá mẫu prompt (xoá mềm).\nHệ thống ghi nhật ký"
+  },
+  {
+    "id": 85,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Kiểm thử mẫu prompt",
+    "actor": "Quản trị AI",
+    "flow": "Chọn phiên bản prompt + truy vấn mẫu.\nHệ thống hiển thị\nChạy thử.\nHệ thống gọi LLM + so sánh với phiên bản cũ\nXem khác biệt phản hồi.\nHệ thống hiển thị diff"
+  },
+  {
+    "id": 86,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Kích hoạt / Khôi phục mẫu prompt",
+    "actor": "Quản trị AI",
+    "flow": "Kích hoạt phiên bản mới.\nHệ thống cập nhật phiên bản đang hoạt động\nKhôi phục về phiên bản cũ.\nHệ thống kích hoạt phiên bản cũ\nGhi nhật ký thay đổi (ai/khi nào/từ phiên bản/tới phiên bản).\nHệ thống ghi nhật ký"
+  },
+  {
+    "id": 87,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Quản lý định tuyến mô hình",
+    "actor": "Quản trị AI",
+    "flow": "Xem model routing hiện tại (classification, generation).\nHệ thống hiển thị\nThay đổi định tuyến mô hình (vd: switch từ self-hosted sang Claude API).\nHệ thống lưu cấu hình\nKiểm thử định tuyến mới trên mẫu.\nHệ thống chạy và so sánh"
+  },
+  {
+    "id": 88,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Lập chỉ mục tự động vào Vector Store",
+    "actor": "Hệ thống tự động (RAG Quy trình xử lý)",
+    "flow": "Nhận sự kiện ocr.completed hoặc curated.published.\nTiến trình nhận sự kiện kích hoạt\nChia khối + nhúng vector qua multilingual-e5-large.\nHệ thống chia khối + mã hoá vector\nChèn vào pgvector với chỉ mục HNSW.\nHệ thống lưu"
+  },
+  {
+    "id": 89,
+    "group": "AI VÀ KHAI THÁC VĂN BẢN",
+    "name": "Lập chỉ mục lại thủ công Vector Store",
+    "actor": "Quản trị AI",
+    "flow": "Chọn tập dữ liệu cần lập chỉ mục lại (toàn bộ / một phần).\nHệ thống hiển thị\nChạy tác vụ lập chỉ mục lại.\nHệ thống chia khối + nhúng vector lại\nXem tiến độ + thời gian dự kiến.\nHệ thống hiển thị"
+  },
+  {
+    "id": 90,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Sao lưu thủ công (theo yêu cầu)",
+    "actor": "Quản trị hệ thống",
+    "flow": "Chọn phạm vi sao lưu (toàn bộ / theo từng CSDL).\nHệ thống hiển thị\nKích hoạt pg_basebackup + tải lên MinIO.\nHệ thống thực hiện\nXác nhận sao lưu hoàn tất.\nHệ thống lưu metadata"
+  },
+  {
+    "id": 91,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Cấu hình lịch sao lưu tự động",
+    "actor": "Quản trị hệ thống",
+    "flow": "Cấu hình lịch (hàng ngày / hàng tuần / hàng tháng).\nHệ thống lưu lịch cron\nCấu hình chính sách lưu giữ.\nHệ thống áp dụng dọn dẹp\nCấu hình lưu trữ WAL liên tục\nHệ thống bật pgbackrest"
+  },
+  {
+    "id": 92,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Phục hồi từ bản sao lưu",
+    "actor": "Quản trị hệ thống",
+    "flow": "Chọn bản sao lưu để phục hồi.\nHệ thống hiển thị danh sách\nChọn thời điểm phục hồi (PITR).\nHệ thống hiển thị cửa sổ WAL\nKích hoạt phục hồi pg_restore.\nHệ thống thực hiện + kiểm tra\nChuyển đổi sang CSDL phục hồi.\nHệ thống cập nhật định tuyến"
+  },
+  {
+    "id": 93,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Xem trạng thái và lịch sử sao lưu",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem danh sách bản sao lưu (đang hoạt động / lưu trữ dài hạn).\nHệ thống hiển thị\nXem trạng thái tác vụ sao lưu (thành công / thất bại / đang chạy).\nHệ thống hiển thị\nXem RPO / RTO hiện tại.\nHệ thống tính toán và hiển thị"
+  },
+  {
+    "id": 94,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Phục hồi sự cố (chuyển sang Trung tâm dữ liệu)",
+    "actor": "Quản trị hệ thống",
+    "flow": "Kích hoạt diễn tập.\nHệ thống mô phỏng chuyển đổi dự phòng\nChuyển sang DC dự phòng khi có sự cố (thủ công / Tự động).\nHệ thống chuyển đổi dự phòng\nChuyển về Trung tâm dữ liệu chính sau khi khôi phục.\nHệ thống đồng bộ + chuyển ngược"
+  },
+  {
+    "id": 95,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Xem bảng điều khiển giám sát sức khoẻ hệ thống",
+    "actor": "Quản trị hệ thống, IT vận hành",
+    "flow": "Xem bảng điều khiển Prometheus + Grafana.\nHệ thống hiển thị chỉ số (CPU/RAM/đĩa/mạng)\nXem chi tiết service cụ thể.\nHệ thống hiển thị\nXem bảng điều khiển SLA (thời gian hoạt động, tỉ lệ lỗi).\nHệ thống hiển thị"
+  },
+  {
+    "id": 96,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Cấu hình và nhận cảnh báo",
+    "actor": "Quản trị hệ thống",
+    "flow": "Cấu hình cảnh báo trong Prometheus.\nHệ thống lưu\nCấu hình kênh nhận (email/SMS/Slack/PagerDuty).\nHệ thống lưu\nNhận cảnh báo sự cố.\nAlertmanager gửi thông báo\nXác nhận / tắt cảnh báo.\nHệ thống lưu"
+  },
+  {
+    "id": 97,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Xem nhật ký tập trung",
+    "actor": "Quản trị hệ thống, Developer",
+    "flow": "Xem nhật ký tập trung trong Loki.\nHệ thống hiển thị\nLọc theo dịch vụ / mức nhật ký / khoảng thời gian.\nHệ thống lọc\nTheo dõi nhật ký thời gian thực.\nHệ thống truyền luồng"
+  },
+  {
+    "id": 98,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Truy vết phân tán",
+    "actor": "Quản trị hệ thống, Developer",
+    "flow": "Xem vết Open\nTelemetry trong Tempo.\nHệ thống hiển thị\nXem chi tiết vết cụ thể qua trace_id.\nHệ thống hiển thị cây span\nPhân tích điểm nghẽn.\nHệ thống làm nổi span chậm"
+  },
+  {
+    "id": 99,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Theo dõi chi phí AI",
+    "actor": "Quản trị AI, Tài chính",
+    "flow": "Xem bảng điều khiển chi phí AI (số token / giờ GPU).\nHệ thống hiển thị\nXem chi tiết theo người dùng / lĩnh vực / mô hình.\nHệ thống hiển thị\nCảnh báo khi vượt ngân sách.\nAlertmanager gửi cảnh báo"
+  },
+  {
+    "id": 100,
+    "group": "VẬN HÀNH HỆ THỐNG",
+    "name": "Quản lý tài nguyên cụm + co giãn",
+    "actor": "Quản trị hệ thống",
+    "flow": "Xem mức sử dụng cụm (Kubernetes / Docker).\nHệ thống hiển thị\nTăng / giảm quy mô dịch vụ (thủ công).\nHệ thống điều chỉnh số bản sao\nCấu hình tự co giãn (HPA).\nHệ thống lưu chính sách"
+  },
+  {
+    "id": 101,
+    "group": "BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)",
+    "name": "Cấu hình mẫu báo cáo cấp trên theo Thông tư",
+    "actor": "Quản trị Danh mục, Cán bộ tổng hợp Sở Tài chính",
+    "flow": "Đăng ký mẫu báo cáo theo Thông tư (TT 343/2016/TT-BTC, TT 99/2017/TT-BTC, TT 24/2019/TT-BTC cho ngân sách; TT 31/2018/TT-BTC cho tài sản; quy định mua sắm tập trung).\nHệ thống lưu biểu mẫu\nCấu hình ánh xạ trường từ mô hình chuẩn -> trường báo cáo Thông tư.\nHệ thống lưu ánh xạ có phiên bản\nKiểm thử kết xuất mẫu trên dữ liệu mẫu.\nHệ thống hiển thị xem trước PDF/Excel/XML\nActivate mẫu mới.\nHệ thống chuyển sang hoạt động + phiên bản mới"
+  },
+  {
+    "id": 102,
+    "group": "BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)",
+    "name": "Quy trình phê duyệt số liệu báo cáo trước khi gửi cấp trên",
+    "actor": "Cán bộ tổng hợp Sở TC, Trưởng phòng nghiệp vụ, Phó GĐ Sở, Giám đốc Sở",
+    "flow": "Cán bộ tổng hợp gửi báo cáo bản nháp + số liệu.\nHệ thống lưu bản nháp + ghi nhật ký\nTrưởng phòng nghiệp vụ rà soát + ký số duyệt mức 1.\nHệ thống chuyển trạng thái sang lvl1_approved\nPhó GĐ Sở rà soát + ký số duyệt mức 2.\nHệ thống chuyển sang lvl2_approved\nGiám đốc Sở ký số duyệt cuối.\nHệ thống chuyển sang final_approved, sẵn sàng gửi cấp trên\nTrả về với lý do (ở bất kỳ bước nào).\nHệ thống lưu lý do + thông báo người gửi + khởi tạo lại quy trình"
+  },
+  {
+    "id": 103,
+    "group": "BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)",
+    "name": "Sinh + gửi báo cáo ngân sách lên Bộ Tài chính / KBNN",
+    "actor": "Cán bộ tổng hợp Sở Tài chính, Hệ thống tự động",
+    "flow": "Chọn loại báo cáo + kỳ (tháng/quý/năm).\nHệ thống hiển thị mẫu áp dụng theo Thông tư hiện hành\nSinh báo cáo theo mẫu.\nHệ thống truy vấn kho chuẩn hoá + Lớp ngữ nghĩa + kết xuất XML/Excel theo định dạng Bộ TC\nĐẩy báo cáo vào quy trình phê duyệt (UC-102).\nHệ thống chuyển sang trạng thái chờ phê duyệt\nSau khi được duyệt cuối, kết xuất báo cáo theo định dạng quy định để cán bộ tải về và nộp lên Bộ TC/KBNN theo quy trình hiện hành.\nHệ thống gửi + ghi nhật ký submission_log. Theo dõi trạng thái gửi (đã gửi / đã nhận / bị từ chối) và thông báo Cán bộ tổng hợp"
+  },
+  {
+    "id": 104,
+    "group": "BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)",
+    "name": "Sinh + gửi báo cáo tài sản công / mua sắm tập trung lên cấp trên",
+    "actor": "Cán bộ tổng hợp Sở Tài chính, Hệ thống tự động",
+    "flow": "Chọn loại báo cáo: tài sản (TT 31/2018) hoặc mua sắm tập trung.\nHệ thống hiển thị mẫu\nSinh báo cáo theo mẫu Thông tư.\nHệ thống truy vấn curated.dm_tai_san / curated.dm_mua_sam + kết xuất\nLuồng xử lý phê duyệt (UC-102).\nHệ thống chuyển sang chờ duyệt\nKết xuất báo cáo để cán bộ tải về và nộp lên Bộ TC / UBND tỉnh theo quy trình hiện hành.\nHệ thống gửi qua kênh đã cấu hình + ghi nhật ký"
+  },
+  {
+    "id": 105,
+    "group": "BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)",
+    "name": "Đối soát số liệu thu/chi với Kho bạc Nhà nước (KBNN) tỉnh",
+    "actor": "Cán bộ Phòng Ngân sách Sở Tài chính",
+    "flow": "Tiếp nhận tệp đối soát số liệu thu/chi từ KBNN theo định kỳ (cán bộ tải về và nhập vào hệ thống).\nHệ thống lưu vào staging.stg_kbnn_reconcile\nSo sánh số liệu TABMIS (trong Kho DL) vs số liệu KBNN theo cùng kỳ.\nHệ thống tự động đối chiếu + làm nổi các chênh lệch\nXem báo cáo chênh lệch (theo đơn vị / khoản mục / kỳ).\nHệ thống hiển thị danh sách + giá trị chênh lệch\nMở ticket đối soát khi có chênh lệch ngoài ngưỡng.\nHệ thống lưu ticket + thông báo các bên liên quan\nXử lý chênh lệch (sửa số liệu / yêu cầu KBNN xác nhận / chấp nhận sai số nhỏ).\nHệ thống lưu quyết định + rationale\nĐóng phiên đối soát + ký số xác nhận.\nHệ thống lưu nhật ký + cập nhật trạng thái"
+  }
+]

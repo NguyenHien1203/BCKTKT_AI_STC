@@ -1,0 +1,201 @@
+version: "3.9"
+
+# Hạ tầng dùng chung + toàn bộ 8 microservice (khung Clean Architecture).
+# UC nghiệp vụ được implement dần theo PLAN.md; service nào chưa có UC vẫn
+# chạy được (chỉ có /health) để bạn có thể build/deploy khung trước.
+
+x-app-env: &app-env
+  POSTGRES_USER: ${POSTGRES_USER:-app}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_password}
+  POSTGRES_DB: ${POSTGRES_DB:-financial_dw}
+
+services:
+  # ---------- Hạ tầng dùng chung ----------
+  postgres:
+    image: postgres:16
+    container_name: hy-postgres
+    restart: unless-stopped
+    environment: *app-env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: hy-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: hy-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: hy-opensearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+
+  minio:
+    image: minio/minio:latest
+    container_name: hy-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: hy-keycloak
+    restart: unless-stopped
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hy-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hy-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+
+  # ---------- Microservices (Clean Architecture) ----------
+  auth-identity-service:
+    build: ./services/auth-identity-service
+    container_name: hy-auth-identity-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+  ingestion-service:
+    build: ./services/ingestion-service
+    container_name: hy-ingestion-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+
+  data-quality-service:
+    build: ./services/data-quality-service
+    container_name: hy-data-quality-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+
+  reporting-service:
+    build: ./services/reporting-service
+    container_name: hy-reporting-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+
+  api-gateway-service:
+    build: ./services/api-gateway-service
+    container_name: hy-api-gateway-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8005:8000"
+
+  ai-service:
+    build: ./services/ai-service
+    container_name: hy-ai-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8006:8000"
+
+  ops-service:
+    build: ./services/ops-service
+    container_name: hy-ops-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8007:8000"
+
+  gov-report-service:
+    build: ./services/gov-report-service
+    container_name: hy-gov-report-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8008:8000"
+
+  # ---------- Frontend ----------
+  frontend:
+    build: ./frontend
+    container_name: hy-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:
+  miniodata:

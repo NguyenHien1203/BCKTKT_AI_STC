@@ -1,0 +1,676 @@
+TT|Tên Use Case|Tên tác nhân|Giao dịch (Transaction)
+A|ỨNG DỤNG TRÊN NỀN TẢNG WEB (RESPONSIVE)|ỨNG DỤNG TRÊN NỀN TẢNG WEB (RESPONSIVE)|ỨNG DỤNG TRÊN NỀN TẢNG WEB (RESPONSIVE)
+I|QUẢN TRỊ HỆ THỐNG|QUẢN TRỊ HỆ THỐNG|QUẢN TRỊ HỆ THỐNG
+1|Quản lý cơ cấu tổ chức|Quản trị hệ thống|Xem danh sách cơ cấu tổ chức.
+Hệ thống truy vấn CSDL và hiển thị
+Thêm mới đơn vị cấp cha/con.
+Hệ thống kiểm tra hợp lệ và lưu
+Sửa thông tin đơn vị.
+Hệ thống lưu và hiển thị
+Xoá đơn vị (xoá mềm).
+Hệ thống đánh dấu ngừng hoạt động + ghi nhật ký
+2|Quản lý người dùng (CRUD)|Quản trị hệ thống|Xem danh sách người dùng.
+Hệ thống truy vấn và hiển thị
+Thêm mới người dùng + gán đơn vị + vai trò.
+Hệ thống tạo trong Keycloak + ghi ánh xạ
+Sửa thông tin người dùng.
+Hệ thống đồng bộ với Keycloak
+Xoá người dùng (xoá mềm).
+Hệ thống ghi nhật ký
+3|Quản lý vòng đời người dùng|Quản trị hệ thống|Khoá / Mở khoá người dùng.
+Hệ thống cập nhật trạng thái Keycloak
+Buộc đăng xuất người dùng.
+Hệ thống vô hiệu hoá tất cả phiên
+Đồng bộ thủ công từ Keycloak.
+Hệ thống kéo dữ liệu + đối soát
+Chuyển người dùng sang đơn vị khác.
+Hệ thống lưu lịch sử + cập nhật permission_context
+4|Quản lý quyền người dùng|Quản trị hệ thống|Xem thông tin quyền của người dùng.
+Hệ thống truy vấn và hiển thị
+Phân quyền theo vai trò.
+Hệ thống lưu permission_context
+Cấu hình permitted_domains + unit cho người dùng.
+Hệ thống lưu
+Cấu hình mức nhạy cảm cho người dùng.
+Hệ thống lưu
+5|Quản lý vai trò người dùng|Quản trị hệ thống|Xem danh sách vai trò.
+Hệ thống hiển thị
+Thêm mới vai trò + gán bộ quyền.
+Hệ thống lưu
+Sửa vai trò.
+Hệ thống lưu phiên bản mới
+Xoá vai trò.
+Hệ thống kiểm tra ràng buộc trước khi xoá
+6|Quản lý cấu hình hệ thống chung|Quản trị hệ thống|Xem cấu hình chung (thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định).
+Hệ thống hiển thị
+Sửa cấu hình.
+Hệ thống lưu và áp dụng (nạp lại nóng)
+7|Quản lý cấu hình tích hợp|Quản trị hệ thống|Cấu hình điểm cuối Keycloak.
+Hệ thống lưu + kiểm tra kết nối
+Cấu hình điểm cuối LGSP.
+Hệ thống lưu + kiểm tra giao thức kết nối
+8|Quản lý cấu hình kênh thông báo|Quản trị hệ thống|Cấu hình máy chủ SMTP.
+Hệ thống lưu + gửi email kiểm thử
+Cấu hình cổng SMS.
+Hệ thống lưu + gửi SMS kiểm thử
+Cấu hình Webhook / kênh Slack.
+Hệ thống lưu + gửi tin nhắn kiểm thử
+9|Quản lý nhật ký truy cập và thao tác|Quản trị hệ thống, Kiểm toán viên|Xem nhật ký toàn bộ.
+Hệ thống truy vấn audit.audit_log và hiển thị
+Lọc nhật ký theo tài khoản.
+Hệ thống lọc và hiển thị
+Lọc nhật ký theo thời gian.
+Hệ thống lọc và hiển thị
+Xuất báo cáo ATTT định kỳ.
+Hệ thống sinh PDF
+10|Quản trị AI Audit Log|Kiểm toán viên, AI Rà soát|Xem danh sách AI query theo khoảng thời gian.
+Hệ thống truy vấn audit.ai_audit_log và hiển thị
+Xem AI Audit Log theo trace_id.
+Hệ thống hiển thị toàn bộ chuỗi (prompt + phản hồi + nguồn + ảnh chụp quyền + mô hình + phiên bản mẫu)
+Lọc AI audit theo user_id.
+Hệ thống lọc và hiển thị
+Xuất báo cáo AI Audit định kỳ tuần/tháng.
+Hệ thống sinh báo cáo
+11|Quản trị tài liệu hướng dẫn sử dụng|Quản trị hệ thống|Thêm tài liệu mới.
+Hệ thống lưu tệp vào MinIO
+Sửa tài liệu.
+Hệ thống quản lý phiên bản
+Xoá tài liệu.
+Hệ thống xoá mềm
+Xem danh sách tài liệu.
+Hệ thống hiển thị
+12|Đăng nhập / Đăng xuất hệ thống (SSO)|Tất cả người dùng|Đăng nhập qua SSO Keycloak.
+Hệ thống xác thực OIDC và thiết lập phiên (access 5 phút, refresh 30 phút)
+Thử thách MFA cho vai trò quản trị.
+Hệ thống xác thực TOTP
+Đăng xuất một lần (single sign-out).
+Hệ thống vô hiệu hoá phiên ở tất cả ứng dụng
+13|Đổi mật khẩu / Cấp lại mật khẩu|Tất cả người dùng, Quản trị hệ thống|Người dùng đổi mật khẩu của mình.
+Hệ thống kiểm tra password policy + cập nhật
+Người dùng yêu cầu cấp lại mật khẩu (quên mật khẩu).
+Hệ thống gửi link reset qua email
+Quản trị hệ thống cấp lại mật khẩu cho người dùng.
+Hệ thống tạo mật khẩu tạm + gửi email
+14|Quản lý phiên đăng nhập|Quản trị hệ thống|Xem danh sách phiên active.
+Hệ thống truy vấn Keycloak
+Buộc đăng xuất phiên cụ thể.
+Hệ thống vô hiệu hoá phiên
+Cấu hình số phiên đồng thời tối đa / người dùng.
+Hệ thống lưu chính sách
+II|TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU|TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU|TIẾP NHẬN VÀ ĐỒNG BỘ DỮ LIỆU
+15|Đăng ký và quản lý nguồn dữ liệu|Quản trị Tích hợp|Đăng ký nguồn mới (1 trong 5: TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).
+Hệ thống lưu vào ingestion.sources
+Xem danh sách nguồn.
+Hệ thống hiển thị
+Sửa thông tin nguồn (nhà cung cấp, chủ sở hữu, mức nhạy cảm).
+Hệ thống lưu
+Vô hiệu hoá nguồn.
+Hệ thống cập nhật trạng thái
+16|Quản lý thư viện bộ kết nối|Quản trị Tích hợp|Xem danh sách bộ kết nối có sẵn (tệp/REST API/JDBC/SOAP).
+Hệ thống hiển thị
+Đăng ký bộ kết nối mới (plugin).
+Hệ thống nạp mô-đun + kiểm tra giao diện
+Cập nhật phiên bản bộ kết nối.
+Hệ thống khởi động lại luân phiên tiến trình nhận sự kiện
+17|Cấu hình kết nối nguồn (credentials/cert)|Quản trị Tích hợp, DBA|Cấu hình connection (API/DB/File).
+Hệ thống lưu thông tin xác thực đã mã hoá
+Kiểm thử kết nối.
+Hệ thống gọi thử và trả kết quả
+Quản lý certificate / API key của bộ kết nối.
+Hệ thống lưu lịch luân chuyển
+Nhận cảnh báo trước khi thông tin xác thực hết hạn.
+Hệ thống Alertmanager gửi cảnh báo
+18|Định nghĩa tập dữ liệu của nguồn|Quản trị Tích hợp|Định nghĩa tập dữ liệu + lược đồ.
+Hệ thống lưu vào metadata.dataset_catalog
+Khai báo khoá chính + chiến lược phân mảnh.
+Hệ thống lưu
+Khai báo trường bắt buộc (NOT NULL).
+Hệ thống lưu vào metadata.critical_fields
+Đăng ký vào Schema Registry.
+Hệ thống quản lý phiên bản lược đồ
+19|Cấu hình tác vụ điều phối|Quản trị Tích hợp|Cấu hình tác vụ điều phối (lịch cron, đầy đủ/tăng dần, chính sách thử lại).
+Hệ thống lưu
+Bật / tắt tác vụ điều phối.
+Hệ thống cập nhật trạng thái tác vụ điều phối
+20|Xem lịch đầy đủ dữ liệu + lịch sử chạy|Quản trị Tích hợp, Phụ trách Dữ liệu|Xem lịch sử chạy.
+Hệ thống truy vấn ingestion.runs và hiển thị
+Xem lịch đầy đủ dữ liệu (kỳ thiếu dữ liệu).
+Hệ thống hiển thị heatmap
+Xem chi tiết phiên cụ thể.
+Hệ thống hiển thị log + tổng kiểm soát
+21|Chạy lại phiên ingest lỗi|Quản trị Tích hợp|Chọn phiên bị lỗi.
+Hệ thống hiển thị nguyên nhân
+Kích hoạt Bộ điều phối chạy lại với khoá chống trùng.
+Hệ thống chạy lại + ghi lịch sử
+Cập nhật trạng thái sau khi chạy lại.
+Hệ thống ghi vào ingestion.runs
+22|Tiếp nhận file thủ công TABMIS (upload)|Cán bộ nộp file|Tải biểu mẫu Excel.
+Hệ thống trả về tệp biểu mẫu chuẩn
+Tải tệp lên.
+Hệ thống lưu raw vào MinIO + validate template + tổng kiểm soát
+Hệ thống tạo phiên tiếp nhận mới.
+Hệ thống ghi vào ingestion.runs
+23|Xem trạng thái + sửa lỗi intake TABMIS|Cán bộ nộp file|Xem trạng thái tiếp nhận.
+Hệ thống hiển thị máy trạng thái
+Xem chi tiết lỗi dòng.
+Hệ thống hiển thị các dòng sai
+Sửa và tải lại tệp đã chỉnh.
+Hệ thống kiểm tra lại
+24|Tiếp nhận thủ công văn bản từ QLVBĐH (upload định kỳ)|Cán bộ nộp văn bản|Cán bộ tải biểu mẫu chuẩn và nhập/đính kèm siêu dữ liệu văn bản từ QLVBĐH theo định kỳ.
+Hệ thống lưu vào staging.stg_van_ban
+Tải tệp PDF/bản quét đính kèm.
+Hệ thống lưu vào MinIO (raw-documents)
+Khử trùng lặp theo so_ky_hieu.
+Hệ thống bỏ qua bản trùng
+Kích hoạt sự kiện ocr.requested.
+Hệ thống đẩy sự kiện
+25|Đồng bộ tăng dần từ API/DB|Hệ thống tự động (Bộ điều phối)|Áp dụng cho MISA (nếu nhà cung cấp cho phép kết nối API), QL Giá, PMSTT.
+Tác vụ điều phối đọc điểm kiểm tra từ ingestion.runs
+Truy vấn tăng dần theo updated_at.
+Bộ kết nối lấy dữ liệu mới/thay đổi
+Lưu dữ liệu thô vào MinIO + cập nhật điểm kiểm tra.
+Hệ thống lưu
+Kích hoạt sự kiện parsing.requested.
+Hệ thống đẩy sự kiện
+26|Kiểm tra Schema Registry|Hệ thống tự động|Trước khi phân tích, kiểm tra lược đồ nguồn so với lược đồ đã đăng ký.
+Hệ thống so sánh
+Nếu lược đồ thay đổi (phá vỡ tương thích).
+Hệ thống DỪNG quy trình xử lý + cảnh báo Quản trị Tích hợp
+Nếu lược đồ tương thích (bổ sung).
+Hệ thống chuyển tiếp + ghi nhận thay đổi
+27|Đối soát phiên intake|Quản trị Tích hợp, Phụ trách Dữ liệu|Chọn phiên cần đối soát.
+Hệ thống hiển thị tổng kiểm soát
+Đánh dấu phát hiện thiếu/sai.
+Hệ thống lưu
+Đóng phiên đối soát đạt yêu cầu.
+Hệ thống cập nhật trạng thái
+28|Xử lý ticket đối soát với chủ quản nguồn|Quản trị Tích hợp|Mở ticket xử lý với chủ quản nguồn.
+Hệ thống lưu ticket + thông báo
+Cập nhật tiến độ xử lý ticket.
+Hệ thống lưu lịch sử
+Đóng ticket khi resolved.
+Hệ thống cập nhật + ghi nhật ký
+III|CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU|CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU|CHUẨN HÓA VÀ QUẢN TRỊ DỮ LIỆU
+29|Phân tích dữ liệu có cấu trúc|Hệ thống tự động (Bộ phân tích cú pháp)|Nhận sự kiện parsing.requested.
+Hệ thống đọc dữ liệu thô -> stg_*
+Phân tích Excel/CSV/JSON/XML theo lược đồ.
+Hệ thống ánh xạ tên trường + ép kiểu
+Kích hoạt sự kiện mapping.requested.
+Hệ thống đẩy sự kiện
+30|Phân tích PDF/bản quét + OCR|Hệ thống tự động (OCR Quy trình xử lý)|Nhận sự kiện ocr.requested.
+Hệ thống đọc file PDF/scan Chạy OCR PaddleOCR/olmOCR. Hệ thống trích xuất văn bản
+Trích xuất bảng.
+Hệ thống lưu dữ liệu có cấu trúc
+Kích hoạt sự kiện ocr.completed + parsing.requested.
+Hệ thống đẩy sự kiện
+31|Ánh xạ trường sang dạng chuẩn|Hệ thống tự động (Bộ ánh xạ dữ liệu)|Tra cứu quy tắc ánh xạ (có phiên bản).
+Hệ thống đọc metadata.mapping_rules. Áp dụng quy tắc + tra cứu danh mục chuẩn. Hệ thống chuẩn hóa field
+Từ chối trường bắt buộc bị NULL.
+Hệ thống ghi vào metadata.mapping_rejections
+Đẩy giá trị chưa ánh xạ vào hàng đợi.
+Hệ thống đẩy vào hàng đợi chưa ánh xạ cho Phụ trách Dữ liệu
+32|Xử lý hàng đợi chưa ánh xạ|Phụ trách Dữ liệu|Xem hàng đợi chưa ánh xạ.
+Hệ thống hiển thị
+Xử lý giá trị (ánh xạ / tạo mục mới / từ chối).
+Hệ thống lưu mapping mới
+Ánh xạ hàng loạt các giá trị tương tự.
+Hệ thống áp dụng đồng loạt
+33|Quản lý danh mục đơn vị|Quản trị Danh mục|Xem danh mục đơn vị (cây phân cấp).
+Hệ thống hiển thị
+Thêm đơn vị mới.
+Hệ thống kiểm tra trùng mã + lưu phiên bản
+Sửa thông tin đơn vị.
+Hệ thống lưu
+Đóng / Tách / Sáp nhập đơn vị (lifecycle).
+Hệ thống lưu effective_from/to
+34|Quản lý danh mục khoản mục NSNN|Quản trị Danh mục|Xem cây khoản mục NSNN (Chương / Loại / Khoản / Mục / Tiểu mục).
+Hệ thống hiển thị
+Thêm / Sửa entry.
+Hệ thống quản lý phiên bản theo năm ngân sách
+Đề nghị thay đổi khoản mục nhạy cảm.
+Hệ thống lưu yêu cầu chờ duyệt
+35|Quản lý danh mục nhóm tài sản|Quản trị Danh mục|Xem danh mục nhóm tài sản (TT 48 / TT 162).
+Hệ thống hiển thị
+Thêm / Sửa entry.
+Hệ thống quản lý phiên bản
+Khai báo tỉ lệ khấu hao theo nhóm.
+Hệ thống lưu
+36|Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn|Quản trị Danh mục|Xem từng danh mục (mặt hàng / loại văn bản / nguồn vốn).
+Hệ thống hiển thị
+Thêm / Sửa entry.
+Hệ thống quản lý phiên bản
+Đề nghị thay đổi danh mục nhạy cảm.
+Hệ thống lưu yêu cầu chờ duyệt
+37|Phê duyệt thay đổi danh mục nhạy cảm|Lãnh đạo Phòng nghiệp vụ Sở Tài chính|Xem các yêu cầu chờ duyệt.
+Hệ thống hiển thị diff
+Phê duyệt / từ chối.
+Hệ thống cập nhật và áp dụng thay đổi
+Ghi lý do phê duyệt.
+Hệ thống lưu vào nhật ký
+38|Quản lý quy tắc kiểm tra chất lượng|Phụ trách Dữ liệu, Quản trị Dữ liệu|Xem danh sách quy tắc chất lượng (đầy đủ / hợp lệ / duy nhất / nhất quán).
+Hệ thống hiển thị
+Thêm / Sửa quy tắc.
+Hệ thống lưu vào metadata.quality_rules + version
+Cấu hình ngưỡng + trọng số cho điểm.
+Hệ thống lưu
+39|Chạy kiểm tra chất lượng dữ liệu|Hệ thống tự động (Quality Service)|Tra cứu quy tắc chất lượng.
+Hệ thống đọc metadata.quality_rules
+Chạy quy tắc.
+Hệ thống tính điểm
+Đạt ngưỡng -> công bố.
+Hệ thống đẩy vào kho chuẩn hoá
+Dưới ngưỡng -> hàng đợi ngoại lệ.
+Hệ thống đẩy vào hàng đợi cho Phụ trách Dữ liệu
+40|Xử lý ngoại lệ chất lượng|Phụ trách Dữ liệu|Xem hàng đợi ngoại lệ.
+Hệ thống hiển thị
+Xử lý từng ngoại lệ (sửa / từ chối / yêu cầu nguồn).
+Hệ thống lưu quyết định
+Xử lý hàng loạt ngoại lệ cùng loại.
+Hệ thống áp dụng
+41|Công bố vào kho chuẩn hoá + batch_summary|Hệ thống tự động (Curated Service)|Chèn/Cập nhật vào dm_*.
+Hệ thống lưu
+Đặt publish_status=approved.
+Hệ thống cập nhật
+Tạo batch_summary + cập nhật độ mới dữ liệu.
+Hệ thống ghi metadata
+Kích hoạt sự kiện curated.published.
+Hệ thống phát sự kiện
+42|Đăng ký siêu dữ liệu tập dữ liệu|Quản trị Dữ liệu|Đăng ký siêu dữ liệu tập dữ liệu (chủ sở hữu, mô tả, mức nhạy cảm).
+Hệ thống lưu vào metadata.dataset_catalog
+Cập nhật siêu dữ liệu.
+Hệ thống lưu phiên bản mới
+Tra cứu siêu dữ liệu tập dữ liệu.
+Hệ thống hiển thị
+43|Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa|Quản trị Dữ liệu|Tạo chỉ tiêu mới (tên, mô tả, biểu thức, lĩnh vực).
+Hệ thống lưu vào PostgreSQL. Kiểm thử chỉ tiêu trên truy vấn mẫu. Hệ thống chạy và hiển thị kết quả Quản lý phiên bản chỉ tiêu. Hệ thống lưu version + audit
+44|Phê duyệt chỉ tiêu|Chủ quản Nghiệp vụ|Xem chỉ tiêu chờ phê duyệt.
+Hệ thống hiển thị
+Xem kết quả kiểm thử + so sánh với số liệu hiện tại.
+Hệ thống hiển thị
+Phê duyệt / từ chối chỉ tiêu.
+Hệ thống công bố hoặc trả về cho Quản trị Dữ liệu
+45|Truy vết nguồn gốc bản ghi|Kiểm toán viên|Chọn bản ghi curated.
+Hệ thống hiển thị
+Xem nguồn gốc dữ liệu qua các bước (thô -> phân tích -> ánh xạ -> chất lượng -> công bố).
+Hệ thống hiển thị chuỗi
+Xem chi tiết từng bước.
+Hệ thống hiển thị dữ liệu vào/ra + phép biến đổi
+46|Xuất báo cáo nguồn gốc dữ liệu|Kiểm toán viên|Chọn phạm vi (tập dữ liệu / bản ghi / nguồn).
+Hệ thống hiển thị
+Sinh báo cáo nguồn gốc dữ liệu.
+Hệ thống kết xuất PDF
+Kết xuất PDF.
+Hệ thống trả file
+IV|KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO|KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO|KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO
+47|Xem Bảng điều khiển điều hành|Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC|Chọn Bảng điều khiển từ danh mục.
+Hệ thống hiển thị danh sách
+Xem Bảng điều khiển.
+Hệ thống hiển thị từ Superset. Ghim bảng điều khiển yêu thích. Hệ thống lưu vào tùy chọn cá nhân
+48|Áp bộ lọc + xem chi tiết Bảng điều khiển|Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC|Áp bộ lọc Bảng điều khiển (năm, đơn vị, lĩnh vực).
+Hệ thống truy vấn lại qua Superset. Xem chi tiết KPI. Hệ thống hiển thị phân rã chi tiết. So sánh cùng kỳ năm trước. Hệ thống truy thêm metric so sánh
+Yêu cầu AI giải thích KPI.
+Hệ thống gọi AI Bộ điều phối
+49|Chọn báo cáo theo mẫu + cấu hình bộ lọc|Cán bộ tổng hợp Sở Tài chính|Xem danh mục mẫu báo cáo.
+Hệ thống hiển thị
+Chọn mẫu báo cáo.
+Hệ thống hiển thị xem trước
+Cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ).
+Hệ thống lưu trạng thái
+50|Sinh + kết xuất báo cáo|Cán bộ tổng hợp Sở Tài chính|Sinh báo cáo theo mẫu + bộ lọc.
+Hệ thống truy vấn Lớp ngữ nghĩa + kết xuất
+Kết xuất PDF.
+Hệ thống trả file
+Kết xuất Excel.
+Hệ thống trả file
+51|Cấu hình báo cáo theo lịch|Cán bộ tổng hợp Sở Tài chính|Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng).
+Hệ thống lưu lịch
+Cấu hình người nhận (email).
+Hệ thống lưu
+Hệ thống tự động sinh + gửi email báo cáo theo lịch.
+Tác vụ định kỳ (cron)
+52|Đăng ký nhận cảnh báo dashboard|Lãnh đạo Sở Tài chính, Cán bộ tổng hợp Sở TC|Cấu hình ngưỡng cảnh báo trên KPI.
+Hệ thống lưu
+Chọn kênh nhận (email / Slack / Webhook).
+Hệ thống lưu
+Khi vượt ngưỡng.
+Hệ thống gửi cảnh báo qua kênh đã chọn
+53|Tra cứu dữ liệu văn bản|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản).
+Hệ thống truy vấn OpenSearch + lọc theo quyền
+Hiển thị kết quả thuộc phạm vi quyền.
+Hệ thống hiển thị
+Xem chi tiết văn bản.
+Hệ thống hiển thị metadata + file PDF
+54|Tra cứu dữ liệu tài sản|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Nhập bộ lọc (đơn vị, nhóm, trạng thái).
+Hệ thống truy vấn curated.dm_tai_san
+Hiển thị danh sách tài sản.
+Hệ thống hiển thị
+Xem chi tiết tài
+55|Tra cứu dữ liệu giá|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Nhập bộ lọc (mặt hàng, địa bàn, kỳ).
+Hệ thống truy vấn curated.dm_gia
+Hiển thị giá theo bảng.
+Hệ thống hiển thị
+Hiển thị biểu đồ xu hướng giá theo thời gian.
+Hệ thống hiển thị line chart
+56|Tra cứu dữ liệu ngân sách|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Nhập bộ lọc (đơn vị, khoản mục, kỳ).
+Hệ thống truy vấn curated.dm_ngan_sach
+Hiển thị số liệu thu/chi/tạm ứng.
+Hệ thống hiển thị
+Xem chi tiết theo đơn vị/khoản mục.
+Hệ thống re-query
+57|Hiển thị độ mới dữ liệu|Tất cả người dùng|Xem ô thông tin độ mới dữ liệu trên Bảng điều khiển.
+Hệ thống truy vấn view curated.data_freshness
+Xem chi tiết last_sync + độ đầy đủ theo nguồn.
+Hệ thống hiển thị bảng
+V|API VÀ TÍCH HỢP|API VÀ TÍCH HỢP|API VÀ TÍCH HỢP
+58|Quản lý danh mục API|Quản trị API|Publish API mới (Search / QA / Data / Metadata).
+Hệ thống cập nhật danh mục
+Gỡ công bố API.
+Hệ thống vô hiệu hoá điểm cuối
+Cấu hình quản lý phiên bản + ngày ngừng hỗ trợ.
+Hệ thống lưu
+59|Quản lý API key|Quản trị API|Tạo khoá API cho đơn vị khai thác.
+Hệ thống sinh khoá + phạm vi
+Thu hồi khoá API.
+Hệ thống thu hồi
+Luân chuyển khoá API (tự động / thủ công).
+Hệ thống tạo khoá mới + thời gian ân hạn
+Ghi nhật ký sử dụng khoá API.
+Hệ thống ghi nhật ký
+60|Quản lý giới hạn tần suất + gói dịch vụ|Quản trị API|Cấu hình gói (miễn phí / tiêu chuẩn / cao cấp).
+Hệ thống lưu
+Cấu hình giới hạn tần suất / gói (req/giây, req/ngày).
+Hệ thống áp dụng tại Cổng API
+Cấu hình giới hạn đột biến + chính sách điều tiết.
+Hệ thống lưu
+61|Theo dõi mức sử dụng API + chỉ số|Quản trị API|Xem bảng điều khiển mức sử dụng API (req/giây, độ trễ, tỉ lệ lỗi).
+Hệ thống hiển thị từ Prometheus
+Xem chi tiết theo đơn vị khai thác.
+Hệ thống hiển thị
+Cảnh báo khi API có bất thường.
+Alertmanager gửi cảnh báo
+62|Quản lý chứng thư / mTLS cho đơn vị khai thác|Quản trị API|Đăng ký chứng thư của đơn vị khai thác.
+Hệ thống lưu vào kho tin cậy
+Luân chuyển chứng thư.
+Hệ thống cập nhật
+Thu hồi chứng thư.
+Hệ thống thêm vào CRL
+63|Cung cấp cổng tài liệu API|QLVBĐH, IOC, LGSP (đơn vị khai thác)|Đơn vị khai thác truy cập cổng Swagger/Redoc.
+Hệ thống hiển thị UI
+Xem
+64|Cung cấp Data API cho IOC|IOC (đơn vị khai thác)|IOC gọi Data API tổng hợp.
+Hệ thống trả dữ liệu qua Lớp ngữ nghĩa
+Cổng API kiểm tra khoá API + phạm vi + giới hạn tần suất.
+Hệ thống thực thi
+Ghi nhật ký lời gọi API.
+Hệ thống ghi vào audit.audit_log
+65|Cung cấp API qua LGSP|LGSP (đơn vị khai thác)|Cổng LGSP chuyển tiếp yêu cầu.
+Hệ thống nhận
+Cổng API kiểm tra chứng thư m
+TLS.
+Hệ thống thực thi
+Trả phản hồi theo chuẩn LGSP.
+Hệ thống response
+66|Cung cấp Search API cho QLVBĐH/cổng nội bộ|QLVBĐH, portal nội bộ|QLVBĐH gọi Search API.
+Hệ thống tìm kiếm vector + BM25
+Lọc theo quyền.
+Hệ thống lọc theo phạm vi của người dùng đến từ QLVBĐH
+Trả kết quả + dẫn nguồn.
+Hệ thống phản hồi JSON
+67|Cung cấp QA API có dẫn nguồn|QLVBĐH, portal nội bộ|QLVBĐH gọi QA API.
+Hệ thống AI Bộ điều phối + RAG
+Dựng ngữ cảnh + gọi LLM.
+Hệ thống phản hồi theo luồng
+Trả phản hồi + dẫn nguồn.
+Hệ thống response
+68|Cung cấp API siêu dữ liệu / tài liệu liên quan|QLVBĐH, portal nội bộ|QLVBĐH gọi API siêu dữ liệu.
+Hệ thống truy vấn curated.dm_van_ban + nguồn gốc dữ liệu
+QLVBĐH gọi API tài liệu liên quan.
+Hệ thống truy vấn quan hệ văn bản
+QLVBĐH gọi API tóm tắt.
+Hệ thống dùng LLM tóm tắt và lưu đệm
+VI|AI VÀ KHAI THÁC VĂN BẢN|AI VÀ KHAI THÁC VĂN BẢN|AI VÀ KHAI THÁC VĂN BẢN
+69|Tra cứu ngữ nghĩa văn bản|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Nhập từ khoá / câu hỏi.
+Hệ thống tìm kiếm vector + BM25 + lọc theo quyền
+Hiển thị danh sách kết quả.
+Hệ thống hiển thị
+Sắp xếp theo độ liên quan / thời gian.
+Hệ thống sắp xếp lại
+70|Xem dẫn nguồn chi tiết + ngữ cảnh trích dẫn|Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)|Click vào kết quả.
+Hệ thống mở chi tiết
+Xem dẫn nguồn cụ thể (số ký hiệu, điều khoản, trang).
+Hệ thống hiển thị
+Xem ngữ cảnh trích dẫn (đoạn văn xung quanh).
+Hệ thống hiển thị
+71|AI hỏi đáp văn bản có dẫn nguồn (RAG)|Lãnh đạo Sở Tài chính, Cán bộ nghiệp vụ Sở TC|Người dùng hỏi AI bằng ngôn ngữ tự nhiên.
+Hệ thống phân loại -> định tuyến tài liệu -> truy hồi RAG -> LLM
+Người dùng xem phản hồi kèm trích dẫn.
+Hệ thống phản hồi theo luồng SSE
+Người dùng xem chi tiết trích dẫn.
+Hệ thống hiển thị nguồn
+72|AI hỏi đáp số liệu (NLQ)|Cán bộ tổng hợp Sở TC, Lãnh đạo Sở Tài chính|Người dùng hỏi AI về số liệu.
+Hệ thống phân loại -> định tuyến dữ liệu -> truy vấn Lớp ngữ nghĩa
+Người dùng xem phản hồi kèm nguồn chỉ tiêu.
+Hệ thống hiển thị
+Người dùng xem câu lệnh SQL được sinh ra (minh bạch).
+Hệ thống hiển thị
+73|AI hỏi đáp đa nguồn (hybrid)|Cán bộ tổng hợp Sở TC, Lãnh đạo Sở Tài chính|Người dùng hỏi cần cả số liệu + văn bản.
+Hệ thống phân loại -> định tuyến kết hợp -> xử lý song song dữ liệu + tài liệu
+Người dùng xem phản hồi với 2 nguồn trích dẫn.
+Hệ thống hiển thị
+74|Xem lịch sử phiên AI của cá nhân|Tất cả người dùng|Xem danh sách phiên AI đã hỏi.
+Hệ thống truy vấn audit.ai_audit_log lọc theo user_id
+Mở lại phiên cũ.
+Hệ thống hiển thị hội thoại
+Xoá phiên cũ.
+Hệ thống xoá mềm (vẫn giữ nhật ký)
+75|AI sinh báo cáo liên ngành|Cán bộ tổng hợp Sở Tài chính|Yêu cầu sinh báo cáo.
+Hệ thống truy vấn đa lĩnh vực + AI soạn thảo
+Hệ thống watermark "BẢN NHÁP - CẦN XEM XÉT".
+Hệ thống hiển thị
+Chỉnh sửa bản nháp.
+Hệ thống lưu bản nháp
+Hoàn thiện và kết xuất.
+Hệ thống kết xuất PDF
+76|AI giải thích KPI trên Bảng điều khiển|Lãnh đạo Sở Tài chính|Click "Giải thích" trên KPI.
+Hệ thống truy vấn phân rã chỉ tiêu + RAG + LLM
+Xem giải thích AI ngay trên Bảng điều khiển.
+Hệ thống hiển thị
+Tham chiếu văn bản chỉ đạo liên quan.
+Hệ thống hiển thị dẫn nguồn
+77|Rà soát hiệu lực văn bản|Cán bộ pháp chế Sở Tài chính|Chọn văn bản.
+Hệ thống hiển thị hieu_luc_status
+Xem lịch sử trạng thái hiệu lực.
+Hệ thống hiển thị timeline
+Xác nhận / cập nhật trạng thái.
+Hệ thống lưu
+78|Xem quan hệ giữa các văn bản|Cán bộ pháp chế Sở Tài chính|Chọn văn bản.
+Hệ thống truy vấn quan hệ (sửa đổi / thay thế / bãi bỏ / dẫn chiếu)
+Vẽ đồ thị quan hệ.
+Hệ thống hiển thị sơ đồ
+Xem chi tiết từng quan hệ.
+Hệ thống hiển thị chi tiết
+79|Tóm tắt văn bản|Lãnh đạo Sở Tài chính, Cán bộ nghiệp vụ Sở TC|Yêu cầu tóm tắt văn bản.
+Hệ thống dùng LLM tóm tắt
+Xem tóm tắt kèm dẫn nguồn.
+Hệ thống hiển thị
+Cấu hình độ dài tóm tắt (ngắn / vừa / dài).
+Hệ thống tóm tắt lại
+80|So sánh 2 văn bản|Cán bộ pháp chế Sở Tài chính|Chọn 2 văn bản.
+Hệ thống diff
+AI phân tích điểm mới / sửa đổi / bãi bỏ.
+Hệ thống hiển thị
+Xem so sánh side-by-side.
+Hệ thống hiển thị
+81|Người dùng đánh giá câu trả lời AI|Tất cả người dùng|Người dùng đánh giá (hữu ích / không hữu ích / sai).
+Hệ thống lưu phản hồi + thông báo người rà soát
+Người dùng nhập nội dung chi tiết (tuỳ chọn).
+Hệ thống lưu
+82|AI Rà soát phân loại phản hồi|AI Rà soát|Xem hàng đợi phản hồi.
+Hệ thống hiển thị
+Phân loại nguyên nhân (thông tin bịa đặt / truy hồi thiếu / rò rỉ quyền / khác).
+Hệ thống lưu
+Gán hành động (sửa prompt / sửa dữ liệu / cải thiện truy hồi).
+Hệ thống lưu
+83|Kiểm duyệt đầu ra AI hàng tuần|AI Rà soát|Xem bảng điều khiển Kiểm toán AI.
+Hệ thống hiển thị thống kê tuần
+Lấy mẫu 5% truy vấn để rà soát chi tiết.
+Hệ thống chọn ngẫu nhiên
+Ghi phát hiện + hành động.
+Hệ thống lưu vào báo cáo tuần
+84|Thêm/Sửa/Xoá mẫu prompt|Quản trị AI|Xem danh sách mẫu prompt.
+Hệ thống hiển thị
+Tạo mẫu prompt mới (bản nháp).
+Hệ thống lưu
+Sửa mẫu prompt (tạo phiên bản mới).
+Hệ thống lưu bản nháp
+Xoá mẫu prompt (xoá mềm).
+Hệ thống ghi nhật ký
+85|Kiểm thử mẫu prompt|Quản trị AI|Chọn phiên bản prompt + truy vấn mẫu.
+Hệ thống hiển thị
+Chạy thử.
+Hệ thống gọi LLM + so sánh với phiên bản cũ
+Xem khác biệt phản hồi.
+Hệ thống hiển thị diff
+86|Kích hoạt / Khôi phục mẫu prompt|Quản trị AI|Kích hoạt phiên bản mới.
+Hệ thống cập nhật phiên bản đang hoạt động
+Khôi phục về phiên bản cũ.
+Hệ thống kích hoạt phiên bản cũ
+Ghi nhật ký thay đổi (ai/khi nào/từ phiên bản/tới phiên bản).
+Hệ thống ghi nhật ký
+87|Quản lý định tuyến mô hình|Quản trị AI|Xem model routing hiện tại (classification, generation).
+Hệ thống hiển thị
+Thay đổi định tuyến mô hình (vd: switch từ self-hosted sang Claude API).
+Hệ thống lưu cấu hình
+Kiểm thử định tuyến mới trên mẫu.
+Hệ thống chạy và so sánh
+88|Lập chỉ mục tự động vào Vector Store|Hệ thống tự động (RAG Quy trình xử lý)|Nhận sự kiện ocr.completed hoặc curated.published.
+Tiến trình nhận sự kiện kích hoạt
+Chia khối + nhúng vector qua multilingual-e5-large.
+Hệ thống chia khối + mã hoá vector
+Chèn vào pgvector với chỉ mục HNSW.
+Hệ thống lưu
+89|Lập chỉ mục lại thủ công Vector Store|Quản trị AI|Chọn tập dữ liệu cần lập chỉ mục lại (toàn bộ / một phần).
+Hệ thống hiển thị
+Chạy tác vụ lập chỉ mục lại.
+Hệ thống chia khối + nhúng vector lại
+Xem tiến độ + thời gian dự kiến.
+Hệ thống hiển thị
+VII|VẬN HÀNH HỆ THỐNG|VẬN HÀNH HỆ THỐNG|VẬN HÀNH HỆ THỐNG
+90|Sao lưu thủ công (theo yêu cầu)|Quản trị hệ thống|Chọn phạm vi sao lưu (toàn bộ / theo từng CSDL).
+Hệ thống hiển thị
+Kích hoạt pg_basebackup + tải lên MinIO.
+Hệ thống thực hiện
+Xác nhận sao lưu hoàn tất.
+Hệ thống lưu metadata
+91|Cấu hình lịch sao lưu tự động|Quản trị hệ thống|Cấu hình lịch (hàng ngày / hàng tuần / hàng tháng).
+Hệ thống lưu lịch cron
+Cấu hình chính sách lưu giữ.
+Hệ thống áp dụng dọn dẹp
+Cấu hình lưu trữ WAL liên tục
+Hệ thống bật pgbackrest
+92|Phục hồi từ bản sao lưu|Quản trị hệ thống|Chọn bản sao lưu để phục hồi.
+Hệ thống hiển thị danh sách
+Chọn thời điểm phục hồi (PITR).
+Hệ thống hiển thị cửa sổ WAL
+Kích hoạt phục hồi pg_restore.
+Hệ thống thực hiện + kiểm tra
+Chuyển đổi sang CSDL phục hồi.
+Hệ thống cập nhật định tuyến
+93|Xem trạng thái và lịch sử sao lưu|Quản trị hệ thống|Xem danh sách bản sao lưu (đang hoạt động / lưu trữ dài hạn).
+Hệ thống hiển thị
+Xem trạng thái tác vụ sao lưu (thành công / thất bại / đang chạy).
+Hệ thống hiển thị
+Xem RPO / RTO hiện tại.
+Hệ thống tính toán và hiển thị
+94|Phục hồi sự cố (chuyển sang Trung tâm dữ liệu)|Quản trị hệ thống|Kích hoạt diễn tập.
+Hệ thống mô phỏng chuyển đổi dự phòng
+Chuyển sang DC dự phòng khi có sự cố (thủ công / Tự động).
+Hệ thống chuyển đổi dự phòng
+Chuyển về Trung tâm dữ liệu chính sau khi khôi phục.
+Hệ thống đồng bộ + chuyển ngược
+95|Xem bảng điều khiển giám sát sức khoẻ hệ thống|Quản trị hệ thống, IT vận hành|Xem bảng điều khiển Prometheus + Grafana.
+Hệ thống hiển thị chỉ số (CPU/RAM/đĩa/mạng)
+Xem chi tiết service cụ thể.
+Hệ thống hiển thị
+Xem bảng điều khiển SLA (thời gian hoạt động, tỉ lệ lỗi).
+Hệ thống hiển thị
+96|Cấu hình và nhận cảnh báo|Quản trị hệ thống|Cấu hình cảnh báo trong Prometheus.
+Hệ thống lưu
+Cấu hình kênh nhận (email/SMS/Slack/PagerDuty).
+Hệ thống lưu
+Nhận cảnh báo sự cố.
+Alertmanager gửi thông báo
+Xác nhận / tắt cảnh báo.
+Hệ thống lưu
+97|Xem nhật ký tập trung|Quản trị hệ thống, Developer|Xem nhật ký tập trung trong Loki.
+Hệ thống hiển thị
+Lọc theo dịch vụ / mức nhật ký / khoảng thời gian.
+Hệ thống lọc
+Theo dõi nhật ký thời gian thực.
+Hệ thống truyền luồng
+98|Truy vết phân tán|Quản trị hệ thống, Developer|Xem vết Open
+Telemetry trong Tempo.
+Hệ thống hiển thị
+Xem chi tiết vết cụ thể qua trace_id.
+Hệ thống hiển thị cây span
+Phân tích điểm nghẽn.
+Hệ thống làm nổi span chậm
+99|Theo dõi chi phí AI|Quản trị AI, Tài chính|Xem bảng điều khiển chi phí AI (số token / giờ GPU).
+Hệ thống hiển thị
+Xem chi tiết theo người dùng / lĩnh vực / mô hình.
+Hệ thống hiển thị
+Cảnh báo khi vượt ngân sách.
+Alertmanager gửi cảnh báo
+100|Quản lý tài nguyên cụm + co giãn|Quản trị hệ thống|Xem mức sử dụng cụm (Kubernetes / Docker).
+Hệ thống hiển thị
+Tăng / giảm quy mô dịch vụ (thủ công).
+Hệ thống điều chỉnh số bản sao
+Cấu hình tự co giãn (HPA).
+Hệ thống lưu chính sách
+VIII|BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)|BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)|BÁO CÁO ĐỊNH KỲ VÀ ĐỐI SOÁT VỚI CẤP TRÊN (ĐẶC THÙ NGÀNH TÀI CHÍNH)
+101|Cấu hình mẫu báo cáo cấp trên theo Thông tư|Quản trị Danh mục, Cán bộ tổng hợp Sở Tài chính|Đăng ký mẫu báo cáo theo Thông tư (TT 343/2016/TT-BTC, TT 99/2017/TT-BTC, TT 24/2019/TT-BTC cho ngân sách; TT 31/2018/TT-BTC cho tài sản; quy định mua sắm tập trung).
+Hệ thống lưu biểu mẫu
+Cấu hình ánh xạ trường từ mô hình chuẩn -> trường báo cáo Thông tư.
+Hệ thống lưu ánh xạ có phiên bản
+Kiểm thử kết xuất mẫu trên dữ liệu mẫu.
+Hệ thống hiển thị xem trước PDF/Excel/XML
+Activate mẫu mới.
+Hệ thống chuyển sang hoạt động + phiên bản mới
+102|Quy trình phê duyệt số liệu báo cáo trước khi gửi cấp trên|Cán bộ tổng hợp Sở TC, Trưởng phòng nghiệp vụ, Phó GĐ Sở, Giám đốc Sở|Cán bộ tổng hợp gửi báo cáo bản nháp + số liệu.
+Hệ thống lưu bản nháp + ghi nhật ký
+Trưởng phòng nghiệp vụ rà soát + ký số duyệt mức 1.
+Hệ thống chuyển trạng thái sang lvl1_approved
+Phó GĐ Sở rà soát + ký số duyệt mức 2.
+Hệ thống chuyển sang lvl2_approved
+Giám đốc Sở ký số duyệt cuối.
+Hệ thống chuyển sang final_approved, sẵn sàng gửi cấp trên
+Trả về với lý do (ở bất kỳ bước nào).
+Hệ thống lưu lý do + thông báo người gửi + khởi tạo lại quy trình
+103|Sinh + gửi báo cáo ngân sách lên Bộ Tài chính / KBNN|Cán bộ tổng hợp Sở Tài chính, Hệ thống tự động|Chọn loại báo cáo + kỳ (tháng/quý/năm).
+Hệ thống hiển thị mẫu áp dụng theo Thông tư hiện hành
+Sinh báo cáo theo mẫu.
+Hệ thống truy vấn kho chuẩn hoá + Lớp ngữ nghĩa + kết xuất XML/Excel theo định dạng Bộ TC
+Đẩy báo cáo vào quy trình phê duyệt (UC-102).
+Hệ thống chuyển sang trạng thái chờ phê duyệt
+Sau khi được duyệt cuối, kết xuất báo cáo theo định dạng quy định để cán bộ tải về và nộp lên Bộ TC/KBNN theo quy trình hiện hành.
+Hệ thống gửi + ghi nhật ký submission_log. Theo dõi trạng thái gửi (đã gửi / đã nhận / bị từ chối) và thông báo Cán bộ tổng hợp
+104|Sinh + gửi báo cáo tài sản công / mua sắm tập trung lên cấp trên|Cán bộ tổng hợp Sở Tài chính, Hệ thống tự động|Chọn loại báo cáo: tài sản (TT 31/2018) hoặc mua sắm tập trung.
+Hệ thống hiển thị mẫu
+Sinh báo cáo theo mẫu Thông tư.
+Hệ thống truy vấn curated.dm_tai_san / curated.dm_mua_sam + kết xuất
+Luồng xử lý phê duyệt (UC-102).
+Hệ thống chuyển sang chờ duyệt
+Kết xuất báo cáo để cán bộ tải về và nộp lên Bộ TC / UBND tỉnh theo quy trình hiện hành.
+Hệ thống gửi qua kênh đã cấu hình + ghi nhật ký
+105|Đối soát số liệu thu/chi với Kho bạc Nhà nước (KBNN) tỉnh|Cán bộ Phòng Ngân sách Sở Tài chính|Tiếp nhận tệp đối soát số liệu thu/chi từ KBNN theo định kỳ (cán bộ tải về và nhập vào hệ thống).
+Hệ thống lưu vào staging.stg_kbnn_reconcile
+So sánh số liệu TABMIS (trong Kho DL) vs số liệu KBNN theo cùng kỳ.
+Hệ thống tự động đối chiếu + làm nổi các chênh lệch
+Xem báo cáo chênh lệch (theo đơn vị / khoản mục / kỳ).
+Hệ thống hiển thị danh sách + giá trị chênh lệch
+Mở ticket đối soát khi có chênh lệch ngoài ngưỡng.
+Hệ thống lưu ticket + thông báo các bên liên quan
+Xử lý chênh lệch (sửa số liệu / yêu cầu KBNN xác nhận / chấp nhận sai số nhỏ).
+Hệ thống lưu quyết định + rationale
+Đóng phiên đối soát + ký số xác nhận.
+Hệ thống lưu nhật ký + cập nhật trạng thái
