@@ -68,4 +68,10 @@ Mỗi service có `docker-compose.override` riêng nếu cần, nhưng biến m�
 **Quyết định**: Implement `auth-identity-service` trước, trong đó UC-01 (Quản lý cơ cấu tổ chức) làm nền cho UC-02 (User CRUD) vì user thuộc về 1 đơn vị.
 **Trạng thái**: Xem `PLAN.md` để biết thứ tự chi tiết.
 
+### ADR-003: Đăng nhập nội bộ (username/password + session token) tạm thay cho SSO Keycloak
+**Bối cảnh**: UC-12 (docs/use_cases.json) yêu cầu SSO qua Keycloak (OIDC). Môi trường phát triển hiện tại chưa cắm Keycloak thật vào được.
+**Quyết định**: Implement đăng nhập username/password nội bộ (băm bằng PBKDF2, thư viện chuẩn Python) + session token lưu trong Postgres (bảng `identity.user_sessions`), thông qua 2 cổng trừu tượng `PasswordHasher`/`TokenGenerator` (domain/repositories.py) và `SessionRepository`. Cùng cơ chế được UC-03 (buộc đăng xuất) tái sử dụng để vô hiệu hoá session.
+**Hệ quả**: Khi tích hợp Keycloak thật, chỉ cần viết `AuthService` mới theo luồng OIDC (authorization code) và/hoặc `KeycloakIdentityProviderClient`, không cần đổi bảng `users`/`org_unit_assignment_history` hay domain layer.
+**Trạng thái**: Tạm thời (interim), ghi rõ trong code (`app/application/use_cases/auth_service.py` docstring).
+
 > Mọi ADR mới phải được thêm vào cuối file này, không sửa ADR cũ (chỉ có thể "Superseded by ADR-XXX").

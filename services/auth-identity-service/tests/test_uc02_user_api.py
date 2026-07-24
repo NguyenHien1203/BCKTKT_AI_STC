@@ -25,6 +25,7 @@ def test_create_and_get_user():
             "email": "a@hungyen.gov.vn",
             "org_unit_id": org_unit["id"],
             "role": "STAFF",
+            "password": "Passw0rd!123",
         },
     )
     assert resp.status_code == 201, resp.text
@@ -45,6 +46,7 @@ def test_create_user_with_invalid_org_unit_returns_409():
             "email": "x@x.vn",
             "org_unit_id": 999999,
             "role": "STAFF",
+            "password": "Passw0rd!123",
         },
     )
     assert resp.status_code == 409
@@ -59,6 +61,7 @@ def test_create_duplicate_username_returns_409():
         "email": "a@x.vn",
         "org_unit_id": org_unit["id"],
         "role": "STAFF",
+            "password": "Passw0rd!123",
     }
     client.post("/users", json=payload)
     resp = client.post("/users", json=payload)
@@ -76,6 +79,7 @@ def test_update_profile():
             "email": "cu@x.vn",
             "org_unit_id": org_unit["id"],
             "role": "STAFF",
+            "password": "Passw0rd!123",
         },
     ).json()
     resp = client.patch(
@@ -96,6 +100,7 @@ def test_deactivate_and_list_only_active():
             "email": "x@x.vn",
             "org_unit_id": org_unit["id"],
             "role": "STAFF",
+            "password": "Passw0rd!123",
         },
     ).json()
     resp = client.post(f"/users/{created['id']}/deactivate")
@@ -123,6 +128,7 @@ def test_delete_user():
             "email": "x@x.vn",
             "org_unit_id": org_unit["id"],
             "role": "STAFF",
+            "password": "Passw0rd!123",
         },
     ).json()
     resp = client.delete(f"/users/{created['id']}")

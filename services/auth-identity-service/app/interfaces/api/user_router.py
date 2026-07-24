@@ -4,14 +4,22 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.application.use_cases.manage_user import UserService
+from app.application.use_cases.manage_user_lifecycle import UserLifecycleService
 from app.domain.exceptions import DomainError, UserNotFound
 from app.infrastructure.db.repository_impl import (
+    SqlAlchemyOrgUnitHistoryRepository,
     SqlAlchemyOrgUnitRepository,
+    SqlAlchemySessionRepository,
     SqlAlchemyUserRepository,
 )
 from app.infrastructure.db.session import get_db
 from app.infrastructure.identity_provider import NoOpIdentityProviderClient
+from app.infrastructure.security import Pbkdf2PasswordHasher
 from app.interfaces.api.schemas import (
+    ForceLogoutResponse,
+    ManualSyncResponse,
+    OrgUnitHistoryResponse,
+    ReassignOrgUnitWithHistory,
     UserCreate,
     UserReassignOrgUnit,
     UserResponse,
@@ -19,15 +27,27 @@ from app.interfaces.api.schemas import (
 )
 
 router = APIRouter(prefix="/users", tags=["UC-02 Quản lý người dùng"])
+lifecycle_router = APIRouter(prefix="/users", tags=["UC-03 Vòng đời người dùng"])
 
 # NoOp cho tới khi tích hợp Keycloak thật (xem app/infrastructure/identity_provider.py).
 _identity_provider = NoOpIdentityProviderClient()
+_password_hasher = Pbkdf2PasswordHasher()
 
 
 def get_service(db: Session = Depends(get_db)) -> UserService:
     return UserService(
         user_repo=SqlAlchemyUserRepository(db),
         org_unit_repo=SqlAlchemyOrgUnitRepository(db),
+        identity_provider=_identity_provider,
+    )
+
+
+def get_lifecycle_service(db: Session = Depends(get_db)) -> UserLifecycleService:
+    return UserLifecycleService(
+        user_repo=SqlAlchemyUserRepository(db),
+        org_unit_repo=SqlAlchemyOrgUnitRepository(db),
+        session_repo=SqlAlchemySessionRepository(db),
+        history_repo=SqlAlchemyOrgUnitHistoryRepository(db),
         identity_provider=_identity_provider,
     )
 
@@ -49,6 +69,7 @@ def create_user(payload: UserCreate, service: UserService = Depends(get_service)
             email=payload.email,
             org_unit_id=payload.org_unit_id,
             role=payload.role,
+            password_hash=_password_hasher.hash(payload.password),
         )
     except DomainError as exc:
         raise _domain_error_to_http(exc)
@@ -113,3 +134,60 @@ def delete_user(user_id: int, service: UserService = Depends(get_service)):
         service.delete(user_id)
     except DomainError as exc:
         raise _domain_error_to_http(exc)
+
+
+# ---------- UC-03: Quản lý vòng đời người dùng ----------
+
+
+@lifecycle_router.post("/{user_id}/lock", response_model=UserResponse)
+def lock_user(user_id: int, service: UserLifecycleService = Depends(get_lifecycle_service)):
+    try:
+        return service.lock(user_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@lifecycle_router.post("/{user_id}/unlock", response_model=UserResponse)
+def unlock_user(user_id: int, service: UserLifecycleService = Depends(get_lifecycle_service)):
+    try:
+        return service.unlock(user_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@lifecycle_router.post("/{user_id}/force-logout", response_model=ForceLogoutResponse)
+def force_logout_user(
+    user_id: int, service: UserLifecycleService = Depends(get_lifecycle_service)
+):
+    try:
+        count = service.force_logout(user_id)
+        return ForceLogoutResponse(revoked_sessions=count)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@lifecycle_router.patch("/{user_id}/org-unit-with-history", response_model=UserResponse)
+def reassign_org_unit_with_history(
+    user_id: int,
+    payload: ReassignOrgUnitWithHistory,
+    service: UserLifecycleService = Depends(get_lifecycle_service),
+):
+    try:
+        return service.reassign_org_unit_with_history(user_id, payload.org_unit_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@lifecycle_router.get("/{user_id}/org-unit-history", response_model=List[OrgUnitHistoryResponse])
+def get_org_unit_history(
+    user_id: int, service: UserLifecycleService = Depends(get_lifecycle_service)
+):
+    try:
+        return service.get_org_unit_history(user_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@lifecycle_router.post("/manual-sync", response_model=ManualSyncResponse)
+def manual_sync(service: UserLifecycleService = Depends(get_lifecycle_service)):
+    return service.manual_sync_from_idp()

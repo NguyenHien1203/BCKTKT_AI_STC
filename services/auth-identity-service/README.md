@@ -3,9 +3,11 @@
 Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `docs/use_cases.json`.
 
 ## Trạng thái hiện tại
-- [x] UC-01: Quản lý cơ cấu tổ chức — code xong, có unit test + integration test.
-- [x] UC-02: Quản lý người dùng (CRUD) — code xong, có unit test + integration test. Đồng bộ Keycloak dùng `NoOpIdentityProviderClient` tạm thời (xem `app/infrastructure/identity_provider.py`) — thay bằng client Keycloak thật khi hạ tầng sẵn sàng.
-- [ ] UC-03 → UC-14: chưa làm (xem `PLAN.md` gốc project).
+- [x] UC-01: Quản lý cơ cấu tổ chức
+- [x] UC-02: Quản lý người dùng (CRUD) — tạo user giờ yêu cầu `password` (băm PBKDF2).
+- [x] UC-03: Quản lý vòng đời người dùng — khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị + lưu lịch sử.
+- [x] UC-12: Đăng nhập/Đăng xuất — tạm dùng username/password nội bộ thay SSO Keycloak thật (xem ADR-003).
+- [ ] UC-04 → UC-14 (trừ 12): chưa làm (xem `PLAN.md` gốc project).
 
 (Test viết xong trong sandbox Claude nhưng chưa tự chạy được do thiếu Internet/Docker — xem `README.md` gốc project mục giới hạn môi trường.)
 
@@ -25,14 +27,31 @@ Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `d
 ### UC-02: Người dùng
 | Method | Path | Mô tả |
 |---|---|---|
-| POST | `/users` | Tạo người dùng (kèm gán đơn vị + vai trò) |
+| POST | `/users` | Tạo người dùng (kèm `password`, gán đơn vị + vai trò) |
 | GET | `/users` | Danh sách (`?only_active=true`, `?org_unit_id=`) |
 | GET | `/users/{id}` | Chi tiết 1 người dùng |
 | PATCH | `/users/{id}/profile` | Sửa họ tên/email |
-| PATCH | `/users/{id}/org-unit` | Chuyển đơn vị công tác |
-| POST | `/users/{id}/deactivate` | Khoá tài khoản |
-| POST | `/users/{id}/activate` | Mở khoá tài khoản |
+| PATCH | `/users/{id}/org-unit` | Chuyển đơn vị công tác (không lưu lịch sử) |
+| POST | `/users/{id}/deactivate` | Khoá tài khoản (xoá mềm) |
+| POST | `/users/{id}/activate` | Mở khoá tài khoản (xoá mềm) |
 | DELETE | `/users/{id}` | Xoá người dùng |
+
+### UC-03: Vòng đời người dùng
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/users/{id}/lock` | Khoá đăng nhập (khác xoá mềm UC-02) + buộc đăng xuất session hiện có |
+| POST | `/users/{id}/unlock` | Mở khoá đăng nhập |
+| POST | `/users/{id}/force-logout` | Buộc đăng xuất, trả về số session bị vô hiệu hoá |
+| PATCH | `/users/{id}/org-unit-with-history` | Chuyển đơn vị + ghi lịch sử |
+| GET | `/users/{id}/org-unit-history` | Xem lịch sử chuyển đơn vị |
+| POST | `/users/manual-sync` | Đồng bộ thủ công từ IdP (NoOp hiện tại trả rỗng) |
+
+### UC-12: Đăng nhập/Đăng xuất
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/auth/login` | Đăng nhập bằng username/password, trả về `token` |
+| POST | `/auth/logout` | Đăng xuất (header `Authorization: Bearer <token>`) |
+| GET | `/auth/me` | Lấy thông tin người dùng hiện tại từ token |
 
 | GET | `/health` | Health check |
 

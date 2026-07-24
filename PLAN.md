@@ -11,7 +11,7 @@ Nguyên tắc: chỉ chuyển UC tiếp theo sang `doing` khi UC trước đã `
 |---|---|---|---|
 | UC-001 | Quản lý cơ cấu tổ chức | Quản trị hệ thống | done (code+test viết xong, chờ bạn chạy `pytest` xác nhận pass) |
 | UC-002 | Quản lý người dùng (CRUD) | Quản trị hệ thống | done (code+test viết xong, đồng bộ Keycloak dùng NoOp stub — chờ bạn chạy `pytest` xác nhận pass) |
-| UC-003 | Quản lý vòng đời người dùng | Quản trị hệ thống | todo |
+| UC-003 | Quản lý vòng đời người dùng | Quản trị hệ thống | done (code+test viết xong: khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị có lưu lịch sử — chờ chạy `pytest` xác nhận pass) |
 | UC-004 | Quản lý quyền người dùng | Quản trị hệ thống | todo |
 | UC-005 | Quản lý vai trò người dùng | Quản trị hệ thống | todo |
 | UC-006 | Quản lý cấu hình hệ thống chung | Quản trị hệ thống | todo |
@@ -20,7 +20,7 @@ Nguyên tắc: chỉ chuyển UC tiếp theo sang `doing` khi UC trước đã `
 | UC-009 | Quản lý nhật ký truy cập và thao tác | Quản trị hệ thống, Kiểm toán viên | todo |
 | UC-010 | Quản trị AI Audit Log | Kiểm toán viên, AI Rà soát | todo |
 | UC-011 | Quản trị tài liệu hướng dẫn sử dụng | Quản trị hệ thống | todo |
-| UC-012 | Đăng nhập / Đăng xuất hệ thống (SSO) | Tất cả người dùng | todo |
+| UC-012 | Đăng nhập / Đăng xuất hệ thống (SSO) | Tất cả người dùng | done (đăng nhập nội bộ username/password + session token, tạm thay cho SSO Keycloak thật — xem ADR-003 trong ARCHITECTURE.md; chờ chạy `pytest` xác nhận pass) |
 | UC-013 | Đổi mật khẩu / Cấp lại mật khẩu | Tất cả người dùng, Quản trị hệ thống | todo |
 | UC-014 | Quản lý phiên đăng nhập | Quản trị hệ thống | todo |
 

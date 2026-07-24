@@ -21,3 +21,9 @@ class NoOpIdentityProviderClient(IdentityProviderClient):
 
     def enable_account(self, external_id: str) -> None:
         return None
+
+    def sync_users(self) -> list:
+        # Chưa nối Keycloak thật -> trả về rỗng, không có gì để đối soát.
+        # Khi có KeycloakIdentityProviderClient thật, hàm này gọi Admin REST API
+        # GET /admin/realms/{realm}/users và map sang list[dict].
+        return []

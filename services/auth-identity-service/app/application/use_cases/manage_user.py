@@ -38,6 +38,7 @@ class UserService:
         email: str,
         org_unit_id: int,
         role: str,
+        password_hash: str,
     ) -> User:
         if self._users.get_by_username(username):
             raise UsernameAlreadyExists(username)
@@ -53,6 +54,7 @@ class UserService:
             email=email.strip(),
             org_unit_id=org_unit_id,
             role=role,
+            password_hash=password_hash,
             is_active=True,
         )
         return self._users.add(user)

@@ -1,7 +1,17 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import { NAV_SECTIONS } from "../nav.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function AppLayout({ title, subtitle, children }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login");
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -46,6 +56,19 @@ export default function AppLayout({ title, subtitle, children }) {
       <div className="main-area">
         <header className="topbar">
           <div className="topbar-title">{title}</div>
+          {user && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{user.full_name}</div>
+                <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
+                  {user.role}
+                </div>
+              </div>
+              <button className="icon-btn" title="Đăng xuất" onClick={handleLogout}>
+                <LogOut size={15} />
+              </button>
+            </div>
+          )}
         </header>
         <main className="page-content">
           {subtitle && (
