@@ -2,6 +2,8 @@ import { Route, Routes } from "react-router-dom";
 import { ArrowRight, Building2, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 
@@ -85,9 +87,31 @@ function HomePage() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/org-units" element={<OrgUnitsPage />} />
-      <Route path="/users" element={<UsersPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/org-units"
+        element={
+          <ProtectedRoute>
+            <OrgUnitsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

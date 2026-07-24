@@ -3,9 +3,19 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import OrgUnit, User
-from app.domain.repositories import OrgUnitRepository, UserRepository
-from app.infrastructure.db.models import OrgUnitModel, UserModel
+from app.domain.entities import OrgUnit, OrgUnitAssignmentHistory, User, UserSession
+from app.domain.repositories import (
+    OrgUnitHistoryRepository,
+    OrgUnitRepository,
+    SessionRepository,
+    UserRepository,
+)
+from app.infrastructure.db.models import (
+    OrgUnitAssignmentHistoryModel,
+    OrgUnitModel,
+    UserModel,
+    UserSessionModel,
+)
 
 
 def _to_entity(m: OrgUnitModel) -> OrgUnit:
@@ -77,7 +87,9 @@ def _to_user_entity(m: UserModel) -> User:
         email=m.email,
         org_unit_id=m.org_unit_id,
         role=m.role,
+        password_hash=m.password_hash,
         is_active=m.is_active,
+        is_locked=m.is_locked,
     )
 
 
@@ -92,7 +104,9 @@ class SqlAlchemyUserRepository(UserRepository):
             email=user.email,
             org_unit_id=user.org_unit_id,
             role=user.role,
+            password_hash=user.password_hash,
             is_active=user.is_active,
+            is_locked=user.is_locked,
         )
         self._session.add(model)
         self._session.commit()
@@ -123,7 +137,9 @@ class SqlAlchemyUserRepository(UserRepository):
         model.email = user.email
         model.org_unit_id = user.org_unit_id
         model.role = user.role
+        model.password_hash = user.password_hash
         model.is_active = user.is_active
+        model.is_locked = user.is_locked
         self._session.commit()
         self._session.refresh(model)
         return _to_user_entity(model)
@@ -133,3 +149,82 @@ class SqlAlchemyUserRepository(UserRepository):
         if model:
             self._session.delete(model)
             self._session.commit()
+
+
+def _to_session_entity(m: UserSessionModel) -> UserSession:
+    return UserSession(
+        id=m.id,
+        user_id=m.user_id,
+        token=m.token,
+        created_at=m.created_at,
+        is_revoked=m.is_revoked,
+    )
+
+
+class SqlAlchemySessionRepository(SessionRepository):
+    def __init__(self, session: Session):
+        self._session = session
+
+    def create(self, session: UserSession) -> UserSession:
+        model = UserSessionModel(
+            user_id=session.user_id,
+            token=session.token,
+            created_at=session.created_at,
+            is_revoked=session.is_revoked,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_session_entity(model)
+
+    def get_by_token(self, token: str) -> Optional[UserSession]:
+        stmt = select(UserSessionModel).where(UserSessionModel.token == token)
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_session_entity(model) if model else None
+
+    def revoke_all_for_user(self, user_id: int) -> int:
+        stmt = select(UserSessionModel).where(
+            UserSessionModel.user_id == user_id,
+            UserSessionModel.is_revoked.is_(False),
+        )
+        models = self._session.execute(stmt).scalars().all()
+        for model in models:
+            model.is_revoked = True
+        self._session.commit()
+        return len(models)
+
+
+def _to_history_entity(m: OrgUnitAssignmentHistoryModel) -> OrgUnitAssignmentHistory:
+    return OrgUnitAssignmentHistory(
+        id=m.id,
+        user_id=m.user_id,
+        old_org_unit_id=m.old_org_unit_id,
+        new_org_unit_id=m.new_org_unit_id,
+        changed_at=m.changed_at,
+    )
+
+
+class SqlAlchemyOrgUnitHistoryRepository(OrgUnitHistoryRepository):
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, entry: OrgUnitAssignmentHistory) -> OrgUnitAssignmentHistory:
+        model = OrgUnitAssignmentHistoryModel(
+            user_id=entry.user_id,
+            old_org_unit_id=entry.old_org_unit_id,
+            new_org_unit_id=entry.new_org_unit_id,
+            changed_at=entry.changed_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_history_entity(model)
+
+    def list_for_user(self, user_id: int) -> List[OrgUnitAssignmentHistory]:
+        stmt = (
+            select(OrgUnitAssignmentHistoryModel)
+            .where(OrgUnitAssignmentHistoryModel.user_id == user_id)
+            .order_by(OrgUnitAssignmentHistoryModel.id.desc())
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_history_entity(m) for m in models]

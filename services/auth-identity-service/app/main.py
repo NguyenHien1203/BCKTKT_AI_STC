@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
+from app.interfaces.api.auth_router import router as auth_router
 from app.interfaces.api.org_unit_router import router as org_unit_router
-from app.interfaces.api.user_router import router as user_router
+from app.interfaces.api.user_router import lifecycle_router, router as user_router
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
 # nhanh bằng SQLite; môi trường Postgres thật dùng Alembic migration).
@@ -20,6 +21,8 @@ app = FastAPI(
 
 app.include_router(org_unit_router)
 app.include_router(user_router)
+app.include_router(lifecycle_router)
+app.include_router(auth_router)
 
 
 @app.on_event("startup")

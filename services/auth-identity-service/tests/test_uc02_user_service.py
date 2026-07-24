@@ -102,20 +102,21 @@ def test_create_user_happy_path(service, active_org_unit):
         email="a@hungyen.gov.vn",
         org_unit_id=active_org_unit.id,
         role="STAFF",
+        password_hash="dummyhash",
     )
     assert user.id == 1
     assert user.is_active is True
 
 
 def test_create_duplicate_username_raises(service, active_org_unit):
-    service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     with pytest.raises(UsernameAlreadyExists):
-        service.create("nguyenvana", "B", "b@x.vn", active_org_unit.id, "STAFF")
+        service.create("nguyenvana", "B", "b@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
 
 
 def test_create_with_invalid_org_unit_raises(service):
     with pytest.raises(InvalidOrgUnitForUser):
-        service.create("nguyenvana", "A", "a@x.vn", 999, "STAFF")
+        service.create("nguyenvana", "A", "a@x.vn", 999, "STAFF", password_hash="dummyhash")
 
 
 def test_create_with_inactive_org_unit_raises(service, org_unit_repo, active_org_unit):
@@ -129,7 +130,7 @@ def test_create_with_inactive_org_unit_raises(service, org_unit_repo, active_org
         )
     )
     with pytest.raises(InvalidOrgUnitForUser):
-        service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+        service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
 
 
 def test_get_not_found_raises(service):
@@ -138,7 +139,7 @@ def test_get_not_found_raises(service):
 
 
 def test_update_profile(service, active_org_unit):
-    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     updated = service.update_profile(user.id, "Nguyễn Văn A (mới)", "moi@x.vn")
     assert updated.full_name == "Nguyễn Văn A (mới)"
     assert updated.email == "moi@x.vn"
@@ -148,19 +149,19 @@ def test_reassign_org_unit(service, org_unit_repo, active_org_unit):
     other_unit = org_unit_repo.add(
         OrgUnit(id=None, code="P-NS", name="Phòng Ngân sách", unit_type="PHONG")
     )
-    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     updated = service.reassign_org_unit(user.id, other_unit.id)
     assert updated.org_unit_id == other_unit.id
 
 
 def test_reassign_to_invalid_org_unit_raises(service, active_org_unit):
-    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     with pytest.raises(InvalidOrgUnitForUser):
         service.reassign_org_unit(user.id, 999)
 
 
 def test_deactivate_then_activate(service, active_org_unit):
-    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     deactivated = service.deactivate(user.id)
     assert deactivated.is_active is False
     activated = service.activate(user.id)
@@ -171,15 +172,15 @@ def test_list_filter_by_org_unit(service, org_unit_repo, active_org_unit):
     other_unit = org_unit_repo.add(
         OrgUnit(id=None, code="P-NS", name="Phòng Ngân sách", unit_type="PHONG")
     )
-    service.create("a", "A", "a@x.vn", active_org_unit.id, "STAFF")
-    service.create("b", "B", "b@x.vn", other_unit.id, "STAFF")
+    service.create("a", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
+    service.create("b", "B", "b@x.vn", other_unit.id, "STAFF", password_hash="dummyhash")
     result = service.list_users(org_unit_id=active_org_unit.id)
     assert len(result) == 1
     assert result[0].username == "a"
 
 
 def test_delete_user(service, active_org_unit):
-    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF")
+    user = service.create("nguyenvana", "A", "a@x.vn", active_org_unit.id, "STAFF", password_hash="dummyhash")
     service.delete(user.id)
     with pytest.raises(UserNotFound):
         service.get(user.id)

@@ -35,3 +35,18 @@ export async function activateUser(id) {
 export async function deleteUser(id) {
   await authIdentityClient.delete(`/users/${id}`);
 }
+
+export async function lockUser(id) {
+  const { data } = await authIdentityClient.post(`/users/${id}/lock`);
+  return data;
+}
+
+export async function unlockUser(id) {
+  const { data } = await authIdentityClient.post(`/users/${id}/unlock`);
+  return data;
+}
+
+export async function forceLogoutUser(id) {
+  const { data } = await authIdentityClient.post(`/users/${id}/force-logout`);
+  return data;
+}

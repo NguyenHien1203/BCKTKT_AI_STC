@@ -53,3 +53,24 @@ class InvalidOrgUnitForUser(DomainError):
 
     def __init__(self, org_unit_id: int):
         super().__init__(f"Đơn vị công tác id={org_unit_id} không tồn tại hoặc đã ngừng hoạt động")
+
+
+class InvalidCredentials(DomainError):
+    code = "INVALID_CREDENTIALS"
+
+    def __init__(self):
+        super().__init__("Tên đăng nhập hoặc mật khẩu không đúng")
+
+
+class UserIsLocked(DomainError):
+    code = "USER_LOCKED"
+
+    def __init__(self, user_id: int):
+        super().__init__(f"Người dùng id={user_id} đang bị khoá")
+
+
+class SessionNotFound(DomainError):
+    code = "SESSION_NOT_FOUND"
+
+    def __init__(self):
+        super().__init__("Phiên đăng nhập không hợp lệ hoặc đã hết hạn")

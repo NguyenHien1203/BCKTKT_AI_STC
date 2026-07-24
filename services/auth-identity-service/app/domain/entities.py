@@ -44,7 +44,9 @@ class User:
     email: str
     org_unit_id: int
     role: str  # vd: "ADMIN" | "STAFF" | "VIEWER" (UC-05 sẽ mở rộng quản lý vai trò)
+    password_hash: str = ""
     is_active: bool = True
+    is_locked: bool = False  # UC-03: khoá/mở khoá (khác is_active — xoá mềm của UC-02)
 
     def rename(self, full_name: str) -> None:
         if not full_name or not full_name.strip():
@@ -56,3 +58,37 @@ class User:
 
     def activate(self) -> None:
         self.is_active = True
+
+    def lock(self) -> None:
+        self.is_locked = True
+
+    def unlock(self) -> None:
+        self.is_locked = False
+
+    def can_login(self) -> bool:
+        return self.is_active and not self.is_locked
+
+
+@dataclass
+class UserSession:
+    """Phiên đăng nhập (UC-12 Đăng nhập/Đăng xuất, UC-03 buộc đăng xuất)."""
+
+    id: Optional[int]
+    user_id: int
+    token: str
+    created_at: str
+    is_revoked: bool = False
+
+    def revoke(self) -> None:
+        self.is_revoked = True
+
+
+@dataclass
+class OrgUnitAssignmentHistory:
+    """Lịch sử chuyển đơn vị công tác của người dùng (UC-03)."""
+
+    id: Optional[int]
+    user_id: int
+    old_org_unit_id: Optional[int]
+    new_org_unit_id: int
+    changed_at: str

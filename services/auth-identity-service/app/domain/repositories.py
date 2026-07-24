@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from app.domain.entities import OrgUnit, User
+from app.domain.entities import OrgUnit, OrgUnitAssignmentHistory, User, UserSession
 
 
 class OrgUnitRepository(ABC):
@@ -78,4 +78,55 @@ class IdentityProviderClient(ABC):
 
     @abstractmethod
     def enable_account(self, external_id: str) -> None:
+        ...
+
+    @abstractmethod
+    def sync_users(self) -> list:
+        """Kéo danh sách user mới nhất từ IdP để đối soát (UC-03).
+
+        Trả về list[dict] với ít nhất {username, email, full_name}.
+        """
+
+
+class SessionRepository(ABC):
+    @abstractmethod
+    def create(self, session: UserSession) -> UserSession:
+        ...
+
+    @abstractmethod
+    def get_by_token(self, token: str) -> Optional[UserSession]:
+        ...
+
+    @abstractmethod
+    def revoke_all_for_user(self, user_id: int) -> int:
+        """Trả về số phiên đã bị vô hiệu hoá."""
+
+
+class OrgUnitHistoryRepository(ABC):
+    @abstractmethod
+    def add(self, entry: OrgUnitAssignmentHistory) -> OrgUnitAssignmentHistory:
+        ...
+
+    @abstractmethod
+    def list_for_user(self, user_id: int) -> List[OrgUnitAssignmentHistory]:
+        ...
+
+
+class PasswordHasher(ABC):
+    """Cổng băm/kiểm tra mật khẩu — implement ở infrastructure/security.py."""
+
+    @abstractmethod
+    def hash(self, plain_password: str) -> str:
+        ...
+
+    @abstractmethod
+    def verify(self, plain_password: str, password_hash: str) -> bool:
+        ...
+
+
+class TokenGenerator(ABC):
+    """Cổng sinh session token — implement ở infrastructure/security.py."""
+
+    @abstractmethod
+    def generate(self) -> str:
         ...

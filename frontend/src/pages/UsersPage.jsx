@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Plus, Power, PowerOff, Trash2 } from "lucide-react";
+import { AlertCircle, Lock, LogOut, Plus, Power, PowerOff, Trash2, Unlock } from "lucide-react";
 import AppLayout from "../components/AppLayout.jsx";
 import { listOrgUnits } from "../api/orgUnits";
 import {
@@ -7,7 +7,10 @@ import {
   createUser,
   deactivateUser,
   deleteUser,
+  forceLogoutUser,
   listUsers,
+  lockUser,
+  unlockUser,
 } from "../api/users";
 
 const ROLES = [
@@ -16,7 +19,14 @@ const ROLES = [
   { value: "VIEWER", label: "Chỉ xem" },
 ];
 
-const EMPTY_FORM = { username: "", full_name: "", email: "", org_unit_id: "", role: "STAFF" };
+const EMPTY_FORM = {
+  username: "",
+  full_name: "",
+  email: "",
+  org_unit_id: "",
+  role: "STAFF",
+  password: "",
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -59,6 +69,7 @@ export default function UsersPage() {
         email: form.email,
         org_unit_id: Number(form.org_unit_id),
         role: form.role,
+        password: form.password,
       });
       setForm(EMPTY_FORM);
       await reload();
@@ -84,6 +95,29 @@ export default function UsersPage() {
     try {
       await deleteUser(user.id);
       await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  async function handleToggleLock(user) {
+    try {
+      if (user.is_locked) {
+        await unlockUser(user.id);
+      } else {
+        await lockUser(user.id);
+      }
+      await reload();
+    } catch (e) {
+      setError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  async function handleForceLogout(user) {
+    try {
+      const result = await forceLogoutUser(user.id);
+      setError(null);
+      alert(`Đã buộc đăng xuất ${result.revoked_sessions} phiên của người dùng này.`);
     } catch (e) {
       setError(e?.response?.data?.detail?.message || e.message);
     }
@@ -133,6 +167,17 @@ export default function UsersPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="password">Mật khẩu</label>
+                <input
+                  id="password"
+                  type="password"
+                  minLength={8}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required
                 />
               </div>
@@ -216,9 +261,12 @@ export default function UsersPage() {
                     <td>{orgUnitName(u.org_unit_id)}</td>
                     <td>{ROLES.find((r) => r.value === u.role)?.label || u.role}</td>
                     <td>
-                      <span className={`badge ${u.is_active ? "badge-success" : "badge-neutral"}`}>
-                        {u.is_active ? "Hoạt động" : "Đã vô hiệu hoá"}
-                      </span>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <span className={`badge ${u.is_active ? "badge-success" : "badge-neutral"}`}>
+                          {u.is_active ? "Hoạt động" : "Đã vô hiệu hoá"}
+                        </span>
+                        {u.is_locked && <span className="badge badge-neutral">Đang khoá</span>}
+                      </div>
                     </td>
                     <td>
                       <div className="row-actions">
@@ -228,6 +276,20 @@ export default function UsersPage() {
                           onClick={() => handleToggleActive(u)}
                         >
                           {u.is_active ? <PowerOff size={15} /> : <Power size={15} />}
+                        </button>
+                        <button
+                          className="icon-btn"
+                          title={u.is_locked ? "Mở khoá" : "Khoá tài khoản"}
+                          onClick={() => handleToggleLock(u)}
+                        >
+                          {u.is_locked ? <Unlock size={15} /> : <Lock size={15} />}
+                        </button>
+                        <button
+                          className="icon-btn"
+                          title="Buộc đăng xuất"
+                          onClick={() => handleForceLogout(u)}
+                        >
+                          <LogOut size={15} />
                         </button>
                         <button className="icon-btn" title="Xoá" onClick={() => handleDelete(u)}>
                           <Trash2 size={15} />

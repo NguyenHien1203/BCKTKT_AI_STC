@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.session import Base
@@ -43,4 +43,38 @@ class UserModel(Base):
         nullable=False,
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="STAFF")
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class UserSessionModel(Base):
+    __tablename__ = "user_sessions"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}users.id"),
+        nullable=False,
+        index=True,
+    )
+    token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class OrgUnitAssignmentHistoryModel(Base):
+    __tablename__ = "org_unit_assignment_history"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}users.id"),
+        nullable=False,
+        index=True,
+    )
+    old_org_unit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    new_org_unit_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    changed_at: Mapped[str] = mapped_column(String(40), nullable=False)

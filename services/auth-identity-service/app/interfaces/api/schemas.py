@@ -36,6 +36,7 @@ class UserCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=255)
     org_unit_id: int
     role: str = Field("STAFF", pattern="^(ADMIN|STAFF|VIEWER)$")
+    password: str = Field(..., min_length=8, max_length=128)
 
 
 class UserUpdateProfile(BaseModel):
@@ -55,5 +56,45 @@ class UserResponse(BaseModel):
     org_unit_id: int
     role: str
     is_active: bool
+    is_locked: bool
 
     model_config = {"from_attributes": True}
+
+
+class ReassignOrgUnitWithHistory(BaseModel):
+    org_unit_id: int
+
+
+class OrgUnitHistoryResponse(BaseModel):
+    id: int
+    user_id: int
+    old_org_unit_id: Optional[int]
+    new_org_unit_id: int
+    changed_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class ManualSyncResponse(BaseModel):
+    remote_total: int
+    matched: int
+    unmatched_usernames: list[str]
+    synced_at: str
+
+
+class ForceLogoutResponse(BaseModel):
+    revoked_sessions: int
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+class LoginResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+
+class CurrentUserResponse(UserResponse):
+    pass
