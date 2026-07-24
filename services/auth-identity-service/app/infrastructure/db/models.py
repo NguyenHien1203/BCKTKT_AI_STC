@@ -27,3 +27,20 @@ class OrgUnitModel(Base):
         nullable=True,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class UserModel(Base):
+    __tablename__ = "users"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_unit_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}org_units.id"),
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="STAFF")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

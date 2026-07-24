@@ -10,7 +10,7 @@ Nguyên tắc: chỉ chuyển UC tiếp theo sang `doing` khi UC trước đã `
 | UC | Tên | Tác nhân | Status |
 |---|---|---|---|
 | UC-001 | Quản lý cơ cấu tổ chức | Quản trị hệ thống | done (code+test viết xong, chờ bạn chạy `pytest` xác nhận pass) |
-| UC-002 | Quản lý người dùng (CRUD) | Quản trị hệ thống | todo |
+| UC-002 | Quản lý người dùng (CRUD) | Quản trị hệ thống | done (code+test viết xong, đồng bộ Keycloak dùng NoOp stub — chờ bạn chạy `pytest` xác nhận pass) |
 | UC-003 | Quản lý vòng đời người dùng | Quản trị hệ thống | todo |
 | UC-004 | Quản lý quyền người dùng | Quản trị hệ thống | todo |
 | UC-005 | Quản lý vai trò người dùng | Quản trị hệ thống | todo |

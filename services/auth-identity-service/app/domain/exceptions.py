@@ -32,3 +32,24 @@ class InvalidParentUnit(DomainError):
 
     def __init__(self, parent_id: int):
         super().__init__(f"Đơn vị cha id={parent_id} không tồn tại")
+
+
+class UsernameAlreadyExists(DomainError):
+    code = "USERNAME_EXISTS"
+
+    def __init__(self, username: str):
+        super().__init__(f"Tên đăng nhập '{username}' đã tồn tại")
+
+
+class UserNotFound(DomainError):
+    code = "USER_NOT_FOUND"
+
+    def __init__(self, user_id: int):
+        super().__init__(f"Không tìm thấy người dùng id={user_id}")
+
+
+class InvalidOrgUnitForUser(DomainError):
+    code = "USER_INVALID_ORG_UNIT"
+
+    def __init__(self, org_unit_id: int):
+        super().__init__(f"Đơn vị công tác id={org_unit_id} không tồn tại hoặc đã ngừng hoạt động")
