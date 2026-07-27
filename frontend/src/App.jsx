@@ -1,10 +1,12 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, Users } from "lucide-react";
+import { ArrowRight, Building2, KeyRound, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
+import PermissionsPage from "./pages/PermissionsPage.jsx";
+import RolesPage from "./pages/RolesPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 
 function HomePage() {
@@ -20,6 +22,18 @@ function HomePage() {
       title: "Người dùng",
       description: "UC-02 — Quản lý tài khoản người dùng, gán đơn vị công tác.",
       icon: Users,
+    },
+    {
+      to: "/permissions",
+      title: "Quyền người dùng",
+      description: "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
+      icon: KeyRound,
+    },
+    {
+      to: "/roles",
+      title: "Vai trò người dùng",
+      description: "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
+      icon: UserCog,
     },
   ];
 
@@ -109,6 +123,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/permissions"
+        element={
+          <ProtectedRoute>
+            <PermissionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roles"
+        element={
+          <ProtectedRoute>
+            <RolesPage />
           </ProtectedRoute>
         }
       />

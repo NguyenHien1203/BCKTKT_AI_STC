@@ -74,3 +74,47 @@ class SessionNotFound(DomainError):
 
     def __init__(self):
         super().__init__("Phiên đăng nhập không hợp lệ hoặc đã hết hạn")
+
+
+class RoleCodeAlreadyExists(DomainError):
+    code = "ROLE_CODE_EXISTS"
+ 
+    def __init__(self, code_value: str):
+        super().__init__(f"Mã vai trò '{code_value}' đã tồn tại")
+ 
+ 
+class RoleNotFound(DomainError):
+    code = "ROLE_NOT_FOUND"
+ 
+    def __init__(self, role_id: int):
+        super().__init__(f"Không tìm thấy vai trò id={role_id}")
+ 
+ 
+class RoleInUse(DomainError):
+    code = "ROLE_IN_USE"
+ 
+    def __init__(self, code_value: str, user_count: int):
+        super().__init__(
+            f"Không thể xoá vai trò '{code_value}' vì đang có {user_count} người dùng sử dụng"
+        )
+
+
+class RoleNotFoundByCode(DomainError):
+    code = "ROLE_NOT_FOUND"
+
+    def __init__(self, role_code: str):
+        super().__init__(f"Không tìm thấy vai trò mã '{role_code}'")
+
+
+class PermissionContextNotFound(DomainError):
+    code = "PERMISSION_CONTEXT_NOT_FOUND"
+
+    def __init__(self, user_id: int):
+        super().__init__(f"Chưa cấu hình quyền cho người dùng id={user_id}")
+
+
+class InvalidSensitivityLevel(DomainError):
+    code = "INVALID_SENSITIVITY_LEVEL"
+
+    def __init__(self, level: str):
+        super().__init__(f"Mức nhạy cảm '{level}' không hợp lệ")

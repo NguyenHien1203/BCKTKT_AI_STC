@@ -8,6 +8,8 @@ import {
   Wrench,
   Users,
   FileBarChart,
+  KeyRound,
+  UserCog,
 } from "lucide-react";
 
 // Mỗi mục tương ứng 1 UC/nhóm UC đã có giao diện. Khi thêm UC mới có màn hình,
@@ -18,6 +20,8 @@ export const NAV_SECTIONS = [
     items: [
       { to: "/org-units", label: "Cơ cấu tổ chức", icon: Building2 },
       { to: "/users", label: "Người dùng", icon: Users },
+      { to: "/permissions", label: "Quyền người dùng", icon: KeyRound },
+      { to: "/roles", label: "Vai trò người dùng", icon: UserCog },
     ],
   },
   {

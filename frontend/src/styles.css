@@ -317,6 +317,11 @@ table.data-table {
   color: var(--color-danger);
 }
 
+.alert-success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
 .empty-state {
   padding: 40px 20px;
   text-align: center;

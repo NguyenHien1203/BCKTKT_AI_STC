@@ -1,6 +1,9 @@
 import os
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+import json
+import os
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.session import Base
@@ -79,3 +82,37 @@ class OrgUnitAssignmentHistoryModel(Base):
     old_org_unit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     new_org_unit_id: Mapped[int] = mapped_column(Integer, nullable=False)
     changed_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+
+class RoleModel(Base):
+    """UC-05: Quản lý vai trò người dùng."""
+
+    __tablename__ = "roles"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    permissions: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list[str]
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class UserPermissionContextModel(Base):
+    """UC-04: Quản lý quyền người dùng."""
+
+    __tablename__ = "user_permission_contexts"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}users.id"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    role_code: Mapped[str] = mapped_column(String(50), nullable=False)
+    permitted_domains: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list[str]
+    permitted_unit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sensitivity_level: Mapped[str] = mapped_column(String(20), nullable=False, default="INTERNAL")

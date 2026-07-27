@@ -99,3 +99,59 @@ class LoginResponse(BaseModel):
 
 class CurrentUserResponse(UserResponse):
     pass
+
+
+# ---------- UC-05: Quản lý vai trò người dùng ----------
+
+
+class RoleCreate(BaseModel):
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+    permissions: list[str] = Field(default_factory=list)
+
+
+class RoleUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+    permissions: list[str] = Field(default_factory=list)
+
+
+class RoleResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str
+    permissions: list[str]
+    version: int
+
+    model_config = {"from_attributes": True}
+
+
+# ---------- UC-04: Quản lý quyền người dùng ----------
+
+
+class AssignRoleRequest(BaseModel):
+    role_code: str = Field(..., min_length=1, max_length=50)
+
+
+class ConfigureDomainsRequest(BaseModel):
+    permitted_domains: list[str] = Field(default_factory=list)
+    permitted_unit_id: Optional[int] = None
+
+
+class ConfigureSensitivityRequest(BaseModel):
+    sensitivity_level: str = Field(
+        ..., pattern="^(PUBLIC|INTERNAL|CONFIDENTIAL|SECRET)$"
+    )
+
+
+class PermissionContextResponse(BaseModel):
+    id: int
+    user_id: int
+    role_code: str
+    permitted_domains: list[str]
+    permitted_unit_id: Optional[int]
+    sensitivity_level: str
+
+    model_config = {"from_attributes": True}

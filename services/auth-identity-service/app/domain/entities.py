@@ -93,3 +93,61 @@ class OrgUnitAssignmentHistory:
     old_org_unit_id: Optional[int]
     new_org_unit_id: int
     changed_at: str
+
+@dataclass
+class Role:
+    """Vai trò người dùng (UC-05), gồm 1 bộ quyền (danh sách mã quyền).
+ 
+    UC-04 (Quản lý quyền người dùng) sẽ dùng Role này để tính permission_context
+    thực tế cho từng user, kết hợp thêm permitted_domains/unit/mức nhạy cảm.
+    """
+ 
+    id: Optional[int]
+    code: str
+    name: str
+    description: str
+    permissions: list  # list[str] mã quyền, vd ["USER_MANAGE", "REPORT_VIEW"]
+    version: int = 1
+ 
+    def update(self, name: str, description: str, permissions: list) -> None:
+        if not name or not name.strip():
+            raise ValueError("Tên vai trò không được để trống")
+        self.name = name.strip()
+        self.description = description.strip() if description else ""
+        self.permissions = list(permissions)
+        self.version += 1
+
+ 
+@dataclass
+class UserPermissionContext:
+    """Ngữ cảnh quyền thực tế của người dùng (UC-04: Quản lý quyền người dùng).
+ 
+    Đây là bản ghi "runtime" tổng hợp từ vai trò (UC-05 `Role`) cộng thêm phạm
+    vi truy cập dữ liệu bổ sung mà UC-04 cho phép cấu hình riêng theo từng
+    người dùng: các miền dữ liệu được phép (`permitted_domains`), đơn vị được
+    phép truy cập (`permitted_unit_id`), và mức nhạy cảm dữ liệu tối đa được
+    xem (`sensitivity_level`).
+    """
+ 
+    SENSITIVITY_LEVELS = ("PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET")
+ 
+    id: Optional[int]
+    user_id: int
+    role_code: str
+    permitted_domains: list  # list[str], vd ["TAI_SAN", "NGAN_SACH", "GIA"]
+    permitted_unit_id: Optional[int] = None
+    sensitivity_level: str = "INTERNAL"
+ 
+    def assign_role(self, role_code: str) -> None:
+        if not role_code or not role_code.strip():
+            raise ValueError("Mã vai trò không được để trống")
+        self.role_code = role_code.strip()
+ 
+    def configure_domains(self, permitted_domains: list, permitted_unit_id: Optional[int]) -> None:
+        self.permitted_domains = list(permitted_domains or [])
+        self.permitted_unit_id = permitted_unit_id
+ 
+    def configure_sensitivity(self, sensitivity_level: str) -> None:
+        if sensitivity_level not in self.SENSITIVITY_LEVELS:
+            raise ValueError(f"Mức nhạy cảm '{sensitivity_level}' không hợp lệ")
+        self.sensitivity_level = sensitivity_level

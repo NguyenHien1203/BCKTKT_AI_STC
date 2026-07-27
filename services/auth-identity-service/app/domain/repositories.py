@@ -2,7 +2,14 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from app.domain.entities import OrgUnit, OrgUnitAssignmentHistory, User, UserSession
+from app.domain.entities import (
+    OrgUnit,
+    OrgUnitAssignmentHistory,
+    Role,
+    User,
+    UserPermissionContext,
+    UserSession,
+)
 
 
 class OrgUnitRepository(ABC):
@@ -129,4 +136,46 @@ class TokenGenerator(ABC):
 
     @abstractmethod
     def generate(self) -> str:
+        ...
+
+
+class RoleRepository(ABC):
+    @abstractmethod
+    def add(self, role: Role) -> Role:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, role_id: int) -> Optional[Role]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[Role]:
+        ...
+
+    @abstractmethod
+    def list(self) -> List[Role]:
+        ...
+
+    @abstractmethod
+    def update(self, role: Role) -> Role:
+        ...
+
+    @abstractmethod
+    def delete(self, role_id: int) -> None:
+        ...
+
+
+class PermissionContextRepository(ABC):
+    """Repository cho UC-04: Quản lý quyền người dùng."""
+
+    @abstractmethod
+    def get_by_user_id(self, user_id: int) -> Optional[UserPermissionContext]:
+        ...
+
+    @abstractmethod
+    def add(self, context: UserPermissionContext) -> UserPermissionContext:
+        ...
+
+    @abstractmethod
+    def update(self, context: UserPermissionContext) -> UserPermissionContext:
         ...

@@ -1,19 +1,31 @@
+import json
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import OrgUnit, OrgUnitAssignmentHistory, User, UserSession
+from app.domain.entities import (
+    OrgUnit,
+    OrgUnitAssignmentHistory,
+    Role,
+    User,
+    UserPermissionContext,
+    UserSession,
+)
 from app.domain.repositories import (
     OrgUnitHistoryRepository,
     OrgUnitRepository,
+    PermissionContextRepository,
+    RoleRepository,
     SessionRepository,
     UserRepository,
 )
 from app.infrastructure.db.models import (
     OrgUnitAssignmentHistoryModel,
     OrgUnitModel,
+    RoleModel,
     UserModel,
+    UserPermissionContextModel,
     UserSessionModel,
 )
 
@@ -231,3 +243,111 @@ class SqlAlchemyOrgUnitHistoryRepository(OrgUnitHistoryRepository):
         )
         models = self._session.execute(stmt).scalars().all()
         return [_to_history_entity(m) for m in models]
+
+
+def _to_role_entity(m: RoleModel) -> Role:
+    return Role(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        description=m.description,
+        permissions=json.loads(m.permissions) if m.permissions else [],
+        version=m.version,
+    )
+
+
+class SqlAlchemyRoleRepository(RoleRepository):
+    """UC-05: Quản lý vai trò người dùng."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, role: Role) -> Role:
+        model = RoleModel(
+            code=role.code,
+            name=role.name,
+            description=role.description,
+            permissions=json.dumps(role.permissions or []),
+            version=role.version,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_role_entity(model)
+
+    def get_by_id(self, role_id: int) -> Optional[Role]:
+        model = self._session.get(RoleModel, role_id)
+        return _to_role_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[Role]:
+        stmt = select(RoleModel).where(RoleModel.code == code)
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_role_entity(model) if model else None
+
+    def list(self) -> List[Role]:
+        models = self._session.execute(select(RoleModel)).scalars().all()
+        return [_to_role_entity(m) for m in models]
+
+    def update(self, role: Role) -> Role:
+        model = self._session.get(RoleModel, role.id)
+        model.name = role.name
+        model.description = role.description
+        model.permissions = json.dumps(role.permissions or [])
+        model.version = role.version
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_role_entity(model)
+
+    def delete(self, role_id: int) -> None:
+        model = self._session.get(RoleModel, role_id)
+        if model:
+            self._session.delete(model)
+            self._session.commit()
+
+
+def _to_permission_context_entity(m: UserPermissionContextModel) -> UserPermissionContext:
+    return UserPermissionContext(
+        id=m.id,
+        user_id=m.user_id,
+        role_code=m.role_code,
+        permitted_domains=json.loads(m.permitted_domains) if m.permitted_domains else [],
+        permitted_unit_id=m.permitted_unit_id,
+        sensitivity_level=m.sensitivity_level,
+    )
+
+
+class SqlAlchemyPermissionContextRepository(PermissionContextRepository):
+    """UC-04: Quản lý quyền người dùng."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def get_by_user_id(self, user_id: int) -> Optional[UserPermissionContext]:
+        stmt = select(UserPermissionContextModel).where(
+            UserPermissionContextModel.user_id == user_id
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_permission_context_entity(model) if model else None
+
+    def add(self, context: UserPermissionContext) -> UserPermissionContext:
+        model = UserPermissionContextModel(
+            user_id=context.user_id,
+            role_code=context.role_code,
+            permitted_domains=json.dumps(context.permitted_domains or []),
+            permitted_unit_id=context.permitted_unit_id,
+            sensitivity_level=context.sensitivity_level,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_permission_context_entity(model)
+
+    def update(self, context: UserPermissionContext) -> UserPermissionContext:
+        model = self._session.get(UserPermissionContextModel, context.id)
+        model.role_code = context.role_code
+        model.permitted_domains = json.dumps(context.permitted_domains or [])
+        model.permitted_unit_id = context.permitted_unit_id
+        model.sensitivity_level = context.sensitivity_level
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_permission_context_entity(model)
