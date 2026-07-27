@@ -118,3 +118,10 @@ class InvalidSensitivityLevel(DomainError):
 
     def __init__(self, level: str):
         super().__init__(f"Mức nhạy cảm '{level}' không hợp lệ")
+
+
+class InvalidSystemConfig(DomainError):
+    code = "INVALID_SYSTEM_CONFIG"
+
+    def __init__(self, message: str):
+        super().__init__(message)

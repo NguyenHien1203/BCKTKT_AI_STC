@@ -6,6 +6,7 @@ from app.domain.entities import (
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
+    SystemConfig,
     User,
     UserPermissionContext,
     UserSession,
@@ -179,3 +180,18 @@ class PermissionContextRepository(ABC):
     @abstractmethod
     def update(self, context: UserPermissionContext) -> UserPermissionContext:
         ...
+
+
+class SystemConfigRepository(ABC):
+    """Repository cho UC-06: Quản lý cấu hình hệ thống chung.
+
+    Bản ghi "singleton" — chỉ có tối đa 1 dòng cấu hình đang hiệu lực.
+    """
+
+    @abstractmethod
+    def get(self) -> Optional[SystemConfig]:
+        ...
+
+    @abstractmethod
+    def save(self, config: SystemConfig) -> SystemConfig:
+        """Tạo mới (lần đầu) hoặc cập nhật (upsert) dòng cấu hình singleton."""

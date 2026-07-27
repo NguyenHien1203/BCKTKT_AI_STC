@@ -11,10 +11,10 @@ Nguyên tắc: chỉ chuyển UC tiếp theo sang `doing` khi UC trước đã `
 |---|---|---|---|
 | UC-001 | Quản lý cơ cấu tổ chức | Quản trị hệ thống | done (code+test viết xong, chờ bạn chạy `pytest` xác nhận pass) |
 | UC-002 | Quản lý người dùng (CRUD) | Quản trị hệ thống | done (code+test viết xong, đồng bộ Keycloak dùng NoOp stub — chờ bạn chạy `pytest` xác nhận pass) |
-| UC-003 | Quản lý vòng đời người dùng | Quản trị hệ thống | done (code+test viết xong: khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị có lưu lịch sử — chờ chạy `pytest` xác nhận pass) |
-| UC-004 | Quản lý quyền người dùng | Quản trị hệ thống | done (code+test viết xong: xem/gán vai trò, cấu hình permitted_domains+unit, cấu hình mức nhạy cảm — permission_context tự khởi tạo mặc định lần đầu truy vấn; đã có giao diện `/permissions`; `pytest` đã chạy pass) |
+| UC-003 | Quản lý vòng đời người dùng | Quản trị hệ thống | tested (code+test viết xong: khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị có lưu lịch sử; đã fix fixture `sample_user` thiếu `external_id` khiến test lock/unlock sai; `pytest` đã chạy pass) |
+| UC-004 | Quản lý quyền người dùng | Quản trị hệ thống | tested (code+test viết xong: xem/gán vai trò, cấu hình permitted_domains+unit, cấu hình mức nhạy cảm — permission_context tự khởi tạo mặc định lần đầu truy vấn; đã có giao diện `/permissions`; đã fix bug `configure_sensitivity` thiếu gán `self.sensitivity_level`; `pytest` đã chạy pass) |
 | UC-005 | Quản lý vai trò người dùng | Quản trị hệ thống | done (code+test viết xong: CRUD vai trò, sửa lưu version mới, xoá kiểm tra ràng buộc còn user dùng; đã có giao diện `/roles`; `pytest` đã chạy pass) |
-| UC-006 | Quản lý cấu hình hệ thống chung | Quản trị hệ thống | todo |
+| UC-006 | Quản lý cấu hình hệ thống chung | Quản trị hệ thống | tested (code+test viết xong: xem cấu hình chung — tự khởi tạo mặc định lần đầu, sửa cấu hình lưu + áp dụng ngay không cần khởi động lại (đọc thẳng CSDL mỗi request); đã có giao diện `/system-config`; `pytest` đã chạy pass toàn bộ 97/97, gồm cả 2 fix phụ ở UC-03/UC-04) |
 | UC-007 | Quản lý cấu hình tích hợp | Quản trị hệ thống | todo |
 | UC-008 | Quản lý cấu hình kênh thông báo | Quản trị hệ thống | todo |
 | UC-009 | Quản lý nhật ký truy cập và thao tác | Quản trị hệ thống, Kiểm toán viên | todo |

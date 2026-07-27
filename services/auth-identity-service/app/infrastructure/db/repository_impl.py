@@ -8,6 +8,7 @@ from app.domain.entities import (
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
+    SystemConfig,
     User,
     UserPermissionContext,
     UserSession,
@@ -18,12 +19,14 @@ from app.domain.repositories import (
     PermissionContextRepository,
     RoleRepository,
     SessionRepository,
+    SystemConfigRepository,
     UserRepository,
 )
 from app.infrastructure.db.models import (
     OrgUnitAssignmentHistoryModel,
     OrgUnitModel,
     RoleModel,
+    SystemConfigModel,
     UserModel,
     UserPermissionContextModel,
     UserSessionModel,
@@ -351,3 +354,44 @@ class SqlAlchemyPermissionContextRepository(PermissionContextRepository):
         self._session.commit()
         self._session.refresh(model)
         return _to_permission_context_entity(model)
+
+
+def _to_system_config_entity(m: SystemConfigModel) -> SystemConfig:
+    return SystemConfig(
+        id=m.id,
+        request_timeout_seconds=m.request_timeout_seconds,
+        max_upload_size_mb=m.max_upload_size_mb,
+        default_language=m.default_language,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemySystemConfigRepository(SystemConfigRepository):
+    """UC-06: Quản lý cấu hình hệ thống chung — bản ghi singleton (id=1)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def get(self) -> Optional[SystemConfig]:
+        stmt = select(SystemConfigModel).order_by(SystemConfigModel.id.asc())
+        model = self._session.execute(stmt).scalars().first()
+        return _to_system_config_entity(model) if model else None
+
+    def save(self, config: SystemConfig) -> SystemConfig:
+        model = self._session.get(SystemConfigModel, config.id) if config.id else None
+        if model is None:
+            model = SystemConfigModel(
+                request_timeout_seconds=config.request_timeout_seconds,
+                max_upload_size_mb=config.max_upload_size_mb,
+                default_language=config.default_language,
+                updated_at=config.updated_at or "",
+            )
+            self._session.add(model)
+        else:
+            model.request_timeout_seconds = config.request_timeout_seconds
+            model.max_upload_size_mb = config.max_upload_size_mb
+            model.default_language = config.default_language
+            model.updated_at = config.updated_at or ""
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_system_config_entity(model)

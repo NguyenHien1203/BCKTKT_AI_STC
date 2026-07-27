@@ -180,6 +180,9 @@ def sample_user(user_repo, active_org_unit):
             org_unit_id=active_org_unit.id,
             role="STAFF",
             password_hash="hash",
+            # external_id mô phỏng user đã được đồng bộ với IdP (NoOp) trước đó,
+            # để test lock/unlock kiểm tra đúng việc gọi disable/enable_account.
+            external_id="noop-nguyenvana",
         )
     )
 
