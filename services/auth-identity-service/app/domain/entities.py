@@ -45,6 +45,7 @@ class User:
     org_unit_id: int
     role: str  # vd: "ADMIN" | "STAFF" | "VIEWER" (UC-05 sẽ mở rộng quản lý vai trò)
     password_hash: str = ""
+    external_id: str = ""  # id người dùng ở IdP (Keycloak) — rỗng nếu chưa đồng bộ
     is_active: bool = True
     is_locked: bool = False  # UC-03: khoá/mở khoá (khác is_active — xoá mềm của UC-02)
 

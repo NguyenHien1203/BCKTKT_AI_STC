@@ -55,6 +55,7 @@ class UserResponse(BaseModel):
     email: str
     org_unit_id: int
     role: str
+    external_id: str
     is_active: bool
     is_locked: bool
 

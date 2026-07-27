@@ -44,6 +44,7 @@ class UserModel(Base):
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="STAFF")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    external_id: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 

@@ -88,6 +88,7 @@ def _to_user_entity(m: UserModel) -> User:
         org_unit_id=m.org_unit_id,
         role=m.role,
         password_hash=m.password_hash,
+        external_id=m.external_id,
         is_active=m.is_active,
         is_locked=m.is_locked,
     )
@@ -105,6 +106,7 @@ class SqlAlchemyUserRepository(UserRepository):
             org_unit_id=user.org_unit_id,
             role=user.role,
             password_hash=user.password_hash,
+            external_id=user.external_id,
             is_active=user.is_active,
             is_locked=user.is_locked,
         )
@@ -138,6 +140,7 @@ class SqlAlchemyUserRepository(UserRepository):
         model.org_unit_id = user.org_unit_id
         model.role = user.role
         model.password_hash = user.password_hash
+        model.external_id = user.external_id
         model.is_active = user.is_active
         model.is_locked = user.is_locked
         self._session.commit()

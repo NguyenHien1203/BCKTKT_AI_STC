@@ -45,7 +45,7 @@ class UserLifecycleService:
     def lock(self, user_id: int) -> User:
         user = self._get(user_id)
         user.lock()
-        self._idp.disable_account(f"noop-{user.username}")
+        self._idp.disable_account(user.external_id)
         updated = self._users.update(user)
         # Khoá xong thì buộc đăng xuất luôn, tránh phiên cũ vẫn dùng được.
         self._sessions.revoke_all_for_user(user_id)
@@ -54,7 +54,7 @@ class UserLifecycleService:
     def unlock(self, user_id: int) -> User:
         user = self._get(user_id)
         user.unlock()
-        self._idp.enable_account(f"noop-{user.username}")
+        self._idp.enable_account(user.external_id)
         return self._users.update(user)
 
     def force_logout(self, user_id: int) -> int:

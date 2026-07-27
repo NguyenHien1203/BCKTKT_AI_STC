@@ -1,0 +1,41 @@
+{
+  "realm": "hungyen-financial",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Quản trị hệ thống" },
+      { "name": "STAFF", "description": "Cán bộ nghiệp vụ" },
+      { "name": "VIEWER", "description": "Chỉ xem" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "auth-identity-service",
+      "name": "Auth Identity Service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "dev-secret-change-me",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin.hungyen",
+      "enabled": true,
+      "firstName": "Quản",
+      "lastName": "Trị Viên",
+      "email": "admin@hungyen.gov.vn",
+      "credentials": [
+        { "type": "password", "value": "ChangeMe123!", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN"]
+    }
+  ]
+}

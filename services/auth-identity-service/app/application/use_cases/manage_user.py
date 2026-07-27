@@ -45,7 +45,7 @@ class UserService:
         self._ensure_org_unit_active(org_unit_id)
 
         # Đồng bộ tạo tài khoản ở IdP trước khi lưu (nếu IdP lỗi, không tạo bản ghi local mồ côi).
-        self._idp.create_account(username=username, email=email, full_name=full_name)
+        external_id = self._idp.create_account(username=username, email=email, full_name=full_name)
 
         user = User(
             id=None,
@@ -55,6 +55,7 @@ class UserService:
             org_unit_id=org_unit_id,
             role=role,
             password_hash=password_hash,
+            external_id=external_id,
             is_active=True,
         )
         return self._users.add(user)
@@ -74,7 +75,7 @@ class UserService:
         user = self.get(user_id)
         user.rename(full_name)
         user.email = email.strip()
-        self._idp.update_account(f"noop-{user.username}", user.email, user.full_name)
+        self._idp.update_account(user.external_id, user.email, user.full_name)
         return self._users.update(user)
 
     def reassign_org_unit(self, user_id: int, new_org_unit_id: int) -> User:
@@ -86,13 +87,13 @@ class UserService:
     def deactivate(self, user_id: int) -> User:
         user = self.get(user_id)
         user.deactivate()
-        self._idp.disable_account(f"noop-{user.username}")
+        self._idp.disable_account(user.external_id)
         return self._users.update(user)
 
     def activate(self, user_id: int) -> User:
         user = self.get(user_id)
         user.activate()
-        self._idp.enable_account(f"noop-{user.username}")
+        self._idp.enable_account(user.external_id)
         return self._users.update(user)
 
     def delete(self, user_id: int) -> None:
