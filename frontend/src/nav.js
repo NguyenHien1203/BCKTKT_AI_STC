@@ -3,6 +3,7 @@ import {
   Database,
   LayoutDashboard,
   Network,
+  Settings,
   ShieldCheck,
   Sparkles,
   Wrench,
@@ -22,6 +23,7 @@ export const NAV_SECTIONS = [
       { to: "/users", label: "Người dùng", icon: Users },
       { to: "/permissions", label: "Quyền người dùng", icon: KeyRound },
       { to: "/roles", label: "Vai trò người dùng", icon: UserCog },
+      { to: "/system-config", label: "Cấu hình hệ thống chung", icon: Settings },
     ],
   },
   {

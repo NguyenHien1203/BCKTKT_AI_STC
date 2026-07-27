@@ -151,3 +151,56 @@ class UserPermissionContext:
         if sensitivity_level not in self.SENSITIVITY_LEVELS:
             raise ValueError(f"Mức nhạy cảm '{sensitivity_level}' không hợp lệ")
         self.sensitivity_level = sensitivity_level
+
+
+@dataclass
+class SystemConfig:
+    """Cấu hình hệ thống chung (UC-06: Quản lý cấu hình hệ thống chung).
+
+    Bản ghi "singleton" (luôn chỉ có 1 dòng, id=1): thời gian chờ (timeout)
+    của request, dung lượng tải lên tối đa, ngôn ngữ mặc định. Sửa cấu hình
+    được áp dụng ngay ("nạp lại nóng") vì mỗi request đọc thẳng từ CSDL,
+    không cần khởi động lại service.
+    """
+
+    SUPPORTED_LANGUAGES = ("vi", "en")
+    MIN_TIMEOUT_SECONDS = 1
+    MAX_TIMEOUT_SECONDS = 600
+    MIN_UPLOAD_SIZE_MB = 1
+    MAX_UPLOAD_SIZE_MB = 1024
+
+    id: Optional[int]
+    request_timeout_seconds: int = 30
+    max_upload_size_mb: int = 50
+    default_language: str = "vi"
+    updated_at: Optional[str] = None
+
+    def update(
+        self,
+        request_timeout_seconds: int,
+        max_upload_size_mb: int,
+        default_language: str,
+        updated_at: str,
+    ) -> None:
+        if not (
+            self.MIN_TIMEOUT_SECONDS <= request_timeout_seconds <= self.MAX_TIMEOUT_SECONDS
+        ):
+            raise ValueError(
+                f"Thời gian chờ phải trong khoảng {self.MIN_TIMEOUT_SECONDS}-"
+                f"{self.MAX_TIMEOUT_SECONDS} giây"
+            )
+        if not (
+            self.MIN_UPLOAD_SIZE_MB <= max_upload_size_mb <= self.MAX_UPLOAD_SIZE_MB
+        ):
+            raise ValueError(
+                f"Dung lượng tải lên tối đa phải trong khoảng {self.MIN_UPLOAD_SIZE_MB}-"
+                f"{self.MAX_UPLOAD_SIZE_MB} MB"
+            )
+        if default_language not in self.SUPPORTED_LANGUAGES:
+            raise ValueError(
+                f"Ngôn ngữ mặc định '{default_language}' không được hỗ trợ"
+            )
+        self.request_timeout_seconds = request_timeout_seconds
+        self.max_upload_size_mb = max_upload_size_mb
+        self.default_language = default_language
+        self.updated_at = updated_at

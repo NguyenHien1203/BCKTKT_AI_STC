@@ -116,3 +116,16 @@ class UserPermissionContextModel(Base):
     permitted_domains: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list[str]
     permitted_unit_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sensitivity_level: Mapped[str] = mapped_column(String(20), nullable=False, default="INTERNAL")
+
+
+class SystemConfigModel(Base):
+    """UC-06: Quản lý cấu hình hệ thống chung — bản ghi singleton (luôn id=1)."""
+
+    __tablename__ = "system_configs"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    request_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    max_upload_size_mb: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
+    default_language: Mapped[str] = mapped_column(String(10), nullable=False, default="vi")
+    updated_at: Mapped[str] = mapped_column(String(40), nullable=False, default="")

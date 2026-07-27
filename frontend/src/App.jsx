@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, KeyRound, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, KeyRound, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import PermissionsPage from "./pages/PermissionsPage.jsx";
 import RolesPage from "./pages/RolesPage.jsx";
+import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 
 function HomePage() {
@@ -34,6 +35,12 @@ function HomePage() {
       title: "Vai trò người dùng",
       description: "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
       icon: UserCog,
+    },
+    {
+      to: "/system-config",
+      title: "Cấu hình hệ thống chung",
+      description: "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
+      icon: Settings,
     },
   ];
 
@@ -139,6 +146,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <RolesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/system-config"
+        element={
+          <ProtectedRoute>
+            <SystemConfigPage />
           </ProtectedRoute>
         }
       />

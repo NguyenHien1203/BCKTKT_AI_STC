@@ -140,6 +140,25 @@ class ConfigureDomainsRequest(BaseModel):
     permitted_unit_id: Optional[int] = None
 
 
+# ---------- UC-06: Quản lý cấu hình hệ thống chung ----------
+
+
+class SystemConfigUpdate(BaseModel):
+    request_timeout_seconds: int = Field(..., ge=1, le=600)
+    max_upload_size_mb: int = Field(..., ge=1, le=1024)
+    default_language: str = Field(..., min_length=2, max_length=10)
+
+
+class SystemConfigResponse(BaseModel):
+    id: int
+    request_timeout_seconds: int
+    max_upload_size_mb: int
+    default_language: str
+    updated_at: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class ConfigureSensitivityRequest(BaseModel):
     sensitivity_level: str = Field(
         ..., pattern="^(PUBLIC|INTERNAL|CONFIDENTIAL|SECRET)$"
