@@ -159,6 +159,32 @@ class SystemConfigResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ---------- UC-07: Quản lý cấu hình tích hợp ----------
+
+
+class KeycloakConfigUpdate(BaseModel):
+    base_url: str = Field(..., min_length=1, max_length=500)
+    realm: str = Field(default="", max_length=100)
+    client_id: str = Field(default="", max_length=100)
+
+
+class LgspConfigUpdate(BaseModel):
+    base_url: str = Field(..., min_length=1, max_length=500)
+    protocol: str = Field(default="", max_length=50)
+
+
+class IntegrationEndpointResponse(BaseModel):
+    id: int
+    endpoint_type: str
+    base_url: str
+    extra_config: dict
+    is_connected: bool
+    last_checked_at: Optional[str] = None
+    last_check_message: str = ""
+
+    model_config = {"from_attributes": True}
+
+
 class ConfigureSensitivityRequest(BaseModel):
     sensitivity_level: str = Field(
         ..., pattern="^(PUBLIC|INTERNAL|CONFIDENTIAL|SECRET)$"

@@ -204,3 +204,45 @@ class SystemConfig:
         self.max_upload_size_mb = max_upload_size_mb
         self.default_language = default_language
         self.updated_at = updated_at
+
+
+@dataclass
+class IntegrationEndpoint:
+    """Cấu hình điểm cuối tích hợp hệ thống ngoài (UC-07: Quản lý cấu hình tích hợp).
+
+    Mỗi dòng tương ứng 1 loại điểm cuối (`endpoint_type`): "KEYCLOAK" (IdP) hoặc
+    "LGSP" (nền tảng tích hợp chia sẻ dữ liệu quốc gia/tỉnh). `extra_config` lưu
+    các trường đặc thù theo loại (vd Keycloak: realm, client_id; LGSP: protocol).
+    Sau khi lưu, hệ thống kiểm tra kết nối/giao thức và ghi nhận kết quả vào
+    `is_connected` + `last_checked_at` — không chặn việc lưu cấu hình dù kiểm
+    tra kết nối thất bại (để admin có thể sửa lại và kiểm tra lại).
+    """
+
+    ENDPOINT_TYPES = ("KEYCLOAK", "LGSP")
+
+    id: Optional[int]
+    endpoint_type: str
+    base_url: str
+    extra_config: dict
+    is_connected: bool = False
+    last_checked_at: Optional[str] = None
+    last_check_message: str = ""
+
+    def configure(self, base_url: str, extra_config: dict) -> None:
+        if self.endpoint_type not in self.ENDPOINT_TYPES:
+            raise ValueError(f"Loại điểm cuối '{self.endpoint_type}' không hợp lệ")
+        if not base_url or not base_url.strip():
+            raise ValueError("URL điểm cuối không được để trống")
+        if not (base_url.startswith("http://") or base_url.startswith("https://")):
+            raise ValueError("URL điểm cuối phải bắt đầu bằng http:// hoặc https://")
+        self.base_url = base_url.strip()
+        self.extra_config = dict(extra_config or {})
+        # Đổi cấu hình -> trạng thái kiểm tra cũ không còn đáng tin, chờ kiểm tra lại.
+        self.is_connected = False
+        self.last_checked_at = None
+        self.last_check_message = ""
+
+    def record_check_result(self, is_connected: bool, message: str, checked_at: str) -> None:
+        self.is_connected = is_connected
+        self.last_check_message = message
+        self.last_checked_at = checked_at

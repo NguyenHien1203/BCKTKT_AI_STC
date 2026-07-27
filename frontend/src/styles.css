@@ -302,6 +302,11 @@ table.data-table {
   color: var(--color-text-secondary);
 }
 
+.badge-danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
 .alert {
   display: flex;
   align-items: flex-start;

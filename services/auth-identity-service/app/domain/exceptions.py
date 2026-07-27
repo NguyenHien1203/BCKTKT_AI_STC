@@ -125,3 +125,17 @@ class InvalidSystemConfig(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class InvalidIntegrationEndpoint(DomainError):
+    code = "INVALID_INTEGRATION_ENDPOINT"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class IntegrationEndpointNotFound(DomainError):
+    code = "INTEGRATION_ENDPOINT_NOT_FOUND"
+
+    def __init__(self, endpoint_type: str):
+        super().__init__(f"Chưa cấu hình điểm cuối '{endpoint_type}'")

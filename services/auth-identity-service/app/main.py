@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
 from app.interfaces.api.auth_router import router as auth_router
+from app.interfaces.api.integration_config_router import router as integration_config_router
 from app.interfaces.api.org_unit_router import router as org_unit_router
 from app.interfaces.api.permission_router import router as permission_router
 from app.interfaces.api.role_router import router as role_router
@@ -29,6 +30,7 @@ app.include_router(auth_router)
 app.include_router(role_router)
 app.include_router(permission_router)
 app.include_router(system_config_router)
+app.include_router(integration_config_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:
