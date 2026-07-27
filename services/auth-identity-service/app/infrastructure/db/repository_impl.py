@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    IntegrationEndpoint,
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
@@ -14,6 +15,7 @@ from app.domain.entities import (
     UserSession,
 )
 from app.domain.repositories import (
+    IntegrationEndpointRepository,
     OrgUnitHistoryRepository,
     OrgUnitRepository,
     PermissionContextRepository,
@@ -23,6 +25,7 @@ from app.domain.repositories import (
     UserRepository,
 )
 from app.infrastructure.db.models import (
+    IntegrationEndpointModel,
     OrgUnitAssignmentHistoryModel,
     OrgUnitModel,
     RoleModel,
@@ -395,3 +398,55 @@ class SqlAlchemySystemConfigRepository(SystemConfigRepository):
         self._session.commit()
         self._session.refresh(model)
         return _to_system_config_entity(model)
+
+
+def _to_integration_endpoint_entity(m: IntegrationEndpointModel) -> IntegrationEndpoint:
+    return IntegrationEndpoint(
+        id=m.id,
+        endpoint_type=m.endpoint_type,
+        base_url=m.base_url,
+        extra_config=json.loads(m.extra_config) if m.extra_config else {},
+        is_connected=m.is_connected,
+        last_checked_at=m.last_checked_at,
+        last_check_message=m.last_check_message,
+    )
+
+
+class SqlAlchemyIntegrationEndpointRepository(IntegrationEndpointRepository):
+    """UC-07: Quản lý cấu hình tích hợp — 1 dòng / loại điểm cuối."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def get_by_type(self, endpoint_type: str) -> Optional[IntegrationEndpoint]:
+        stmt = select(IntegrationEndpointModel).where(
+            IntegrationEndpointModel.endpoint_type == endpoint_type
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_integration_endpoint_entity(model) if model else None
+
+    def list(self) -> List[IntegrationEndpoint]:
+        models = self._session.execute(select(IntegrationEndpointModel)).scalars().all()
+        return [_to_integration_endpoint_entity(m) for m in models]
+
+    def save(self, endpoint: IntegrationEndpoint) -> IntegrationEndpoint:
+        model = self._session.get(IntegrationEndpointModel, endpoint.id) if endpoint.id else None
+        if model is None:
+            model = IntegrationEndpointModel(
+                endpoint_type=endpoint.endpoint_type,
+                base_url=endpoint.base_url,
+                extra_config=json.dumps(endpoint.extra_config or {}),
+                is_connected=endpoint.is_connected,
+                last_checked_at=endpoint.last_checked_at,
+                last_check_message=endpoint.last_check_message,
+            )
+            self._session.add(model)
+        else:
+            model.base_url = endpoint.base_url
+            model.extra_config = json.dumps(endpoint.extra_config or {})
+            model.is_connected = endpoint.is_connected
+            model.last_checked_at = endpoint.last_checked_at
+            model.last_check_message = endpoint.last_check_message
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_integration_endpoint_entity(model)

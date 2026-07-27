@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from app.domain.entities import (
+    IntegrationEndpoint,
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
@@ -195,3 +196,31 @@ class SystemConfigRepository(ABC):
     @abstractmethod
     def save(self, config: SystemConfig) -> SystemConfig:
         """Tạo mới (lần đầu) hoặc cập nhật (upsert) dòng cấu hình singleton."""
+
+
+class IntegrationEndpointRepository(ABC):
+    """Repository cho UC-07: Quản lý cấu hình tích hợp."""
+
+    @abstractmethod
+    def get_by_type(self, endpoint_type: str) -> Optional[IntegrationEndpoint]:
+        ...
+
+    @abstractmethod
+    def list(self) -> List[IntegrationEndpoint]:
+        ...
+
+    @abstractmethod
+    def save(self, endpoint: IntegrationEndpoint) -> IntegrationEndpoint:
+        """Tạo mới (lần đầu theo `endpoint_type`) hoặc cập nhật (upsert)."""
+
+
+class ConnectionChecker(ABC):
+    """Cổng kiểm tra kết nối/giao thức tới điểm cuối tích hợp ngoài (UC-07).
+
+    Implement thật (gọi HTTP tới Keycloak/LGSP) hoặc giả (NoOp cho dev/test)
+    đặt ở infrastructure/connection_checker.py.
+    """
+
+    @abstractmethod
+    def check(self, endpoint_type: str, base_url: str, extra_config: dict) -> tuple:
+        """Trả về tuple (is_connected: bool, message: str)."""

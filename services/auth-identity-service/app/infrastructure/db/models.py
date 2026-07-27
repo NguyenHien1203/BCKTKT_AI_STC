@@ -129,3 +129,18 @@ class SystemConfigModel(Base):
     max_upload_size_mb: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
     default_language: Mapped[str] = mapped_column(String(10), nullable=False, default="vi")
     updated_at: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+
+
+class IntegrationEndpointModel(Base):
+    """UC-07: Quản lý cấu hình tích hợp — 1 dòng / loại điểm cuối (KEYCLOAK, LGSP)."""
+
+    __tablename__ = "integration_endpoints"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    endpoint_type: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    base_url: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    extra_config: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    is_connected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    last_checked_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_check_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
