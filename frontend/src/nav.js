@@ -1,4 +1,5 @@
 import {
+  Bell,
   Building2,
   Database,
   LayoutDashboard,
@@ -25,6 +26,7 @@ export const NAV_SECTIONS = [
       { to: "/roles", label: "Vai trò người dùng", icon: UserCog },
       { to: "/system-config", label: "Cấu hình hệ thống chung", icon: Settings },
       { to: "/integration-config", label: "Cấu hình tích hợp", icon: Network },
+      { to: "/notification-channels", label: "Cấu hình kênh thông báo", icon: Bell },
     ],
   },
   {

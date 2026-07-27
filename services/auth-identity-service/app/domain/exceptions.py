@@ -139,3 +139,17 @@ class IntegrationEndpointNotFound(DomainError):
 
     def __init__(self, endpoint_type: str):
         super().__init__(f"Chưa cấu hình điểm cuối '{endpoint_type}'")
+
+
+class InvalidNotificationChannel(DomainError):
+    code = "INVALID_NOTIFICATION_CHANNEL"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NotificationChannelNotFound(DomainError):
+    code = "NOTIFICATION_CHANNEL_NOT_FOUND"
+
+    def __init__(self, channel_type: str):
+        super().__init__(f"Chưa cấu hình kênh thông báo '{channel_type}'")
