@@ -204,6 +204,8 @@ services:
     build: ./frontend
     container_name: hy-frontend
     restart: unless-stopped
+    depends_on:
+      - auth-identity-service
     ports:
       - "5173:80"
 
