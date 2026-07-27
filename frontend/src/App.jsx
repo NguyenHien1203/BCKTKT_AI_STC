@@ -1,30 +1,23 @@
 import { Route, Routes } from "react-router-dom";
-import {
-  ArrowRight,
-  Building2,
-  KeyRound,
-  Settings,
-  UserCog,
-  Users,
-} from "lucide-react";
+import { ArrowRight, Building2, KeyRound, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import NotificationChannelsPage from "./pages/NotificationChannelsPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import PermissionsPage from "./pages/PermissionsPage.jsx";
 import RolesPage from "./pages/RolesPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
-import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 
 function HomePage() {
   const modules = [
     {
       to: "/org-units",
       title: "Cơ cấu tổ chức",
-      description:
-        "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
+      description: "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
       icon: Building2,
     },
     {
@@ -36,22 +29,19 @@ function HomePage() {
     {
       to: "/permissions",
       title: "Quyền người dùng",
-      description:
-        "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
+      description: "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
       icon: KeyRound,
     },
     {
       to: "/roles",
       title: "Vai trò người dùng",
-      description:
-        "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
+      description: "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
       icon: UserCog,
     },
     {
       to: "/system-config",
       title: "Cấu hình hệ thống chung",
-      description:
-        "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
+      description: "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
       icon: Settings,
     },
   ];
@@ -93,9 +83,7 @@ function HomePage() {
                 <Icon size={20} />
               </div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.title}</div>
-              <div
-                style={{ fontSize: 13, color: "var(--color-text-secondary)" }}
-              >
+              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
                 {m.description}
               </div>
               <div
@@ -176,6 +164,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IntegrationConfigPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notification-channels"
+        element={
+          <ProtectedRoute>
+            <NotificationChannelsPage />
           </ProtectedRoute>
         }
       />

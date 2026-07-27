@@ -185,6 +185,43 @@ class IntegrationEndpointResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ---------- UC-08: Quản lý cấu hình kênh thông báo ----------
+
+
+class SmtpConfigUpdate(BaseModel):
+    smtp_host: str = Field(..., min_length=1, max_length=255)
+    smtp_port: int = Field(..., ge=1, le=65535)
+    from_email: str = Field(..., min_length=3, max_length=255)
+    username: str = Field(default="", max_length=255)
+    password: str = Field(default="", max_length=255)
+    test_recipient: str = Field(default="", max_length=255)
+
+
+class SmsConfigUpdate(BaseModel):
+    gateway_url: str = Field(..., min_length=1, max_length=500)
+    api_key: str = Field(..., min_length=1, max_length=255)
+    test_recipient: str = Field(..., min_length=1, max_length=30)
+
+
+class WebhookConfigUpdate(BaseModel):
+    webhook_url: str = Field(..., min_length=1, max_length=500)
+
+
+class SendTestRequest(BaseModel):
+    recipient: str = Field(default="", max_length=255)
+
+
+class NotificationChannelResponse(BaseModel):
+    id: int
+    channel_type: str
+    config: dict
+    is_verified: bool
+    last_test_at: Optional[str] = None
+    last_test_message: str = ""
+
+    model_config = {"from_attributes": True}
+
+
 class ConfigureSensitivityRequest(BaseModel):
     sensitivity_level: str = Field(
         ..., pattern="^(PUBLIC|INTERNAL|CONFIDENTIAL|SECRET)$"

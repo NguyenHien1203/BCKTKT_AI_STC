@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from app.domain.entities import (
     IntegrationEndpoint,
+    NotificationChannel,
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
@@ -224,3 +225,31 @@ class ConnectionChecker(ABC):
     @abstractmethod
     def check(self, endpoint_type: str, base_url: str, extra_config: dict) -> tuple:
         """Trả về tuple (is_connected: bool, message: str)."""
+
+
+class NotificationChannelRepository(ABC):
+    """Repository cho UC-08: Quản lý cấu hình kênh thông báo."""
+
+    @abstractmethod
+    def get_by_type(self, channel_type: str) -> Optional[NotificationChannel]:
+        ...
+
+    @abstractmethod
+    def list(self) -> List[NotificationChannel]:
+        ...
+
+    @abstractmethod
+    def save(self, channel: NotificationChannel) -> NotificationChannel:
+        """Tạo mới (lần đầu theo `channel_type`) hoặc cập nhật (upsert)."""
+
+
+class NotificationSender(ABC):
+    """Cổng gửi thông điệp kiểm thử qua kênh thông báo ngoài (UC-08).
+
+    Implement thật (gửi email SMTP thật / gọi API SMS / POST Webhook) hoặc
+    giả (NoOp cho dev/test) đặt ở infrastructure/notification_sender.py.
+    """
+
+    @abstractmethod
+    def send_test(self, channel_type: str, config: dict, recipient: str) -> tuple:
+        """Trả về tuple (is_verified: bool, message: str)."""

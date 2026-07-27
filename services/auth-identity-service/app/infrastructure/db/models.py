@@ -144,3 +144,17 @@ class IntegrationEndpointModel(Base):
     is_connected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     last_checked_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
     last_check_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+
+class NotificationChannelModel(Base):
+    """UC-08: Quản lý cấu hình kênh thông báo — 1 dòng / loại kênh (SMTP, SMS, WEBHOOK)."""
+
+    __tablename__ = "notification_channels"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    channel_type: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    config: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    last_test_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_test_message: Mapped[str] = mapped_column(Text, nullable=False, default="")

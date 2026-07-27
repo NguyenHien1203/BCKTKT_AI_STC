@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities import (
     IntegrationEndpoint,
+    NotificationChannel,
     OrgUnit,
     OrgUnitAssignmentHistory,
     Role,
@@ -16,6 +17,7 @@ from app.domain.entities import (
 )
 from app.domain.repositories import (
     IntegrationEndpointRepository,
+    NotificationChannelRepository,
     OrgUnitHistoryRepository,
     OrgUnitRepository,
     PermissionContextRepository,
@@ -26,6 +28,7 @@ from app.domain.repositories import (
 )
 from app.infrastructure.db.models import (
     IntegrationEndpointModel,
+    NotificationChannelModel,
     OrgUnitAssignmentHistoryModel,
     OrgUnitModel,
     RoleModel,
@@ -450,3 +453,52 @@ class SqlAlchemyIntegrationEndpointRepository(IntegrationEndpointRepository):
         self._session.commit()
         self._session.refresh(model)
         return _to_integration_endpoint_entity(model)
+
+
+def _to_notification_channel_entity(m: NotificationChannelModel) -> NotificationChannel:
+    return NotificationChannel(
+        id=m.id,
+        channel_type=m.channel_type,
+        config=json.loads(m.config) if m.config else {},
+        is_verified=m.is_verified,
+        last_test_at=m.last_test_at,
+        last_test_message=m.last_test_message,
+    )
+
+
+class SqlAlchemyNotificationChannelRepository(NotificationChannelRepository):
+    """UC-08: Quản lý cấu hình kênh thông báo — 1 dòng / loại kênh."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def get_by_type(self, channel_type: str) -> Optional[NotificationChannel]:
+        stmt = select(NotificationChannelModel).where(
+            NotificationChannelModel.channel_type == channel_type
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_notification_channel_entity(model) if model else None
+
+    def list(self) -> List[NotificationChannel]:
+        models = self._session.execute(select(NotificationChannelModel)).scalars().all()
+        return [_to_notification_channel_entity(m) for m in models]
+
+    def save(self, channel: NotificationChannel) -> NotificationChannel:
+        model = self._session.get(NotificationChannelModel, channel.id) if channel.id else None
+        if model is None:
+            model = NotificationChannelModel(
+                channel_type=channel.channel_type,
+                config=json.dumps(channel.config or {}),
+                is_verified=channel.is_verified,
+                last_test_at=channel.last_test_at,
+                last_test_message=channel.last_test_message,
+            )
+            self._session.add(model)
+        else:
+            model.config = json.dumps(channel.config or {})
+            model.is_verified = channel.is_verified
+            model.last_test_at = channel.last_test_at
+            model.last_test_message = channel.last_test_message
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_notification_channel_entity(model)

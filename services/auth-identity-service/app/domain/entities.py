@@ -246,3 +246,83 @@ class IntegrationEndpoint:
         self.is_connected = is_connected
         self.last_check_message = message
         self.last_checked_at = checked_at
+
+
+@dataclass
+class NotificationChannel:
+    """Kênh gửi thông báo hệ thống (UC-08: Quản lý cấu hình kênh thông báo).
+
+    Mỗi dòng tương ứng 1 loại kênh (`channel_type`): "SMTP" (email), "SMS"
+    (cổng SMS), hoặc "WEBHOOK" (Webhook/Slack). `config` lưu các trường đặc
+    thù theo loại (SMTP: smtp_host, smtp_port, from_email, username, password;
+    SMS: gateway_url, api_key; WEBHOOK: webhook_url). Sau khi lưu, admin có
+    thể gửi một thông điệp kiểm thử — kết quả (thành công/thất bại) được ghi
+    nhận lại trên chính bản ghi, không chặn việc lưu cấu hình dù gửi thử
+    thất bại (để admin sửa lại và gửi thử lại).
+    """
+
+    CHANNEL_TYPES = ("SMTP", "SMS", "WEBHOOK")
+
+    id: Optional[int]
+    channel_type: str
+    config: dict
+    is_verified: bool = False
+    last_test_at: Optional[str] = None
+    last_test_message: str = ""
+
+    def configure(self, config: dict) -> None:
+        if self.channel_type not in self.CHANNEL_TYPES:
+            raise ValueError(f"Loại kênh thông báo '{self.channel_type}' không hợp lệ")
+        config = dict(config or {})
+        if self.channel_type == "SMTP":
+            self._validate_smtp(config)
+        elif self.channel_type == "SMS":
+            self._validate_sms(config)
+        elif self.channel_type == "WEBHOOK":
+            self._validate_webhook(config)
+        self.config = config
+        # Đổi cấu hình -> trạng thái kiểm thử cũ không còn đáng tin, chờ gửi thử lại.
+        self.is_verified = False
+        self.last_test_at = None
+        self.last_test_message = ""
+
+    @staticmethod
+    def _validate_smtp(config: dict) -> None:
+        smtp_host = (config.get("smtp_host") or "").strip()
+        from_email = (config.get("from_email") or "").strip()
+        smtp_port = config.get("smtp_port")
+        if not smtp_host:
+            raise ValueError("Máy chủ SMTP (smtp_host) không được để trống")
+        if not from_email or "@" not in from_email:
+            raise ValueError("Địa chỉ email gửi (from_email) không hợp lệ")
+        if not isinstance(smtp_port, int) or not (1 <= smtp_port <= 65535):
+            raise ValueError("Cổng SMTP (smtp_port) phải là số nguyên trong khoảng 1-65535")
+        config["smtp_host"] = smtp_host
+        config["from_email"] = from_email
+
+    @staticmethod
+    def _validate_sms(config: dict) -> None:
+        gateway_url = (config.get("gateway_url") or "").strip()
+        api_key = (config.get("api_key") or "").strip()
+        if not gateway_url:
+            raise ValueError("URL cổng SMS (gateway_url) không được để trống")
+        if not (gateway_url.startswith("http://") or gateway_url.startswith("https://")):
+            raise ValueError("URL cổng SMS phải bắt đầu bằng http:// hoặc https://")
+        if not api_key:
+            raise ValueError("API key cổng SMS không được để trống")
+        config["gateway_url"] = gateway_url
+        config["api_key"] = api_key
+
+    @staticmethod
+    def _validate_webhook(config: dict) -> None:
+        webhook_url = (config.get("webhook_url") or "").strip()
+        if not webhook_url:
+            raise ValueError("URL Webhook không được để trống")
+        if not (webhook_url.startswith("http://") or webhook_url.startswith("https://")):
+            raise ValueError("URL Webhook phải bắt đầu bằng http:// hoặc https://")
+        config["webhook_url"] = webhook_url
+
+    def record_test_result(self, is_verified: bool, message: str, tested_at: str) -> None:
+        self.is_verified = is_verified
+        self.last_test_message = message
+        self.last_test_at = tested_at
