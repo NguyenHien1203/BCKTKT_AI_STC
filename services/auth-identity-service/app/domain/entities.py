@@ -326,3 +326,35 @@ class NotificationChannel:
         self.is_verified = is_verified
         self.last_test_message = message
         self.last_test_at = tested_at
+
+
+@dataclass
+class AuditLogEntry:
+    """Bản ghi nhật ký truy cập/thao tác (UC-09: Quản lý nhật ký truy cập và thao tác).
+
+    Mỗi dòng là 1 sự kiện đã xảy ra: ai (`username`), làm gì (`action`), trên
+    đối tượng nào (`resource_type`/`resource_id`), khi nào (`created_at`), từ
+    đâu (`ip_address`), kết quả ra sao (`status`) — dùng cho Quản trị hệ thống
+    xem/lọc toàn bộ nhật ký và Kiểm toán viên xuất báo cáo ATTT (an toàn thông
+    tin) định kỳ. Đây là bản ghi chỉ-thêm (append-only) — không có API sửa/xoá.
+    """
+
+    STATUSES = ("SUCCESS", "FAILURE")
+
+    id: Optional[int]
+    username: str
+    action: str
+    resource_type: str
+    created_at: str
+    resource_id: str = ""
+    detail: str = ""
+    ip_address: str = ""
+    status: str = "SUCCESS"
+
+    def __post_init__(self) -> None:
+        if not self.username or not self.username.strip():
+            raise ValueError("Tài khoản thực hiện thao tác không được để trống")
+        if not self.action or not self.action.strip():
+            raise ValueError("Hành động (action) không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"Trạng thái '{self.status}' không hợp lệ")

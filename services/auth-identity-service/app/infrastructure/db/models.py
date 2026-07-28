@@ -146,6 +146,23 @@ class IntegrationEndpointModel(Base):
     last_check_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
 
+class AuditLogModel(Base):
+    """UC-09: Quản lý nhật ký truy cập và thao tác — append-only."""
+
+    __tablename__ = "audit_logs"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    resource_id: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ip_address: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="SUCCESS")
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+
+
 class NotificationChannelModel(Base):
     """UC-08: Quản lý cấu hình kênh thông báo — 1 dòng / loại kênh (SMTP, SMS, WEBHOOK)."""
 

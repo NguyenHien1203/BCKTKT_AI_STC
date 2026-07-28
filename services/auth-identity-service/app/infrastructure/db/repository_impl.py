@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    AuditLogEntry,
     IntegrationEndpoint,
     NotificationChannel,
     OrgUnit,
@@ -16,6 +17,7 @@ from app.domain.entities import (
     UserSession,
 )
 from app.domain.repositories import (
+    AuditLogRepository,
     IntegrationEndpointRepository,
     NotificationChannelRepository,
     OrgUnitHistoryRepository,
@@ -27,6 +29,7 @@ from app.domain.repositories import (
     UserRepository,
 )
 from app.infrastructure.db.models import (
+    AuditLogModel,
     IntegrationEndpointModel,
     NotificationChannelModel,
     OrgUnitAssignmentHistoryModel,
@@ -502,3 +505,57 @@ class SqlAlchemyNotificationChannelRepository(NotificationChannelRepository):
         self._session.commit()
         self._session.refresh(model)
         return _to_notification_channel_entity(model)
+    
+
+def _to_audit_log_entity(m: AuditLogModel) -> AuditLogEntry:
+    return AuditLogEntry(
+        id=m.id,
+        username=m.username,
+        action=m.action,
+        resource_type=m.resource_type,
+        created_at=m.created_at,
+        resource_id=m.resource_id,
+        detail=m.detail,
+        ip_address=m.ip_address,
+        status=m.status,
+    )
+
+
+class SqlAlchemyAuditLogRepository(AuditLogRepository):
+    """UC-09: Quản lý nhật ký truy cập và thao tác — append-only."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, entry: AuditLogEntry) -> AuditLogEntry:
+        model = AuditLogModel(
+            username=entry.username,
+            action=entry.action,
+            resource_type=entry.resource_type,
+            resource_id=entry.resource_id,
+            detail=entry.detail,
+            ip_address=entry.ip_address,
+            status=entry.status,
+            created_at=entry.created_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_audit_log_entity(model)
+
+    def list(
+        self,
+        username: Optional[str] = None,
+        time_from: Optional[str] = None,
+        time_to: Optional[str] = None,
+    ) -> List[AuditLogEntry]:
+        stmt = select(AuditLogModel)
+        if username:
+            stmt = stmt.where(AuditLogModel.username == username)
+        if time_from:
+            stmt = stmt.where(AuditLogModel.created_at >= time_from)
+        if time_to:
+            stmt = stmt.where(AuditLogModel.created_at <= time_to)
+        stmt = stmt.order_by(AuditLogModel.created_at.desc(), AuditLogModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_audit_log_entity(m) for m in models]

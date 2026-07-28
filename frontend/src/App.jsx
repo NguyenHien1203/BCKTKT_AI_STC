@@ -1,8 +1,9 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, KeyRound, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, FileText, KeyRound, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotificationChannelsPage from "./pages/NotificationChannelsPage.jsx";
@@ -43,6 +44,12 @@ function HomePage() {
       title: "Cấu hình hệ thống chung",
       description: "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
       icon: Settings,
+    },
+    {
+      to: "/audit-logs",
+      title: "Nhật ký truy cập và thao tác",
+      description: "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
+      icon: FileText,
     },
   ];
 
@@ -172,6 +179,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <NotificationChannelsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audit-logs"
+        element={
+          <ProtectedRoute>
+            <AuditLogsPage />
           </ProtectedRoute>
         }
       />
