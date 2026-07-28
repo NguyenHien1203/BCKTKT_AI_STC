@@ -95,6 +95,10 @@ uvicorn app.main:app --reload
 ```
 Hoặc chạy toàn bộ qua Docker: `docker compose up -d --build` ở thư mục gốc.
 
+Test toàn bộ hệ thống qua Docker: `docker compose exec auth-identity-service pytest -q` ở thư mục gốc
+
+Update Db alembic mới nhất: `docker compose exec auth-identity-service alembic upgrade head`  ở thư mục gốc
+
 ## Cấu trúc Clean Architecture
 ```
 app/

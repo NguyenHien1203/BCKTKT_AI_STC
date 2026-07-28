@@ -6,7 +6,7 @@ Slack incoming webhook) ở đây, rồi đổi factory ở
 app/interfaces/api/notification_channel_router.py — không cần sửa
 domain/application.
 """
-from app.domain.repositories import NotificationSender
+from app.domain.repositories import NotificationSender, PasswordEmailSender
 
 
 class NoOpNotificationSender(NotificationSender):
@@ -25,3 +25,21 @@ class NoOpNotificationSender(NotificationSender):
         if channel_type == "SMS":
             return True, f"Đã gửi SMS kiểm thử tới {recipient} (giả lập NoOp, chưa nối cổng SMS thật)"
         return True, "Đã gửi tin nhắn kiểm thử tới Webhook (giả lập NoOp, chưa nối Webhook/Slack thật)"
+
+
+class NoOpPasswordEmailSender(PasswordEmailSender):
+    """Dùng cho môi trường dev/test khi chưa nối SMTP thật (UC-13).
+
+    Không gửi email thật ra ngoài — chỉ log lại nội dung để tiện debug/test.
+    Khi tích hợp thật: thêm `SmtpPasswordEmailSender` (dùng smtplib + cấu hình
+    ở NotificationChannel SMTP của UC-08) rồi đổi factory ở
+    app/interfaces/api/password_router.py — không cần sửa domain/application.
+    """
+
+    def send_reset_link(self, to_email: str, reset_link: str) -> None:
+        print(f"[NoOpPasswordEmailSender] Gửi link reset mật khẩu tới {to_email}: {reset_link}")
+
+    def send_temp_password(self, to_email: str, temp_password: str) -> None:
+        print(
+            f"[NoOpPasswordEmailSender] Gửi mật khẩu tạm tới {to_email}: {temp_password}"
+        )

@@ -8,6 +8,7 @@ from app.interfaces.api.guide_document_router import router as guide_document_ro
 from app.interfaces.api.integration_config_router import router as integration_config_router
 from app.interfaces.api.notification_channel_router import router as notification_channel_router
 from app.interfaces.api.org_unit_router import router as org_unit_router
+from app.interfaces.api.password_router import router as password_router
 from app.interfaces.api.permission_router import router as permission_router
 from app.interfaces.api.role_router import router as role_router
 from app.interfaces.api.system_config_router import router as system_config_router
@@ -31,6 +32,7 @@ app.include_router(org_unit_router)
 app.include_router(user_router)
 app.include_router(lifecycle_router)
 app.include_router(auth_router)
+app.include_router(password_router)
 app.include_router(role_router)
 app.include_router(permission_router)
 app.include_router(system_config_router)

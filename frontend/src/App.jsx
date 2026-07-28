@@ -5,12 +5,15 @@ import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AiAuditLogPage from "./pages/AiAuditLogPage.jsx";
 import AuditLogsPage from "./pages/AuditLogsPage.jsx";
+import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotificationChannelsPage from "./pages/NotificationChannelsPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import PermissionsPage from "./pages/PermissionsPage.jsx";
+import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import RolesPage from "./pages/RolesPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
@@ -132,6 +135,16 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePasswordPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/"
         element={

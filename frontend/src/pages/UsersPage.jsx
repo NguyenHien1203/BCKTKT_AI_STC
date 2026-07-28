@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Lock, LogOut, Plus, Power, PowerOff, Trash2, Unlock } from "lucide-react";
+import {
+  AlertCircle,
+  KeyRound,
+  Lock,
+  LogOut,
+  Plus,
+  Power,
+  PowerOff,
+  Trash2,
+  Unlock,
+} from "lucide-react";
 import AppLayout from "../components/AppLayout.jsx";
 import { listOrgUnits } from "../api/orgUnits";
+import { adminResetPassword } from "../api/password.js";
 import {
   activateUser,
   createUser,
@@ -118,6 +129,22 @@ export default function UsersPage() {
       const result = await forceLogoutUser(user.id);
       setError(null);
       alert(`Đã buộc đăng xuất ${result.revoked_sessions} phiên của người dùng này.`);
+    } catch (e) {
+      setError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  async function handleAdminResetPassword(user) {
+    // UC-13: Quản trị hệ thống cấp lại mật khẩu tạm cho người dùng khác.
+    // Mật khẩu tạm được sinh ngẫu nhiên và gửi qua email — không hiển thị
+    // trên giao diện để giảm rủi ro lộ lọt.
+    if (!window.confirm(`Cấp lại mật khẩu tạm cho "${user.full_name || user.username}"?`)) {
+      return;
+    }
+    try {
+      const result = await adminResetPassword(user.id);
+      setError(null);
+      alert(result?.message || "Đã tạo mật khẩu tạm và gửi qua email cho người dùng.");
     } catch (e) {
       setError(e?.response?.data?.detail?.message || e.message);
     }
@@ -290,6 +317,13 @@ export default function UsersPage() {
                           onClick={() => handleForceLogout(u)}
                         >
                           <LogOut size={15} />
+                        </button>
+                        <button
+                          className="icon-btn"
+                          title="Cấp lại mật khẩu tạm"
+                          onClick={() => handleAdminResetPassword(u)}
+                        >
+                          <KeyRound size={15} />
                         </button>
                         <button className="icon-btn" title="Xoá" onClick={() => handleDelete(u)}>
                           <Trash2 size={15} />

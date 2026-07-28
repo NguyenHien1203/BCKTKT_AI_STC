@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { NAV_SECTIONS } from "../nav.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -64,6 +64,9 @@ export default function AppLayout({ title, subtitle, children }) {
                   {user.role}
                 </div>
               </div>
+              <NavLink className="icon-btn" title="Đổi mật khẩu" to="/change-password">
+                <KeyRound size={15} />
+              </NavLink>
               <button className="icon-btn" title="Đăng xuất" onClick={handleLogout}>
                 <LogOut size={15} />
               </button>

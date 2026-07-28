@@ -76,6 +76,44 @@ class SessionNotFound(DomainError):
         super().__init__("Phiên đăng nhập không hợp lệ hoặc đã hết hạn")
 
 
+class WrongOldPassword(DomainError):
+    code = "WRONG_OLD_PASSWORD"
+
+    def __init__(self):
+        super().__init__("Mật khẩu hiện tại không đúng")
+
+
+class WeakPassword(DomainError):
+    code = "WEAK_PASSWORD"
+
+    def __init__(self, message: str = ""):
+        super().__init__(
+            message
+            or "Mật khẩu mới không đạt yêu cầu (tối thiểu 8 ký tự, có chữ và số)"
+        )
+
+
+class PasswordResetTokenNotFound(DomainError):
+    code = "PASSWORD_RESET_TOKEN_NOT_FOUND"
+
+    def __init__(self):
+        super().__init__("Token cấp lại mật khẩu không hợp lệ")
+
+
+class PasswordResetTokenExpired(DomainError):
+    code = "PASSWORD_RESET_TOKEN_EXPIRED"
+
+    def __init__(self):
+        super().__init__("Token cấp lại mật khẩu đã hết hạn")
+
+
+class PasswordResetTokenUsed(DomainError):
+    code = "PASSWORD_RESET_TOKEN_USED"
+
+    def __init__(self):
+        super().__init__("Token cấp lại mật khẩu đã được sử dụng")
+
+
 class RoleCodeAlreadyExists(DomainError):
     code = "ROLE_CODE_EXISTS"
  

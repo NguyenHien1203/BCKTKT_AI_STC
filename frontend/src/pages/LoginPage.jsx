@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle, LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -83,6 +83,15 @@ export default function LoginPage() {
             {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
+
+        <div style={{ marginTop: 16, textAlign: "center" }}>
+          <Link
+            to="/forgot-password"
+            style={{ fontSize: 13, color: "var(--color-primary)", textDecoration: "none" }}
+          >
+            Quên mật khẩu?
+          </Link>
+        </div>
       </div>
     </div>
   );
