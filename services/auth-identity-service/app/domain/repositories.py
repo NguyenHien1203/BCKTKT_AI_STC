@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from app.domain.entities import (
+    AiAuditLogEntry,
     AuditLogEntry,
     IntegrationEndpoint,
     NotificationChannel,
@@ -286,6 +287,48 @@ class AuditReportGenerator(ABC):
     def generate(
         self,
         entries: List[AuditLogEntry],
+        time_from: Optional[str],
+        time_to: Optional[str],
+        generated_at: str,
+    ) -> bytes:
+        """Trả về nội dung file PDF (bytes)."""
+
+
+class AiAuditLogRepository(ABC):
+    """Repository cho UC-10: Quản trị AI Audit Log.
+
+    Append-only: chỉ có `add` (ghi), `list` (đọc/lọc) và `get_by_trace_id`.
+    """
+
+    @abstractmethod
+    def add(self, entry: AiAuditLogEntry) -> AiAuditLogEntry:
+        ...
+
+    @abstractmethod
+    def get_by_trace_id(self, trace_id: str) -> Optional[AiAuditLogEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        user_id: Optional[str] = None,
+        time_from: Optional[str] = None,
+        time_to: Optional[str] = None,
+    ) -> List[AiAuditLogEntry]:
+        """Trả về danh sách AI query, mới nhất trước, lọc theo user_id/thời gian nếu có."""
+
+
+class AiAuditReportGenerator(ABC):
+    """Cổng sinh báo cáo AI Audit định kỳ (tuần/tháng) dạng PDF (UC-10).
+
+    Implement thật (reportlab) đặt ở infrastructure/ai_audit_report_generator.py.
+    """
+
+    @abstractmethod
+    def generate(
+        self,
+        entries: List[AiAuditLogEntry],
+        period: str,
         time_from: Optional[str],
         time_to: Optional[str],
         generated_at: str,

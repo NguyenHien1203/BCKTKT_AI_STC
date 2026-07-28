@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    AiAuditLogEntry,
     AuditLogEntry,
     IntegrationEndpoint,
     NotificationChannel,
@@ -17,6 +18,7 @@ from app.domain.entities import (
     UserSession,
 )
 from app.domain.repositories import (
+    AiAuditLogRepository,
     AuditLogRepository,
     IntegrationEndpointRepository,
     NotificationChannelRepository,
@@ -29,6 +31,7 @@ from app.domain.repositories import (
     UserRepository,
 )
 from app.infrastructure.db.models import (
+    AiAuditLogModel,
     AuditLogModel,
     IntegrationEndpointModel,
     NotificationChannelModel,
@@ -559,3 +562,63 @@ class SqlAlchemyAuditLogRepository(AuditLogRepository):
         stmt = stmt.order_by(AuditLogModel.created_at.desc(), AuditLogModel.id.desc())
         models = self._session.execute(stmt).scalars().all()
         return [_to_audit_log_entity(m) for m in models]
+
+def _to_ai_audit_log_entity(m: AiAuditLogModel) -> AiAuditLogEntry:
+    return AiAuditLogEntry(
+        id=m.id,
+        trace_id=m.trace_id,
+        username=m.username,
+        model=m.model,
+        prompt=m.prompt,
+        response=m.response,
+        created_at=m.created_at,
+        sources=json.loads(m.sources) if m.sources else [],
+        permission_snapshot=json.loads(m.permission_snapshot) if m.permission_snapshot else {},
+        prompt_version=m.prompt_version,
+    )
+
+
+class SqlAlchemyAiAuditLogRepository(AiAuditLogRepository):
+    """UC-10: Quản trị AI Audit Log — append-only."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, entry: AiAuditLogEntry) -> AiAuditLogEntry:
+        model = AiAuditLogModel(
+            trace_id=entry.trace_id,
+            username=entry.username,
+            model=entry.model,
+            prompt=entry.prompt,
+            response=entry.response,
+            sources=json.dumps(entry.sources or []),
+            permission_snapshot=json.dumps(entry.permission_snapshot or {}),
+            prompt_version=entry.prompt_version,
+            created_at=entry.created_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_ai_audit_log_entity(model)
+
+    def get_by_trace_id(self, trace_id: str) -> Optional[AiAuditLogEntry]:
+        stmt = select(AiAuditLogModel).where(AiAuditLogModel.trace_id == trace_id)
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_ai_audit_log_entity(model) if model else None
+
+    def list(
+        self,
+        user_id: Optional[str] = None,
+        time_from: Optional[str] = None,
+        time_to: Optional[str] = None,
+    ) -> List[AiAuditLogEntry]:
+        stmt = select(AiAuditLogModel)
+        if user_id:
+            stmt = stmt.where(AiAuditLogModel.username == user_id)
+        if time_from:
+            stmt = stmt.where(AiAuditLogModel.created_at >= time_from)
+        if time_to:
+            stmt = stmt.where(AiAuditLogModel.created_at <= time_to)
+        stmt = stmt.order_by(AiAuditLogModel.created_at.desc(), AiAuditLogModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_ai_audit_log_entity(m) for m in models]

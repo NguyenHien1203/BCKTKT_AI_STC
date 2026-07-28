@@ -167,3 +167,24 @@ class InvalidAuditLogFilter(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class InvalidAiAuditLogEntry(DomainError):
+    code = "INVALID_AI_AUDIT_LOG_ENTRY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidAiAuditLogFilter(DomainError):
+    code = "INVALID_AI_AUDIT_LOG_FILTER"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class AiAuditLogNotFound(DomainError):
+    code = "AI_AUDIT_LOG_NOT_FOUND"
+
+    def __init__(self, trace_id: str):
+        super().__init__(f"Không tìm thấy AI Audit Log với trace_id='{trace_id}'")

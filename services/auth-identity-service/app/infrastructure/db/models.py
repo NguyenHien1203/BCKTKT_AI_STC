@@ -163,6 +163,24 @@ class AuditLogModel(Base):
     created_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
 
 
+class AiAuditLogModel(Base):
+    """UC-10: Quản trị AI Audit Log — append-only, mỗi dòng 1 phiên hỏi-đáp AI."""
+
+    __tablename__ = "ai_audit_logs"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    trace_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    username: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    model: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    prompt: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    response: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    sources: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list[str]
+    permission_snapshot: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    prompt_version: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+
+
 class NotificationChannelModel(Base):
     """UC-08: Quản lý cấu hình kênh thông báo — 1 dòng / loại kênh (SMTP, SMS, WEBHOOK)."""
 

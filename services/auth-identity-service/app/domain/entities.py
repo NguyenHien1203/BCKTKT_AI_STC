@@ -1,5 +1,5 @@
 """Domain entities — thuần Python, không phụ thuộc framework/ORM."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -358,3 +358,36 @@ class AuditLogEntry:
             raise ValueError("Hành động (action) không được để trống")
         if self.status not in self.STATUSES:
             raise ValueError(f"Trạng thái '{self.status}' không hợp lệ")
+
+
+@dataclass
+class AiAuditLogEntry:
+    """Bản ghi AI Audit Log (UC-10: Quản trị AI Audit Log).
+
+    Mỗi dòng là 1 phiên hỏi-đáp AI đã xảy ra (RAG/NLQ/hybrid — xem UC-71/72/73):
+    ai hỏi (`username`), hỏi gì (`prompt`), AI trả lời gì (`response`), dẫn
+    nguồn nào (`sources`), dùng mô hình/phiên bản mẫu nào (`model`,
+    `prompt_version`), và ảnh chụp quyền tại thời điểm hỏi (`permission_snapshot`
+    — vd permitted_domains/sensitivity_level lúc đó, phục vụ truy vết sau này
+    dù quyền người dùng có thể đã đổi). `trace_id` dùng để xem lại toàn bộ
+    chuỗi 1 phiên hỏi-đáp. Đây là bản ghi chỉ-thêm (append-only).
+    """
+
+    id: Optional[int]
+    trace_id: str
+    username: str
+    model: str
+    prompt: str
+    response: str
+    created_at: str
+    sources: list = field(default_factory=list)
+    permission_snapshot: dict = field(default_factory=dict)
+    prompt_version: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.trace_id or not self.trace_id.strip():
+            raise ValueError("trace_id không được để trống")
+        if not self.username or not self.username.strip():
+            raise ValueError("Tài khoản (username) không được để trống")
+        if not self.prompt or not self.prompt.strip():
+            raise ValueError("Nội dung câu hỏi (prompt) không được để trống")

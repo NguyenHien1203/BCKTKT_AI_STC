@@ -4,6 +4,7 @@ import {
   Database,
   LayoutDashboard,
   Network,
+  ScanSearch,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -29,6 +30,7 @@ export const NAV_SECTIONS = [
       { to: "/integration-config", label: "Cấu hình tích hợp", icon: Network },
       { to: "/notification-channels", label: "Cấu hình kênh thông báo", icon: Bell },
       { to: "/audit-logs", label: "Nhật ký truy cập và thao tác", icon: FileText },
+      { to: "/ai-audit-logs", label: "Quản trị AI Audit Log", icon: ScanSearch },
     ],
   },
   {
