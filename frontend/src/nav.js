@@ -2,6 +2,7 @@ import {
   Bell,
   Building2,
   Database,
+  FileStack,
   LayoutDashboard,
   Network,
   ScanSearch,
@@ -31,6 +32,7 @@ export const NAV_SECTIONS = [
       { to: "/notification-channels", label: "Cấu hình kênh thông báo", icon: Bell },
       { to: "/audit-logs", label: "Nhật ký truy cập và thao tác", icon: FileText },
       { to: "/ai-audit-logs", label: "Quản trị AI Audit Log", icon: ScanSearch },
+      { to: "/guide-documents", label: "Tài liệu hướng dẫn sử dụng", icon: FileStack },
     ],
   },
   {
