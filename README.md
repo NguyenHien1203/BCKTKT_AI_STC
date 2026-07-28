@@ -1,87 +1,99 @@
-# Kho Dữ Liệu Tổng Hợp Ngành Tài Chính Tỉnh Hưng Yên + Trợ Lý Ảo AI
+# auth-identity-service
 
-Hệ thống được xây dựng theo **Báo cáo Kinh tế Kỹ thuật** (`docs/BCKTKT_AI_STC-da-sua-gop-y-4.docx`) của Sở Tài chính tỉnh Hưng Yên: kho dữ liệu tổng hợp ngành tài chính, kết hợp trợ lý ảo AI (RAG/NLQ/OCR), kết nối chia sẻ dữ liệu với CSDL toàn tỉnh và IOC.
+Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `docs/use_cases.json`.
 
-## Tài liệu tham chiếu
-Xem thư mục [`docs/`](./docs):
-- `BCKTKT_AI_STC-da-sua-gop-y-4.docx` — tài liệu gốc (nguồn sự thật duy nhất cho mọi yêu cầu).
-- `use_cases.json` — 105 Use Case đã trích xuất có cấu trúc (id, nhóm, tên, tác nhân, luồng xử lý).
-- `use_cases_raw.txt` — bảng UC gốc dạng text thô để đối chiếu khi cần.
+## Trạng thái hiện tại
+- [x] UC-01: Quản lý cơ cấu tổ chức
+- [x] UC-02: Quản lý người dùng (CRUD) — tạo user giờ yêu cầu `password` (băm PBKDF2).
+- [x] UC-03: Quản lý vòng đời người dùng — khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị + lưu lịch sử.
+- [x] UC-12: Đăng nhập/Đăng xuất — tạm dùng username/password nội bộ thay SSO Keycloak thật (xem ADR-003).
+- [ ] UC-04 → UC-14 (trừ 12): chưa làm (xem `PLAN.md` gốc project).
 
-## Bộ tài liệu điều hành dự án
-- [`PLAN.md`](./PLAN.md) — Kế hoạch triển khai theo từng UC, thứ tự phụ thuộc, trạng thái (todo/doing/done/tested).
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Kiến trúc Clean Architecture + microservice, sơ đồ service, luồng dữ liệu, ADR.
-- [`RULE.md`](./RULE.md) — Quy tắc bắt buộc khi code (coding convention, DoD, quy trình test-trước-khi-qua-UC-tiếp).
-- [`SKILL.md`](./SKILL.md) — Hướng dẫn tái sử dụng: cách thêm 1 UC mới, cách thêm 1 service mới, mẫu code chuẩn (template).
+(Test viết xong trong sandbox Claude nhưng chưa tự chạy được do thiếu Internet/Docker — xem `README.md` gốc project mục giới hạn môi trường.)
 
-## Công nghệ
-| Layer | Công nghệ |
-|---|---|
-| Backend | Python 3.11+, FastAPI, Clean Architecture |
-| Frontend | React (Vite) |
-| CSDL | PostgreSQL 16 + pgvector |
-| Cache/Queue | Redis 7, RabbitMQ + Celery |
-| Search | OpenSearch 2.x |
-| Object storage | MinIO |
-| Auth | Keycloak (SSO/OIDC) |
-| API Gateway | APISIX |
-| AI | vLLM/llama.cpp (LLM), OCR (PaddleOCR/olmOCR), pgvector/OpenSearch (embedding/RAG) |
-| Observability | Prometheus, Grafana, Loki, OpenTelemetry |
-| Hạ tầng | Docker + Docker Compose, CI/CD |
+## Endpoint hiện có
 
-## Cấu trúc thư mục (đã scaffold đầy đủ)
+### UC-01: Cơ cấu tổ chức
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/org-units` | Tạo đơn vị tổ chức |
+| GET | `/org-units` | Danh sách đơn vị (`?only_active=true` để lọc) |
+| GET | `/org-units/{id}` | Chi tiết 1 đơn vị |
+| PATCH | `/org-units/{id}/rename` | Đổi tên đơn vị |
+| POST | `/org-units/{id}/deactivate` | Vô hiệu hoá đơn vị |
+| POST | `/org-units/{id}/activate` | Kích hoạt lại đơn vị |
+| DELETE | `/org-units/{id}` | Xoá đơn vị (chặn nếu còn đơn vị con) |
+
+### UC-02: Người dùng
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/users` | Tạo người dùng (kèm `password`, gán đơn vị + vai trò) |
+| GET | `/users` | Danh sách (`?only_active=true`, `?org_unit_id=`) |
+| GET | `/users/{id}` | Chi tiết 1 người dùng |
+| PATCH | `/users/{id}/profile` | Sửa họ tên/email |
+| PATCH | `/users/{id}/org-unit` | Chuyển đơn vị công tác (không lưu lịch sử) |
+| POST | `/users/{id}/deactivate` | Khoá tài khoản (xoá mềm) |
+| POST | `/users/{id}/activate` | Mở khoá tài khoản (xoá mềm) |
+| DELETE | `/users/{id}` | Xoá người dùng |
+
+### UC-03: Vòng đời người dùng
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/users/{id}/lock` | Khoá đăng nhập (khác xoá mềm UC-02) + buộc đăng xuất session hiện có |
+| POST | `/users/{id}/unlock` | Mở khoá đăng nhập |
+| POST | `/users/{id}/force-logout` | Buộc đăng xuất, trả về số session bị vô hiệu hoá |
+| PATCH | `/users/{id}/org-unit-with-history` | Chuyển đơn vị + ghi lịch sử |
+| GET | `/users/{id}/org-unit-history` | Xem lịch sử chuyển đơn vị |
+| POST | `/users/manual-sync` | Đồng bộ thủ công từ IdP (NoOp hiện tại trả rỗng) |
+
+### UC-12: Đăng nhập/Đăng xuất
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/auth/login` | Đăng nhập bằng username/password, trả về `token` |
+| POST | `/auth/logout` | Đăng xuất (header `Authorization: Bearer <token>`) |
+| GET | `/auth/me` | Lấy thông tin người dùng hiện tại từ token |
+
+| GET | `/health` | Health check |
+
+### UC-09: Nhật ký truy cập và thao tác
+| Method | Path | Mô tả |
+|---|---|---|
+| GET | `/audit-logs` | Xem nhật ký toàn bộ (`?account=`, `?time_from=`, `?time_to=` để lọc) |
+| POST | `/audit-logs` | Ghi 1 sự kiện vào nhật ký (dùng nội bộ bởi các UC khác) |
+| GET | `/audit-logs/export` | Xuất báo cáo ATTT định kỳ dạng PDF (`?time_from=`, `?time_to=`) |
+
+
+## Chạy local (cần Python 3.11+, có Internet để cài package)
+```bash
+cd services/auth-identity-service
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Chạy test (mặc định dùng SQLite, không cần Postgres)
+pytest -v
+
+# Chạy service (SQLite dev)
+uvicorn app.main:app --reload
+# Mở http://127.0.0.1:8000/docs để xem Swagger UI
 ```
-project/
-├── docs/                     # Tài liệu gốc + UC đã trích xuất
-├── PLAN.md / ARCHITECTURE.md / RULE.md / SKILL.md / README.md
-├── docker-compose.yml        # Toàn bộ hạ tầng + 8 service + frontend
-├── .env.example / .gitignore
-├── services/                 # Mỗi microservice 1 thư mục, Clean Architecture bên trong
-│   ├── auth-identity-service/    # Nhóm I: Quản trị hệ thống (UC 1-14) — ✅ UC-01 đã code+test
-│   ├── ingestion-service/        # Nhóm II: Tiếp nhận & đồng bộ dữ liệu (UC 15-28) — khung sẵn sàng
-│   ├── data-quality-service/     # Nhóm III: Chuẩn hóa & quản trị dữ liệu (UC 29-46) — khung sẵn sàng
-│   ├── reporting-service/        # Nhóm IV: Dashboard & báo cáo (UC 47-57) — khung sẵn sàng
-│   ├── api-gateway-service/      # Nhóm V: API & tích hợp (UC 58-68) — khung sẵn sàng
-│   ├── ai-service/                # Nhóm VI: AI & khai thác văn bản (UC 69-89) — khung sẵn sàng
-│   ├── ops-service/               # Nhóm VII: Vận hành hệ thống (UC 90-100) — khung sẵn sàng
-│   └── gov-report-service/        # Nhóm VIII: Báo cáo định kỳ/đối soát cấp trên (UC 101-105) — khung sẵn sàng
-└── frontend/                 # React (Vite) — có sẵn trang UC-01 Quản lý cơ cấu tổ chức
-```
 
-Mỗi service "khung sẵn sàng" đã có đủ: `app/domain`, `app/application/use_cases`, `app/infrastructure/db`, `app/interfaces/api`, `tests/test_health.py`, `Dockerfile`, `requirements.txt`, `README.md` — chỉ còn thiếu code nghiệp vụ cho từng UC cụ thể (xem `PLAN.md` + `SKILL.md` mục A/B để biết cách thêm).
-
-## Quick Start (chạy toàn bộ hệ thống bằng Docker)
+## Chạy với Postgres thật (qua Docker Compose, ở thư mục gốc project)
 ```bash
 cp .env.example .env
-docker compose up -d --build
-# Backend: auth-identity :8001, ingestion :8002, data-quality :8003,
-#          reporting :8004, api-gateway :8005, ai :8006, ops :8007, gov-report :8008
-# Frontend: http://localhost:5173
-# Hạ tầng: Postgres :5432, Redis :6379, RabbitMQ UI :15672, OpenSearch :9200,
-#          MinIO console :9001, Keycloak :8080, Prometheus :9090, Grafana :3001
+docker compose up -d postgres
+cd services/auth-identity-service
+export DATABASE_URL=postgresql+psycopg2://app:app_password@localhost:5432/financial_dw
+alembic upgrade head
+uvicorn app.main:app --reload
 ```
-Chạy riêng 1 service để phát triển (khuyến nghị khi code UC mới):
-```bash
-cd services/<ten-service>
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-pytest -v            # chạy test
-uvicorn app.main:app --reload --port <port>
-```
-Chạy frontend riêng:
-```bash
-cd frontend
-npm install
-npm run dev           # http://localhost:5173, proxy sẵn sang auth-identity-service:8001
-```
+Hoặc chạy toàn bộ qua Docker: `docker compose up -d --build` ở thư mục gốc.
 
-## Nguyên tắc triển khai
-1. **Từng UC một**: implement → viết test → chạy test pass → mới sang UC tiếp theo (xem `PLAN.md`).
-2. Mỗi service tự chứa (self-contained): domain / application / infrastructure / interfaces, không phụ thuộc chéo code giữa các service — chỉ giao tiếp qua API/queue.
-3. Mọi thay đổi kiến trúc phải cập nhật `ARCHITECTURE.md` (ADR).
-
-## ⚠️ Giới hạn môi trường hiện tại
-Sandbox chạy Claude **không có Internet** và **không có Docker** để tôi tự chạy `docker-compose up`. Vì vậy:
-- Code được viết đầy đủ, có thể chạy `docker-compose up` **trên máy/server của bạn**.
-- Test đơn vị (unit test) dùng SQLite in-memory để tôi tự verify logic ngay trong sandbox (không cần Docker).
-- Khi bạn có môi trường Docker, chạy `docker-compose up -d postgres redis` rồi `pytest` với biến môi trường trỏ Postgres thật để test tích hợp đầy đủ.
+## Cấu trúc Clean Architecture
+```
+app/
+├── domain/            # OrgUnit entity, repository interface, domain exceptions
+├── application/       # OrgUnitService (use case UC-01)
+├── infrastructure/db/ # SQLAlchemy model + repository implementation
+└── interfaces/api/    # FastAPI router + Pydantic schemas
+```

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from app.domain.entities import (
+    AuditLogEntry,
     IntegrationEndpoint,
     NotificationChannel,
     OrgUnit,
@@ -253,3 +254,40 @@ class NotificationSender(ABC):
     @abstractmethod
     def send_test(self, channel_type: str, config: dict, recipient: str) -> tuple:
         """Trả về tuple (is_verified: bool, message: str)."""
+
+
+class AuditLogRepository(ABC):
+    """Repository cho UC-09: Quản lý nhật ký truy cập và thao tác.
+
+    Append-only: chỉ có `add` (ghi) và `list` (đọc/lọc) — không sửa/xoá.
+    """
+
+    @abstractmethod
+    def add(self, entry: AuditLogEntry) -> AuditLogEntry:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        username: Optional[str] = None,
+        time_from: Optional[str] = None,
+        time_to: Optional[str] = None,
+    ) -> List[AuditLogEntry]:
+        """Trả về danh sách nhật ký, mới nhất trước, lọc theo tài khoản/thời gian nếu có."""
+
+
+class AuditReportGenerator(ABC):
+    """Cổng sinh báo cáo ATTT (an toàn thông tin) định kỳ dạng PDF (UC-09).
+
+    Implement thật (reportlab) đặt ở infrastructure/audit_report_generator.py.
+    """
+
+    @abstractmethod
+    def generate(
+        self,
+        entries: List[AuditLogEntry],
+        time_from: Optional[str],
+        time_to: Optional[str],
+        generated_at: str,
+    ) -> bytes:
+        """Trả về nội dung file PDF (bytes)."""

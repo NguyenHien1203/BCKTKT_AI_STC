@@ -153,3 +153,17 @@ class NotificationChannelNotFound(DomainError):
 
     def __init__(self, channel_type: str):
         super().__init__(f"Chưa cấu hình kênh thông báo '{channel_type}'")
+
+
+class InvalidAuditLogEntry(DomainError):
+    code = "INVALID_AUDIT_LOG_ENTRY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidAuditLogFilter(DomainError):
+    code = "INVALID_AUDIT_LOG_FILTER"
+
+    def __init__(self, message: str):
+        super().__init__(message)

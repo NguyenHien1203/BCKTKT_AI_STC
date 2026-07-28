@@ -10,6 +10,7 @@ import {
   Wrench,
   Users,
   FileBarChart,
+  FileText,
   KeyRound,
   UserCog,
 } from "lucide-react";
@@ -27,6 +28,7 @@ export const NAV_SECTIONS = [
       { to: "/system-config", label: "Cấu hình hệ thống chung", icon: Settings },
       { to: "/integration-config", label: "Cấu hình tích hợp", icon: Network },
       { to: "/notification-channels", label: "Cấu hình kênh thông báo", icon: Bell },
+      { to: "/audit-logs", label: "Nhật ký truy cập và thao tác", icon: FileText },
     ],
   },
   {

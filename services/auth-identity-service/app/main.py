@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
+from app.interfaces.api.audit_log_router import router as audit_log_router
 from app.interfaces.api.auth_router import router as auth_router
 from app.interfaces.api.integration_config_router import router as integration_config_router
 from app.interfaces.api.notification_channel_router import router as notification_channel_router
@@ -33,6 +34,7 @@ app.include_router(permission_router)
 app.include_router(system_config_router)
 app.include_router(integration_config_router)
 app.include_router(notification_channel_router)
+app.include_router(audit_log_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

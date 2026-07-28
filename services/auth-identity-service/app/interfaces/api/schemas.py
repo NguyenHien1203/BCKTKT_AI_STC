@@ -228,6 +228,33 @@ class ConfigureSensitivityRequest(BaseModel):
     )
 
 
+# ---------- UC-09: Quản lý nhật ký truy cập và thao tác ----------
+
+
+class AuditLogCreate(BaseModel):
+    username: str = Field(..., min_length=1, max_length=100)
+    action: str = Field(..., min_length=1, max_length=100)
+    resource_type: str = Field(..., min_length=1, max_length=100)
+    resource_id: str = Field(default="", max_length=100)
+    detail: str = Field(default="", max_length=2000)
+    ip_address: str = Field(default="", max_length=64)
+    status: str = Field(default="SUCCESS", pattern="^(SUCCESS|FAILURE)$")
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    username: str
+    action: str
+    resource_type: str
+    resource_id: str
+    detail: str
+    ip_address: str
+    status: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
 class PermissionContextResponse(BaseModel):
     id: int
     user_id: int
