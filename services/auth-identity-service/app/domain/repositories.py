@@ -5,6 +5,8 @@ from typing import List, Optional
 from app.domain.entities import (
     AiAuditLogEntry,
     AuditLogEntry,
+    GuideDocument,
+    GuideDocumentVersion,
     IntegrationEndpoint,
     NotificationChannel,
     OrgUnit,
@@ -334,3 +336,59 @@ class AiAuditReportGenerator(ABC):
         generated_at: str,
     ) -> bytes:
         """Trả về nội dung file PDF (bytes)."""
+
+class GuideDocumentRepository(ABC):
+    """Repository cho UC-11: Quản trị tài liệu hướng dẫn sử dụng."""
+
+    @abstractmethod
+    def add(self, document: GuideDocument) -> GuideDocument:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, document_id: int) -> Optional[GuideDocument]:
+        ...
+
+    @abstractmethod
+    def list(self, only_active: bool = False, category: Optional[str] = None) -> List[GuideDocument]:
+        ...
+
+    @abstractmethod
+    def update(self, document: GuideDocument) -> GuideDocument:
+        ...
+
+    @abstractmethod
+    def delete(self, document_id: int) -> None:
+        """Xoá cứng — hiếm dùng, UC-11 chủ yếu dùng xoá mềm qua `update`."""
+
+
+class GuideDocumentVersionRepository(ABC):
+    """Repository lịch sử phiên bản tài liệu hướng dẫn (UC-11). Append-only."""
+
+    @abstractmethod
+    def add(self, version: GuideDocumentVersion) -> GuideDocumentVersion:
+        ...
+
+    @abstractmethod
+    def list_for_document(self, document_id: int) -> List[GuideDocumentVersion]:
+        """Trả về danh sách phiên bản, mới nhất trước."""
+
+
+class FileStorage(ABC):
+    """Cổng lưu trữ tệp nhị phân (UC-11 lưu tệp hướng dẫn vào MinIO).
+
+    Implement thật (MinIO qua thư viện `minio`) hoặc giả (lưu đĩa cục bộ cho
+    dev/test) đặt ở `infrastructure/file_storage.py` — domain/application
+    không phụ thuộc trực tiếp vào MinIO SDK.
+    """
+
+    @abstractmethod
+    def upload(self, key: str, content: bytes, content_type: str) -> None:
+        ...
+
+    @abstractmethod
+    def download(self, key: str) -> bytes:
+        ...
+
+    @abstractmethod
+    def delete(self, key: str) -> None:
+        ...

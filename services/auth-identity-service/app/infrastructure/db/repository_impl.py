@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.domain.entities import (
     AiAuditLogEntry,
     AuditLogEntry,
+    GuideDocument,
+    GuideDocumentVersion,
     IntegrationEndpoint,
     NotificationChannel,
     OrgUnit,
@@ -20,6 +22,8 @@ from app.domain.entities import (
 from app.domain.repositories import (
     AiAuditLogRepository,
     AuditLogRepository,
+    GuideDocumentRepository,
+    GuideDocumentVersionRepository,
     IntegrationEndpointRepository,
     NotificationChannelRepository,
     OrgUnitHistoryRepository,
@@ -33,6 +37,8 @@ from app.domain.repositories import (
 from app.infrastructure.db.models import (
     AiAuditLogModel,
     AuditLogModel,
+    GuideDocumentModel,
+    GuideDocumentVersionModel,
     IntegrationEndpointModel,
     NotificationChannelModel,
     OrgUnitAssignmentHistoryModel,
@@ -622,3 +628,130 @@ class SqlAlchemyAiAuditLogRepository(AiAuditLogRepository):
         stmt = stmt.order_by(AiAuditLogModel.created_at.desc(), AiAuditLogModel.id.desc())
         models = self._session.execute(stmt).scalars().all()
         return [_to_ai_audit_log_entity(m) for m in models]
+
+def _to_guide_document_entity(m: GuideDocumentModel) -> GuideDocument:
+    return GuideDocument(
+        id=m.id,
+        title=m.title,
+        description=m.description,
+        category=m.category,
+        file_key=m.file_key,
+        file_name=m.file_name,
+        content_type=m.content_type,
+        file_size=m.file_size,
+        current_version=m.current_version,
+        uploaded_by=m.uploaded_by,
+        is_active=m.is_active,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyGuideDocumentRepository(GuideDocumentRepository):
+    """UC-11: Quản trị tài liệu hướng dẫn sử dụng."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, document: GuideDocument) -> GuideDocument:
+        model = GuideDocumentModel(
+            title=document.title,
+            description=document.description,
+            category=document.category,
+            file_key=document.file_key,
+            file_name=document.file_name,
+            content_type=document.content_type,
+            file_size=document.file_size,
+            current_version=document.current_version,
+            uploaded_by=document.uploaded_by,
+            is_active=document.is_active,
+            created_at=document.created_at,
+            updated_at=document.updated_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_guide_document_entity(model)
+
+    def get_by_id(self, document_id: int) -> Optional[GuideDocument]:
+        model = self._session.get(GuideDocumentModel, document_id)
+        return _to_guide_document_entity(model) if model else None
+
+    def list(self, only_active: bool = False, category: Optional[str] = None) -> List[GuideDocument]:
+        stmt = select(GuideDocumentModel)
+        if only_active:
+            stmt = stmt.where(GuideDocumentModel.is_active.is_(True))
+        if category:
+            stmt = stmt.where(GuideDocumentModel.category == category)
+        stmt = stmt.order_by(GuideDocumentModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_guide_document_entity(m) for m in models]
+
+    def update(self, document: GuideDocument) -> GuideDocument:
+        model = self._session.get(GuideDocumentModel, document.id)
+        model.title = document.title
+        model.description = document.description
+        model.category = document.category
+        model.file_key = document.file_key
+        model.file_name = document.file_name
+        model.content_type = document.content_type
+        model.file_size = document.file_size
+        model.current_version = document.current_version
+        model.uploaded_by = document.uploaded_by
+        model.is_active = document.is_active
+        model.updated_at = document.updated_at
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_guide_document_entity(model)
+
+    def delete(self, document_id: int) -> None:
+        model = self._session.get(GuideDocumentModel, document_id)
+        if model:
+            self._session.delete(model)
+            self._session.commit()
+
+
+def _to_guide_document_version_entity(m: GuideDocumentVersionModel) -> GuideDocumentVersion:
+    return GuideDocumentVersion(
+        id=m.id,
+        document_id=m.document_id,
+        version=m.version,
+        file_key=m.file_key,
+        file_name=m.file_name,
+        content_type=m.content_type,
+        file_size=m.file_size,
+        uploaded_by=m.uploaded_by,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyGuideDocumentVersionRepository(GuideDocumentVersionRepository):
+    """UC-11: lịch sử phiên bản tài liệu hướng dẫn — append-only."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, version: GuideDocumentVersion) -> GuideDocumentVersion:
+        model = GuideDocumentVersionModel(
+            document_id=version.document_id,
+            version=version.version,
+            file_key=version.file_key,
+            file_name=version.file_name,
+            content_type=version.content_type,
+            file_size=version.file_size,
+            uploaded_by=version.uploaded_by,
+            created_at=version.created_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_guide_document_version_entity(model)
+
+    def list_for_document(self, document_id: int) -> List[GuideDocumentVersion]:
+        stmt = (
+            select(GuideDocumentVersionModel)
+            .where(GuideDocumentVersionModel.document_id == document_id)
+            .order_by(GuideDocumentVersionModel.version.desc())
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_guide_document_version_entity(m) for m in models]

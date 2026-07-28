@@ -188,3 +188,17 @@ class AiAuditLogNotFound(DomainError):
 
     def __init__(self, trace_id: str):
         super().__init__(f"Không tìm thấy AI Audit Log với trace_id='{trace_id}'")
+
+
+class InvalidGuideDocument(DomainError):
+    code = "INVALID_GUIDE_DOCUMENT"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class GuideDocumentNotFound(DomainError):
+    code = "GUIDE_DOCUMENT_NOT_FOUND"
+
+    def __init__(self, document_id: int):
+        super().__init__(f"Không tìm thấy tài liệu hướng dẫn id={document_id}")

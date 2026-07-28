@@ -391,3 +391,93 @@ class AiAuditLogEntry:
             raise ValueError("Tài khoản (username) không được để trống")
         if not self.prompt or not self.prompt.strip():
             raise ValueError("Nội dung câu hỏi (prompt) không được để trống")
+
+
+@dataclass
+class GuideDocument:
+    """Tài liệu hướng dẫn sử dụng (UC-11: Quản trị tài liệu hướng dẫn sử dụng).
+
+    Mỗi dòng là 1 tài liệu hướng dẫn. Tệp thực tế lưu ở MinIO — `file_key` là
+    khoá đối tượng trong MinIO (xem cổng `FileStorage` ở domain/repositories.py).
+    Sửa tài liệu (thay tệp mới) không ghi đè tệp cũ mà tăng `current_version`
+    và lưu lại bản cũ vào `GuideDocumentVersion` (lịch sử phiên bản). Xoá tài
+    liệu là xoá mềm (`is_active=False`), không xoá tệp khỏi MinIO.
+    """
+
+    id: Optional[int]
+    title: str
+    category: str
+    file_key: str
+    file_name: str
+    content_type: str
+    uploaded_by: str
+    created_at: str
+    updated_at: str
+    description: str = ""
+    file_size: int = 0
+    current_version: int = 1
+    is_active: bool = True
+
+    def __post_init__(self) -> None:
+        self._validate_title(self.title)
+        self._validate_file_name(self.file_name)
+
+    @staticmethod
+    def _validate_title(title: str) -> None:
+        if not title or not title.strip():
+            raise ValueError("Tiêu đề tài liệu không được để trống")
+
+    @staticmethod
+    def _validate_file_name(file_name: str) -> None:
+        if not file_name or not file_name.strip():
+            raise ValueError("Tên tệp không được để trống")
+
+    def update_metadata(self, title: str, description: str, category: str) -> None:
+        self._validate_title(title)
+        self.title = title.strip()
+        self.description = (description or "").strip()
+        self.category = (category or "").strip()
+
+    def replace_file(
+        self,
+        file_key: str,
+        file_name: str,
+        content_type: str,
+        file_size: int,
+        uploaded_by: str,
+        updated_at: str,
+    ) -> None:
+        """Thay tệp mới cho tài liệu — tăng phiên bản (bản cũ lưu ở lịch sử)."""
+        self._validate_file_name(file_name)
+        self.file_key = file_key
+        self.file_name = file_name
+        self.content_type = content_type
+        self.file_size = file_size
+        self.uploaded_by = uploaded_by
+        self.current_version += 1
+        self.updated_at = updated_at
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+    def activate(self) -> None:
+        self.is_active = True
+
+
+@dataclass
+class GuideDocumentVersion:
+    """Lịch sử phiên bản của 1 tài liệu hướng dẫn (UC-11).
+
+    Mỗi lần sửa tài liệu (thay tệp mới) tạo 1 dòng lịch sử lưu lại thông tin
+    tệp của phiên bản đó — cho phép admin xem lại/tải lại các phiên bản cũ.
+    """
+
+    id: Optional[int]
+    document_id: int
+    version: int
+    file_key: str
+    file_name: str
+    content_type: str
+    file_size: int
+    uploaded_by: str
+    created_at: str

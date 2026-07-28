@@ -293,3 +293,41 @@ class PermissionContextResponse(BaseModel):
     sensitivity_level: str
 
     model_config = {"from_attributes": True}
+
+# ---------- UC-11: Quản trị tài liệu hướng dẫn sử dụng ----------
+
+
+class GuideDocumentResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    category: str
+    file_name: str
+    content_type: str
+    file_size: int
+    current_version: int
+    uploaded_by: str
+    is_active: bool
+    created_at: str
+    updated_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class GuideDocumentVersionResponse(BaseModel):
+    id: int
+    document_id: int
+    version: int
+    file_name: str
+    content_type: str
+    file_size: int
+    uploaded_by: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class GuideDocumentMetaUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    category: Optional[str] = Field(default=None, max_length=100)

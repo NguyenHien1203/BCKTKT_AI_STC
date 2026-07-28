@@ -181,6 +181,50 @@ class AiAuditLogModel(Base):
     created_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
 
 
+class GuideDocumentModel(Base):
+    """UC-11: Quản trị tài liệu hướng dẫn sử dụng — tệp thực tế lưu ở MinIO,
+    dòng này chỉ lưu siêu dữ liệu + `file_key` trỏ tới đối tượng MinIO."""
+
+    __tablename__ = "guide_documents"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    file_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    uploaded_by: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+
+class GuideDocumentVersionModel(Base):
+    """UC-11: lịch sử phiên bản tài liệu hướng dẫn — append-only."""
+
+    __tablename__ = "guide_document_versions"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}guide_documents.id"),
+        nullable=False,
+        index=True,
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    uploaded_by: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+
+
 class NotificationChannelModel(Base):
     """UC-08: Quản lý cấu hình kênh thông báo — 1 dòng / loại kênh (SMTP, SMS, WEBHOOK)."""
 

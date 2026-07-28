@@ -1,10 +1,11 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, FileText, KeyRound, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, FileStack, FileText, KeyRound, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AiAuditLogPage from "./pages/AiAuditLogPage.jsx";
 import AuditLogsPage from "./pages/AuditLogsPage.jsx";
+import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotificationChannelsPage from "./pages/NotificationChannelsPage.jsx";
@@ -57,6 +58,12 @@ function HomePage() {
       title: "Quản trị AI Audit Log",
       description: "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
       icon: ScanSearch,
+    },
+    {
+      to: "/guide-documents",
+      title: "Tài liệu hướng dẫn sử dụng",
+      description: "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
+      icon: FileStack,
     },
   ];
 
@@ -202,6 +209,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AiAuditLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/guide-documents"
+        element={
+          <ProtectedRoute>
+            <GuideDocumentsPage />
           </ProtectedRoute>
         }
       />
