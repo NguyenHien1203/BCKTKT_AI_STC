@@ -232,6 +232,34 @@ class SqlAlchemySessionRepository(SessionRepository):
         self._session.commit()
         return len(models)
 
+    def get_by_id(self, session_id: int) -> Optional[UserSession]:
+        model = self._session.get(UserSessionModel, session_id)
+        return _to_session_entity(model) if model else None
+
+    def list_for_user(self, user_id: int, only_active: bool = True) -> List[UserSession]:
+        stmt = select(UserSessionModel).where(UserSessionModel.user_id == user_id)
+        if only_active:
+            stmt = stmt.where(UserSessionModel.is_revoked.is_(False))
+        stmt = stmt.order_by(UserSessionModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_session_entity(m) for m in models]
+
+    def list_all(self, only_active: bool = True) -> List[UserSession]:
+        stmt = select(UserSessionModel)
+        if only_active:
+            stmt = stmt.where(UserSessionModel.is_revoked.is_(False))
+        stmt = stmt.order_by(UserSessionModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_to_session_entity(m) for m in models]
+
+    def revoke_by_id(self, session_id: int) -> bool:
+        model = self._session.get(UserSessionModel, session_id)
+        if model is None or model.is_revoked:
+            return False
+        model.is_revoked = True
+        self._session.commit()
+        return True
+
 
 def _to_reset_token_entity(m: PasswordResetTokenModel) -> PasswordResetToken:
     return PasswordResetToken(

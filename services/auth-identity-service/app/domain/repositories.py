@@ -116,6 +116,22 @@ class SessionRepository(ABC):
     def revoke_all_for_user(self, user_id: int) -> int:
         """Trả về số phiên đã bị vô hiệu hoá."""
 
+    @abstractmethod
+    def get_by_id(self, session_id: int) -> Optional[UserSession]:
+        ...
+
+    @abstractmethod
+    def list_for_user(self, user_id: int, only_active: bool = True) -> List[UserSession]:
+        """Danh sách phiên của 1 người dùng (UC-14)."""
+
+    @abstractmethod
+    def list_all(self, only_active: bool = True) -> List[UserSession]:
+        """Danh sách toàn bộ phiên trong hệ thống, mới nhất trước (UC-14)."""
+
+    @abstractmethod
+    def revoke_by_id(self, session_id: int) -> bool:
+        """Vô hiệu hoá 1 phiên cụ thể. Trả về False nếu không tìm thấy (UC-14)."""
+
 
 class OrgUnitHistoryRepository(ABC):
     @abstractmethod

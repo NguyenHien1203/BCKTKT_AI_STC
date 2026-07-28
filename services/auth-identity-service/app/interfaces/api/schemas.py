@@ -352,3 +352,18 @@ class GuideDocumentMetaUpdate(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
     category: Optional[str] = Field(default=None, max_length=100)
+
+
+# ---------- UC-14: Quản lý phiên đăng nhập ----------
+
+
+class SessionResponse(BaseModel):
+    id: int
+    user_id: int
+    username: str
+    full_name: str
+    created_at: str
+    is_revoked: bool
+    token_preview: str
+
+    model_config = {"from_attributes": True}

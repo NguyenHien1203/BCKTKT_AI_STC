@@ -97,6 +97,26 @@ class FakeSessionRepository(SessionRepository):
                 count += 1
         return count
 
+    def get_by_id(self, session_id: int):
+        return self._data.get(session_id)
+
+    def list_for_user(self, user_id: int, only_active: bool = True):
+        return [
+            s
+            for s in self._data.values()
+            if s.user_id == user_id and (not only_active or not s.is_revoked)
+        ]
+
+    def list_all(self, only_active: bool = True):
+        return [s for s in self._data.values() if not only_active or not s.is_revoked]
+
+    def revoke_by_id(self, session_id: int) -> bool:
+        s = self._data.get(session_id)
+        if s is None or s.is_revoked:
+            return False
+        s.is_revoked = True
+        return True
+
 
 class FakeOrgUnitHistoryRepository(OrgUnitHistoryRepository):
     def __init__(self):
