@@ -35,6 +35,39 @@ def generate_session_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def generate_reset_token() -> str:
+    """Sinh token cấp lại mật khẩu (UC-13), dùng chung cơ chế với session token."""
+    return secrets.token_urlsafe(32)
+
+
+def generate_temp_password() -> str:
+    """Sinh mật khẩu tạm ngẫu nhiên (UC-13, luồng Quản trị viên cấp lại mật khẩu).
+
+    Đảm bảo luôn thoả password policy (>= 8 ký tự, có cả chữ và số) bằng cách
+    ghép 1 tiền tố cố định + phần random rồi thêm 1 chữ số.
+    """
+    alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    random_part = "".join(secrets.choice(alphabet) for _ in range(8))
+    return f"Tk{random_part}9"
+
+
+def validate_password_policy(plain_password: str) -> None:
+    """Kiểm tra chính sách mật khẩu tối thiểu (UC-13).
+
+    Yêu cầu: tối thiểu 8 ký tự, có ít nhất 1 chữ cái và 1 chữ số. Raise
+    `WeakPassword` (domain exception) nếu vi phạm — import cục bộ để tránh
+    vòng lặp import với domain/exceptions.py.
+    """
+    from app.domain.exceptions import WeakPassword
+
+    if not plain_password or len(plain_password) < 8:
+        raise WeakPassword("Mật khẩu mới phải có tối thiểu 8 ký tự")
+    if not any(c.isalpha() for c in plain_password):
+        raise WeakPassword("Mật khẩu mới phải chứa ít nhất 1 chữ cái")
+    if not any(c.isdigit() for c in plain_password):
+        raise WeakPassword("Mật khẩu mới phải chứa ít nhất 1 chữ số")
+
+
 # ---------- Implement port khai báo ở domain/repositories.py ----------
 from app.domain.repositories import PasswordHasher, TokenGenerator  # noqa: E402
 

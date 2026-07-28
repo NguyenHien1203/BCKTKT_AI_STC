@@ -11,6 +11,7 @@ from app.domain.entities import (
     NotificationChannel,
     OrgUnit,
     OrgUnitAssignmentHistory,
+    PasswordResetToken,
     Role,
     SystemConfig,
     User,
@@ -143,6 +144,40 @@ class TokenGenerator(ABC):
 
     @abstractmethod
     def generate(self) -> str:
+        ...
+
+
+class PasswordResetTokenRepository(ABC):
+    """Repository cho UC-13: Đổi mật khẩu / Cấp lại mật khẩu."""
+
+    @abstractmethod
+    def add(self, reset_token: PasswordResetToken) -> PasswordResetToken:
+        ...
+
+    @abstractmethod
+    def get_by_token(self, token: str) -> Optional[PasswordResetToken]:
+        ...
+
+    @abstractmethod
+    def update(self, reset_token: PasswordResetToken) -> PasswordResetToken:
+        ...
+
+
+class PasswordEmailSender(ABC):
+    """Cổng gửi email liên quan mật khẩu (UC-13): link reset / mật khẩu tạm.
+
+    Tách riêng khỏi `NotificationSender` (UC-08, dùng để gửi thử kênh thông
+    báo) vì đây là nghiệp vụ gửi thật cho người dùng cuối, không phải gửi
+    thử cấu hình. Implement thật (SMTP) hoặc giả (NoOp cho dev/test) đặt ở
+    infrastructure/notification_sender.py.
+    """
+
+    @abstractmethod
+    def send_reset_link(self, to_email: str, reset_link: str) -> None:
+        ...
+
+    @abstractmethod
+    def send_temp_password(self, to_email: str, temp_password: str) -> None:
         ...
 
 

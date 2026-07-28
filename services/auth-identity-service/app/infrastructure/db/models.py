@@ -84,6 +84,25 @@ class OrgUnitAssignmentHistoryModel(Base):
     changed_at: Mapped[str] = mapped_column(String(40), nullable=False)
 
 
+class PasswordResetTokenModel(Base):
+    """UC-13: Đổi mật khẩu / Cấp lại mật khẩu — token dùng 1 lần, có hạn."""
+
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}users.id"),
+        nullable=False,
+        index=True,
+    )
+    token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    expires_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
 class RoleModel(Base):
     """UC-05: Quản lý vai trò người dùng."""
 

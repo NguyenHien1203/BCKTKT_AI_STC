@@ -101,6 +101,27 @@ class CurrentUserResponse(UserResponse):
     pass
 
 
+# ---------- UC-13: Đổi mật khẩu / Cấp lại mật khẩu ----------
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=255)
+
+
+class ForgotPasswordRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=255)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 # ---------- UC-05: Quản lý vai trò người dùng ----------
 
 

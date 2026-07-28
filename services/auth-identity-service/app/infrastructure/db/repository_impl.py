@@ -13,6 +13,7 @@ from app.domain.entities import (
     NotificationChannel,
     OrgUnit,
     OrgUnitAssignmentHistory,
+    PasswordResetToken,
     Role,
     SystemConfig,
     User,
@@ -28,6 +29,7 @@ from app.domain.repositories import (
     NotificationChannelRepository,
     OrgUnitHistoryRepository,
     OrgUnitRepository,
+    PasswordResetTokenRepository,
     PermissionContextRepository,
     RoleRepository,
     SessionRepository,
@@ -43,6 +45,7 @@ from app.infrastructure.db.models import (
     NotificationChannelModel,
     OrgUnitAssignmentHistoryModel,
     OrgUnitModel,
+    PasswordResetTokenModel,
     RoleModel,
     SystemConfigModel,
     UserModel,
@@ -228,6 +231,47 @@ class SqlAlchemySessionRepository(SessionRepository):
             model.is_revoked = True
         self._session.commit()
         return len(models)
+
+
+def _to_reset_token_entity(m: PasswordResetTokenModel) -> PasswordResetToken:
+    return PasswordResetToken(
+        id=m.id,
+        user_id=m.user_id,
+        token=m.token,
+        created_at=m.created_at,
+        expires_at=m.expires_at,
+        is_used=m.is_used,
+    )
+
+
+class SqlAlchemyPasswordResetTokenRepository(PasswordResetTokenRepository):
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, reset_token: PasswordResetToken) -> PasswordResetToken:
+        model = PasswordResetTokenModel(
+            user_id=reset_token.user_id,
+            token=reset_token.token,
+            created_at=reset_token.created_at,
+            expires_at=reset_token.expires_at,
+            is_used=reset_token.is_used,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_reset_token_entity(model)
+
+    def get_by_token(self, token: str) -> Optional[PasswordResetToken]:
+        stmt = select(PasswordResetTokenModel).where(PasswordResetTokenModel.token == token)
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _to_reset_token_entity(model) if model else None
+
+    def update(self, reset_token: PasswordResetToken) -> PasswordResetToken:
+        model = self._session.get(PasswordResetTokenModel, reset_token.id)
+        model.is_used = reset_token.is_used
+        self._session.commit()
+        self._session.refresh(model)
+        return _to_reset_token_entity(model)
 
 
 def _to_history_entity(m: OrgUnitAssignmentHistoryModel) -> OrgUnitAssignmentHistory:

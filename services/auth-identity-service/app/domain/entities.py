@@ -359,6 +359,23 @@ class AuditLogEntry:
         if self.status not in self.STATUSES:
             raise ValueError(f"Trạng thái '{self.status}' không hợp lệ")
 
+@dataclass
+class PasswordResetToken:
+    """Token cấp lại mật khẩu (UC-13: Đổi mật khẩu / Cấp lại mật khẩu).
+    Sinh ra khi người dùng bấm "quên mật khẩu": hệ thống tạo 1 token dùng
+    một lần (`is_used`), có hạn sử dụng (`expires_at`), gửi kèm link reset
+    qua email. Khi người dùng đặt lại mật khẩu bằng token, token bị đánh dấu
+    đã dùng để không thể tái sử dụng.
+    """
+    id: Optional[int]
+    user_id: int
+    token: str
+    created_at: str
+    expires_at: str
+    is_used: bool = False
+
+    def mark_used(self) -> None:
+        self.is_used = True
 
 @dataclass
 class AiAuditLogEntry:
