@@ -4,6 +4,7 @@ import {
   Database,
   FileStack,
   LayoutDashboard,
+  MonitorSmartphone,
   Network,
   ScanSearch,
   Settings,
@@ -33,6 +34,7 @@ export const NAV_SECTIONS = [
       { to: "/audit-logs", label: "Nhật ký truy cập và thao tác", icon: FileText },
       { to: "/ai-audit-logs", label: "Quản trị AI Audit Log", icon: ScanSearch },
       { to: "/guide-documents", label: "Tài liệu hướng dẫn sử dụng", icon: FileStack },
+      { to: "/sessions", label: "Quản lý phiên đăng nhập", icon: MonitorSmartphone },
     ],
   },
   {

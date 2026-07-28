@@ -72,7 +72,7 @@ class User:
 
 @dataclass
 class UserSession:
-    """Phiên đăng nhập (UC-12 Đăng nhập/Đăng xuất, UC-03 buộc đăng xuất)."""
+    """Phiên đăng nhập (UC-12 Đăng nhập/Đăng xuất, UC-03 buộc đăng xuất, UC-14 Quản lý phiên đăng nhập)."""
 
     id: Optional[int]
     user_id: int

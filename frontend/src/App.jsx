@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, FileStack, FileText, KeyRound, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, FileStack, FileText, KeyRound, MonitorSmartphone, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -15,6 +15,7 @@ import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import PermissionsPage from "./pages/PermissionsPage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import RolesPage from "./pages/RolesPage.jsx";
+import SessionsPage from "./pages/SessionsPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 
@@ -67,6 +68,12 @@ function HomePage() {
       title: "Tài liệu hướng dẫn sử dụng",
       description: "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
       icon: FileStack,
+    },
+    {
+      to: "/sessions",
+      title: "Quản lý phiên đăng nhập",
+      description: "UC-14 — Xem và thu hồi từng phiên đăng nhập đang hoạt động trong hệ thống.",
+      icon: MonitorSmartphone,
     },
   ];
 
@@ -230,6 +237,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <GuideDocumentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sessions"
+        element={
+          <ProtectedRoute>
+            <SessionsPage />
           </ProtectedRoute>
         }
       />

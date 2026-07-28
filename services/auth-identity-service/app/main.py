@@ -11,6 +11,7 @@ from app.interfaces.api.org_unit_router import router as org_unit_router
 from app.interfaces.api.password_router import router as password_router
 from app.interfaces.api.permission_router import router as permission_router
 from app.interfaces.api.role_router import router as role_router
+from app.interfaces.api.session_router import router as session_router
 from app.interfaces.api.system_config_router import router as system_config_router
 from app.interfaces.api.user_router import lifecycle_router, router as user_router
 
@@ -41,6 +42,7 @@ app.include_router(notification_channel_router)
 app.include_router(audit_log_router)
 app.include_router(ai_audit_log_router)
 app.include_router(guide_document_router)
+app.include_router(session_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:
