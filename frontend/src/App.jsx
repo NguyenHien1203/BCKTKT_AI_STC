@@ -1,8 +1,9 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, FileText, KeyRound, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, FileText, KeyRound, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AiAuditLogPage from "./pages/AiAuditLogPage.jsx";
 import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
@@ -50,6 +51,12 @@ function HomePage() {
       title: "Nhật ký truy cập và thao tác",
       description: "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
       icon: FileText,
+    },
+    {
+      to: "/ai-audit-logs",
+      title: "Quản trị AI Audit Log",
+      description: "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
+      icon: ScanSearch,
     },
   ];
 
@@ -187,6 +194,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AuditLogsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ai-audit-logs"
+        element={
+          <ProtectedRoute>
+            <AiAuditLogPage />
           </ProtectedRoute>
         }
       />

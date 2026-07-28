@@ -255,6 +255,35 @@ class AuditLogResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ---------- UC-10: Quản trị AI Audit Log ----------
+
+
+class AiAuditLogCreate(BaseModel):
+    trace_id: str = Field(..., min_length=1, max_length=100)
+    username: str = Field(..., min_length=1, max_length=100)
+    model: str = Field(default="", max_length=100)
+    prompt: str = Field(..., min_length=1, max_length=10000)
+    response: str = Field(default="", max_length=20000)
+    sources: list[str] = Field(default_factory=list)
+    permission_snapshot: dict = Field(default_factory=dict)
+    prompt_version: str = Field(default="", max_length=50)
+
+
+class AiAuditLogResponse(BaseModel):
+    id: int
+    trace_id: str
+    username: str
+    model: str
+    prompt: str
+    response: str
+    sources: list[str]
+    permission_snapshot: dict
+    prompt_version: str
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
 class PermissionContextResponse(BaseModel):
     id: int
     user_id: int

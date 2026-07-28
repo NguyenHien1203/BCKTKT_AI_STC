@@ -62,6 +62,14 @@ Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `d
 | POST | `/audit-logs` | Ghi 1 sự kiện vào nhật ký (dùng nội bộ bởi các UC khác) |
 | GET | `/audit-logs/export` | Xuất báo cáo ATTT định kỳ dạng PDF (`?time_from=`, `?time_to=`) |
 
+### UC-10: Quản trị AI Audit Log
+| Method | Path | Mô tả |
+|---|---|---|
+| GET | `/ai-audit-logs` | Xem danh sách AI query (`?user_id=`, `?time_from=`, `?time_to=` để lọc) |
+| POST | `/ai-audit-logs` | Ghi 1 phiên hỏi-đáp AI vào nhật ký (dùng nội bộ bởi UC-71/72/73) |
+| GET | `/ai-audit-logs/export` | Xuất báo cáo AI Audit định kỳ tuần/tháng dạng PDF (`?period=WEEK\|MONTH`) |
+| GET | `/ai-audit-logs/{trace_id}` | Xem toàn bộ chuỗi 1 phiên hỏi-đáp theo trace_id |
+
 
 ## Chạy local (cần Python 3.11+, có Internet để cài package)
 ```bash
