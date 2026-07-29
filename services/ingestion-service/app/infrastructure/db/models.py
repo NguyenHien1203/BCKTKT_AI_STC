@@ -27,3 +27,21 @@ class DataSourceModel(Base):
     owner: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     sensitivity_level: Mapped[str] = mapped_column(String(20), nullable=False, default="INTERNAL")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class ConnectorModel(Base):
+    """UC-016: Quản lý thư viện bộ kết nối."""
+
+    __tablename__ = "connectors"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    connector_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(50), nullable=False)
+    entry_point: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    interface_status: Mapped[str] = mapped_column(String(20), nullable=False, default="PASSED")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    restart_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

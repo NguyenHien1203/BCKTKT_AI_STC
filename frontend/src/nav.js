@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   MonitorSmartphone,
   Network,
+  Plug,
   ScanSearch,
   Settings,
   ShieldCheck,
@@ -41,6 +42,7 @@ export const NAV_SECTIONS = [
     label: "Dữ liệu",
     items: [
       { to: "/data-sources", label: "Nguồn dữ liệu", icon: Database },
+      { to: "/connectors", label: "Thư viện bộ kết nối", icon: Plug },
       { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
     ],
   },

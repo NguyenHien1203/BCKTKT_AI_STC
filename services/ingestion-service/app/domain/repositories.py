@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from app.domain.entities import DataSource
+from app.domain.entities import Connector, DataSource
 
 
 class DataSourceRepository(ABC):
@@ -30,4 +30,32 @@ class DataSourceRepository(ABC):
 
     @abstractmethod
     def update(self, data_source: DataSource) -> DataSource:
+        ...
+
+
+class ConnectorRepository(ABC):
+    """Repository cho UC-016: Quản lý thư viện bộ kết nối."""
+
+    @abstractmethod
+    def add(self, connector: Connector) -> Connector:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, connector_id: int) -> Optional[Connector]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[Connector]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        only_active: bool = False,
+        connector_type: Optional[str] = None,
+    ) -> List[Connector]:
+        ...
+
+    @abstractmethod
+    def update(self, connector: Connector) -> Connector:
         ...
