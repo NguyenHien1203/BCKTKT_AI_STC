@@ -158,3 +158,27 @@ class SchemaVersionModel(Base):
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     schema_snapshot: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
     registered_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+
+class ScheduledTaskModel(Base):
+    """UC-019: Cấu hình tác vụ điều phối (lịch cron, đầy đủ/tăng dần,
+    chính sách thử lại; bật/tắt; hệ thống cập nhật trạng thái)."""
+
+    __tablename__ = "scheduled_tasks"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dataset_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}dataset_catalog.id"), nullable=False, index=True
+    )
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    sync_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="FULL")
+    cron_expression: Mapped[str] = mapped_column(String(100), nullable=False, default="0 0 * * *")
+    retry_max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    retry_delay_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
+    retry_backoff: Mapped[str] = mapped_column(String(20), nullable=False, default="FIXED")
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="IDLE")
+    last_run_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_run_message: Mapped[str] = mapped_column(Text, nullable=False, default="")

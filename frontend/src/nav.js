@@ -1,6 +1,7 @@
 import {
   Bell,
   Building2,
+  CalendarClock,
   Database,
   FileStack,
   LayoutDashboard,
@@ -47,6 +48,7 @@ export const NAV_SECTIONS = [
       { to: "/connectors", label: "Thư viện bộ kết nối", icon: Plug },
       { to: "/source-connections", label: "Cấu hình kết nối nguồn", icon: PlugZap },
       { to: "/datasets", label: "Định nghĩa tập dữ liệu của nguồn", icon: Layers },
+      { to: "/scheduled-tasks", label: "Cấu hình tác vụ điều phối", icon: CalendarClock },
       { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
     ],
   },

@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -9,6 +9,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
+import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
@@ -102,6 +103,12 @@ function HomePage() {
       title: "Định nghĩa tập dữ liệu của nguồn",
       description: "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
       icon: Layers,
+    },
+    {
+      to: "/scheduled-tasks",
+      title: "Cấu hình tác vụ điều phối",
+      description: "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
+      icon: CalendarClock,
     },
   ];
 
@@ -305,6 +312,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DatasetsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scheduled-tasks"
+        element={
+          <ProtectedRoute>
+            <ScheduledTasksPage />
           </ProtectedRoute>
         }
       />
