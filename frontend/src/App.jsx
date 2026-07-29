@@ -1,11 +1,12 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, MonitorSmartphone, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, MonitorSmartphone, Plug, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AiAuditLogPage from "./pages/AiAuditLogPage.jsx";
 import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
+import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
@@ -81,6 +82,12 @@ function HomePage() {
       title: "Nguồn dữ liệu",
       description: "UC-015 — Đăng ký, xem, sửa và vô hiệu hoá nguồn dữ liệu (TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).",
       icon: Database,
+    },
+    {
+      to: "/connectors",
+      title: "Thư viện bộ kết nối",
+      description: "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
+      icon: Plug,
     },
   ];
 
@@ -260,6 +267,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DataSourcesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/connectors"
+        element={
+          <ProtectedRoute>
+            <ConnectorsPage />
           </ProtectedRoute>
         }
       />
