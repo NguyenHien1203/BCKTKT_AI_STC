@@ -74,4 +74,10 @@ Mỗi service có `docker-compose.override` riêng nếu cần, nhưng biến m�
 **Hệ quả**: Khi tích hợp Keycloak thật, chỉ cần viết `AuthService` mới theo luồng OIDC (authorization code) và/hoặc `KeycloakIdentityProviderClient`, không cần đổi bảng `users`/`org_unit_assignment_history` hay domain layer.
 **Trạng thái**: Tạm thời (interim), ghi rõ trong code (`app/application/use_cases/auth_service.py` docstring).
 
+### ADR-004: Mỗi service phải đặt tên riêng cho bảng `alembic_version` khi dùng chung 1 database Postgres
+**Bối cảnh**: ADR-001 dùng 1 Postgres cluster, mỗi service 1 schema. Nhưng bảng theo dõi phiên bản migration mặc định của Alembic (`alembic_version`) không nằm trong schema riêng của service — nó nằm ở schema mặc định của connection (thường là `public`), nên **bị dùng chung giữa mọi service trỏ vào cùng 1 database** (`financial_dw`). Khi `ingestion-service` (chỉ có revision `0001`) chạy `alembic upgrade head` sau khi `auth-identity-service` đã stamp `alembic_version = 0012`, Alembic báo lỗi `Can't locate revision identified by '0012'` vì đọc nhầm lịch sử migration của service khác.
+**Quyết định**: Mỗi service tự đặt `version_table` riêng trong `alembic/env.py` (cả `run_migrations_offline` và `run_migrations_online`), ví dụ `ingestion-service` dùng `version_table="alembic_version_ingestion"`. Không sửa lại service đã chạy ổn định (`auth-identity-service` giữ nguyên bảng `alembic_version` mặc định để không phá trạng thái đã migrate).
+**Hệ quả**: Khi thêm Alembic cho `data-quality-service`, `reporting-service`... (nhóm III trở đi), phải áp dụng cùng quy ước: `version_table="alembic_version_<ten-service-rut-gon>"`, đồng thời nhớ `COPY alembic.ini` + `COPY alembic` trong `Dockerfile` (dễ quên vì service mới scaffold không có sẵn 2 dòng này).
+**Trạng thái**: Đã áp dụng cho `ingestion-service` (UC-015). Cần áp dụng khi các service còn lại thêm Alembic.
+
 > Mọi ADR mới phải được thêm vào cuối file này, không sửa ADR cũ (chỉ có thể "Superseded by ADR-XXX").

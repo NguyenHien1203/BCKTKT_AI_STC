@@ -40,7 +40,7 @@ export const NAV_SECTIONS = [
   {
     label: "Dữ liệu",
     items: [
-      { to: "/ingestion", label: "Tiếp nhận dữ liệu", icon: Database, disabled: true },
+      { to: "/data-sources", label: "Nguồn dữ liệu", icon: Database },
       { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
     ],
   },
