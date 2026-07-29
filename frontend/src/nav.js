@@ -7,6 +7,7 @@ import {
   MonitorSmartphone,
   Network,
   Plug,
+  PlugZap,
   ScanSearch,
   Settings,
   ShieldCheck,
@@ -43,6 +44,7 @@ export const NAV_SECTIONS = [
     items: [
       { to: "/data-sources", label: "Nguồn dữ liệu", icon: Database },
       { to: "/connectors", label: "Thư viện bộ kết nối", icon: Plug },
+      { to: "/source-connections", label: "Cấu hình kết nối nguồn", icon: PlugZap },
       { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
     ],
   },

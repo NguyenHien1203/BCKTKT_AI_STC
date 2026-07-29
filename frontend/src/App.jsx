@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, MonitorSmartphone, Plug, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -8,6 +8,7 @@ import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
+import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -88,6 +89,12 @@ function HomePage() {
       title: "Thư viện bộ kết nối",
       description: "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
       icon: Plug,
+    },
+    {
+      to: "/source-connections",
+      title: "Cấu hình kết nối nguồn",
+      description: "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
+      icon: PlugZap,
     },
   ];
 
@@ -275,6 +282,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ConnectorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/source-connections"
+        element={
+          <ProtectedRoute>
+            <SourceConnectionsPage />
           </ProtectedRoute>
         }
       />
