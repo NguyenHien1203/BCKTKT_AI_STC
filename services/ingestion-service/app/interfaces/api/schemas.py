@@ -241,3 +241,60 @@ class SchemaVersionResponse(BaseModel):
     registered_at: str
 
     model_config = {"from_attributes": True}
+
+
+# ---------- UC-019: Cấu hình tác vụ điều phối ----------
+
+_SYNC_MODE_PATTERN = "^(FULL|INCREMENTAL)$"
+_RETRY_BACKOFF_PATTERN = "^(NONE|FIXED|EXPONENTIAL)$"
+_RUN_STATUS_PATTERN = "^(IDLE|RUNNING|SUCCESS|FAILED)$"
+
+
+class ScheduledTaskCreate(BaseModel):
+    """Cấu hình tác vụ điều phối mới (lịch cron, đầy đủ/tăng dần, chính
+    sách thử lại)."""
+
+    dataset_id: int = Field(..., gt=0)
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    sync_mode: str = Field("FULL", pattern=_SYNC_MODE_PATTERN)
+    cron_expression: str = Field("0 0 * * *", min_length=1, max_length=100)
+    retry_max_attempts: int = Field(3, ge=0)
+    retry_delay_seconds: int = Field(60, ge=0)
+    retry_backoff: str = Field("FIXED", pattern=_RETRY_BACKOFF_PATTERN)
+
+
+class ScheduledTaskConfigUpdate(BaseModel):
+    """Sửa cấu hình tác vụ điều phối đã có."""
+
+    sync_mode: str = Field(..., pattern=_SYNC_MODE_PATTERN)
+    cron_expression: str = Field(..., min_length=1, max_length=100)
+    retry_max_attempts: int = Field(..., ge=0)
+    retry_delay_seconds: int = Field(..., ge=0)
+    retry_backoff: str = Field(..., pattern=_RETRY_BACKOFF_PATTERN)
+
+
+class ScheduledTaskRunStatusUpdate(BaseModel):
+    """Hệ thống (Bộ điều phối) cập nhật trạng thái thực thi tác vụ."""
+
+    status: str = Field(..., pattern=_RUN_STATUS_PATTERN)
+    message: str = Field("", max_length=2000)
+    run_at: Optional[str] = None
+
+
+class ScheduledTaskResponse(BaseModel):
+    id: int
+    dataset_id: int
+    code: str
+    name: str
+    sync_mode: str
+    cron_expression: str
+    retry_max_attempts: int
+    retry_delay_seconds: int
+    retry_backoff: str
+    is_enabled: bool
+    status: str
+    last_run_at: Optional[str] = None
+    last_run_message: str
+
+    model_config = {"from_attributes": True}

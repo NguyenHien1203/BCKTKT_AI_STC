@@ -10,6 +10,7 @@ from app.domain.entities import (
     CriticalField,
     DataSource,
     Dataset,
+    ScheduledTask,
     SchemaVersion,
     SourceConnection,
 )
@@ -19,6 +20,7 @@ from app.domain.repositories import (
     CriticalFieldRepository,
     DataSourceRepository,
     DatasetRepository,
+    ScheduledTaskRepository,
     SchemaVersionRepository,
     SourceConnectionRepository,
 )
@@ -28,6 +30,7 @@ from app.infrastructure.db.models import (
     CriticalFieldModel,
     DataSourceModel,
     DatasetModel,
+    ScheduledTaskModel,
     SchemaVersionModel,
     SourceConnectionModel,
 )
@@ -487,3 +490,86 @@ class SqlAlchemySchemaVersionRepository(SchemaVersionRepository):
         )
         model = self._session.execute(stmt).scalar_one_or_none()
         return _schema_version_to_entity(model) if model else None
+
+
+def _scheduled_task_to_entity(m: ScheduledTaskModel) -> ScheduledTask:
+    return ScheduledTask(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        code=m.code,
+        name=m.name,
+        sync_mode=m.sync_mode,
+        cron_expression=m.cron_expression,
+        retry_max_attempts=m.retry_max_attempts,
+        retry_delay_seconds=m.retry_delay_seconds,
+        retry_backoff=m.retry_backoff,
+        is_enabled=m.is_enabled,
+        status=m.status,
+        last_run_at=m.last_run_at,
+        last_run_message=m.last_run_message,
+    )
+
+
+class SqlAlchemyScheduledTaskRepository(ScheduledTaskRepository):
+    """UC-019: Cấu hình tác vụ điều phối (bảng `scheduled_tasks`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, task: ScheduledTask) -> ScheduledTask:
+        model = ScheduledTaskModel(
+            dataset_id=task.dataset_id,
+            code=task.code,
+            name=task.name,
+            sync_mode=task.sync_mode,
+            cron_expression=task.cron_expression,
+            retry_max_attempts=task.retry_max_attempts,
+            retry_delay_seconds=task.retry_delay_seconds,
+            retry_backoff=task.retry_backoff,
+            is_enabled=task.is_enabled,
+            status=task.status,
+            last_run_at=task.last_run_at,
+            last_run_message=task.last_run_message,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _scheduled_task_to_entity(model)
+
+    def get_by_id(self, task_id: int) -> Optional[ScheduledTask]:
+        model = self._session.get(ScheduledTaskModel, task_id)
+        return _scheduled_task_to_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[ScheduledTask]:
+        stmt = select(ScheduledTaskModel).where(ScheduledTaskModel.code == code)
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _scheduled_task_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        only_enabled: bool = False,
+    ) -> List[ScheduledTask]:
+        stmt = select(ScheduledTaskModel)
+        if dataset_id:
+            stmt = stmt.where(ScheduledTaskModel.dataset_id == dataset_id)
+        if only_enabled:
+            stmt = stmt.where(ScheduledTaskModel.is_enabled.is_(True))
+        stmt = stmt.order_by(ScheduledTaskModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_scheduled_task_to_entity(m) for m in models]
+
+    def update(self, task: ScheduledTask) -> ScheduledTask:
+        model = self._session.get(ScheduledTaskModel, task.id)
+        model.sync_mode = task.sync_mode
+        model.cron_expression = task.cron_expression
+        model.retry_max_attempts = task.retry_max_attempts
+        model.retry_delay_seconds = task.retry_delay_seconds
+        model.retry_backoff = task.retry_backoff
+        model.is_enabled = task.is_enabled
+        model.status = task.status
+        model.last_run_at = task.last_run_at
+        model.last_run_message = task.last_run_message
+        self._session.commit()
+        self._session.refresh(model)
+        return _scheduled_task_to_entity(model)

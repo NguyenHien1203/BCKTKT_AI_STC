@@ -485,3 +485,145 @@ class SchemaVersion:
             raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
         if not self.version or self.version <= 0:
             raise ValueError("Phiên bản lược đồ (version) phải > 0")
+
+
+@dataclass
+class ScheduledTask:
+    """Tác vụ điều phối (scheduler job) đồng bộ 1 tập dữ liệu (UC-019).
+
+    Luồng nghiệp vụ:
+    1. Cấu hình tác vụ điều phối (lịch cron, đầy đủ/tăng dần, chính sách
+       thử lại) -> hệ thống lưu (`__post_init__` / `update_config`).
+    2. Bật/tắt tác vụ điều phối -> hệ thống cập nhật trạng thái tác vụ
+       điều phối (`enable`/`disable`).
+    3. Hệ thống điều phối (Bộ điều phối, xem UC-025) cập nhật trạng thái
+       thực thi tác vụ (`record_run_status`) mỗi khi chạy xong 1 phiên.
+
+    `sync_mode` = "FULL" (đồng bộ đầy đủ) hoặc "INCREMENTAL" (đồng bộ
+    tăng dần). `retry_backoff` quyết định cách tính khoảng chờ giữa các
+    lần thử lại: NONE (không thử lại), FIXED (khoảng chờ cố định),
+    EXPONENTIAL (tăng dần theo cấp số nhân).
+    """
+
+    SYNC_MODES = ("FULL", "INCREMENTAL")
+    RETRY_BACKOFFS = ("NONE", "FIXED", "EXPONENTIAL")
+    RUN_STATUSES = ("IDLE", "RUNNING", "SUCCESS", "FAILED")
+
+    id: Optional[int]
+    dataset_id: int
+    code: str
+    name: str
+    sync_mode: str = "FULL"
+    cron_expression: str = "0 0 * * *"
+    retry_max_attempts: int = 3
+    retry_delay_seconds: int = 60
+    retry_backoff: str = "FIXED"
+    is_enabled: bool = True
+    status: str = "IDLE"
+    last_run_at: Optional[str] = None
+    last_run_message: str = ""
+
+    def __post_init__(self) -> None:
+        self._validate_dataset_id(self.dataset_id)
+        self._validate_code(self.code)
+        self._validate_name(self.name)
+        self._validate_sync_mode(self.sync_mode)
+        self._validate_cron_expression(self.cron_expression)
+        self._validate_retry_policy(
+            self.retry_max_attempts, self.retry_delay_seconds, self.retry_backoff
+        )
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_dataset_id(dataset_id: int) -> None:
+        if not dataset_id or dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+
+    @staticmethod
+    def _validate_code(code: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("Mã tác vụ điều phối không được để trống")
+
+    @staticmethod
+    def _validate_name(name: str) -> None:
+        if not name or not name.strip():
+            raise ValueError("Tên tác vụ điều phối không được để trống")
+
+    @classmethod
+    def _validate_sync_mode(cls, sync_mode: str) -> None:
+        if sync_mode not in cls.SYNC_MODES:
+            raise ValueError(
+                f"Chế độ đồng bộ '{sync_mode}' không hợp lệ, "
+                f"phải là 1 trong {cls.SYNC_MODES}"
+            )
+
+    @staticmethod
+    def _validate_cron_expression(cron_expression: str) -> None:
+        """Kiểm tra định dạng cron cơ bản: 5 trường cách nhau bởi khoảng
+        trắng (phút giờ ngày tháng thứ). Không diễn giải ngữ nghĩa lịch,
+        chỉ đảm bảo đúng cấu trúc trước khi lưu."""
+        if not cron_expression or not cron_expression.strip():
+            raise ValueError("Lịch cron không được để trống")
+        parts = cron_expression.strip().split()
+        if len(parts) != 5:
+            raise ValueError(
+                "Lịch cron không hợp lệ, phải có đúng 5 trường "
+                "(phút giờ ngày-trong-tháng tháng ngày-trong-tuần), "
+                f"nhận được '{cron_expression}'"
+            )
+
+    @classmethod
+    def _validate_retry_policy(
+        cls, retry_max_attempts: int, retry_delay_seconds: int, retry_backoff: str
+    ) -> None:
+        if retry_max_attempts < 0:
+            raise ValueError("Số lần thử lại tối đa (retry_max_attempts) không được âm")
+        if retry_delay_seconds < 0:
+            raise ValueError("Khoảng chờ thử lại (retry_delay_seconds) không được âm")
+        if retry_backoff not in cls.RETRY_BACKOFFS:
+            raise ValueError(
+                f"Chính sách thử lại '{retry_backoff}' không hợp lệ, "
+                f"phải là 1 trong {cls.RETRY_BACKOFFS}"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.RUN_STATUSES:
+            raise ValueError(f"Trạng thái '{status}' không hợp lệ")
+
+    def update_config(
+        self,
+        sync_mode: str,
+        cron_expression: str,
+        retry_max_attempts: int,
+        retry_delay_seconds: int,
+        retry_backoff: str,
+    ) -> None:
+        """Cấu hình tác vụ điều phối: lịch cron, đầy đủ/tăng dần, chính
+        sách thử lại. Hệ thống lưu."""
+        self._validate_sync_mode(sync_mode)
+        self._validate_cron_expression(cron_expression)
+        self._validate_retry_policy(retry_max_attempts, retry_delay_seconds, retry_backoff)
+        self.sync_mode = sync_mode
+        self.cron_expression = cron_expression.strip()
+        self.retry_max_attempts = retry_max_attempts
+        self.retry_delay_seconds = retry_delay_seconds
+        self.retry_backoff = retry_backoff
+
+    def enable(self) -> None:
+        """Bật tác vụ điều phối. Hệ thống cập nhật trạng thái tác vụ
+        điều phối."""
+        self.is_enabled = True
+
+    def disable(self) -> None:
+        """Tắt tác vụ điều phối. Hệ thống cập nhật trạng thái tác vụ
+        điều phối."""
+        self.is_enabled = False
+
+    def record_run_status(self, status: str, message: str, run_at: str) -> None:
+        """Hệ thống cập nhật trạng thái tác vụ điều phối sau khi Bộ điều
+        phối thực thi 1 phiên (RUNNING/SUCCESS/FAILED)."""
+        self._validate_status(status)
+        self.status = status
+        self.last_run_message = message
+        self.last_run_at = run_at

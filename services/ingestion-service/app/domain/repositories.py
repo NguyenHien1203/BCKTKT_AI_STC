@@ -8,6 +8,7 @@ from app.domain.entities import (
     CriticalField,
     DataSource,
     Dataset,
+    ScheduledTask,
     SchemaVersion,
     SourceConnection,
 )
@@ -212,4 +213,32 @@ class SchemaVersionRepository(ABC):
 
     @abstractmethod
     def get_by_version(self, dataset_id: int, version: int) -> Optional[SchemaVersion]:
+        ...
+
+
+class ScheduledTaskRepository(ABC):
+    """Repository cho UC-019: Cấu hình tác vụ điều phối."""
+
+    @abstractmethod
+    def add(self, task: ScheduledTask) -> ScheduledTask:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, task_id: int) -> Optional[ScheduledTask]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[ScheduledTask]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        only_enabled: bool = False,
+    ) -> List[ScheduledTask]:
+        ...
+
+    @abstractmethod
+    def update(self, task: ScheduledTask) -> ScheduledTask:
         ...

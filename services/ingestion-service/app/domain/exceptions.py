@@ -106,3 +106,24 @@ class SchemaVersionNotFound(DomainError):
         super().__init__(
             f"Không tìm thấy phiên bản lược đồ version={version} của tập dữ liệu id={dataset_id}"
         )
+
+
+class ScheduledTaskCodeAlreadyExists(DomainError):
+    code = "SCHEDULED_TASK_CODE_EXISTS"
+
+    def __init__(self, code_value: str):
+        super().__init__(f"Mã tác vụ điều phối '{code_value}' đã tồn tại")
+
+
+class ScheduledTaskNotFound(DomainError):
+    code = "SCHEDULED_TASK_NOT_FOUND"
+
+    def __init__(self, task_id: int):
+        super().__init__(f"Không tìm thấy tác vụ điều phối id={task_id}")
+
+
+class InvalidScheduledTask(DomainError):
+    code = "INVALID_SCHEDULED_TASK"
+
+    def __init__(self, message: str):
+        super().__init__(message)
