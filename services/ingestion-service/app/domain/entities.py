@@ -289,3 +289,199 @@ class CredentialAsset:
 
     def activate(self) -> None:
         self.is_active = True
+
+@dataclass
+class Dataset:
+    """Tập dữ liệu (dataset) của 1 nguồn dữ liệu, kèm lược đồ (UC-018).
+
+    Bước 1 luồng nghiệp vụ "Định nghĩa tập dữ liệu + lược đồ" tương ứng
+    với việc khởi tạo entity này: `schema_fields` là danh sách trường của
+    lược đồ, mỗi phần tử dạng
+    `{"name": str, "data_type": str, "nullable": bool, "description": str}`.
+
+    Bước 2 "Khai báo khoá chính + chiến lược phân mảnh" tương ứng
+    `configure_partitioning()`.
+
+    Bước 4 "Đăng ký vào Schema Registry" tương ứng `register_schema_version()`
+    — chỉ được phép khi đã khai báo khoá chính (đã qua bước 2), và mỗi lần
+    đăng ký hệ thống tăng `current_schema_version` thêm 1 (quản lý phiên bản
+    lược đồ, xem thêm `SchemaVersion`).
+    """
+
+    DATA_TYPES = (
+        "STRING",
+        "INTEGER",
+        "BIGINT",
+        "DECIMAL",
+        "BOOLEAN",
+        "DATE",
+        "DATETIME",
+        "JSON",
+    )
+    PARTITION_STRATEGIES = ("NONE", "RANGE", "LIST", "HASH")
+
+    id: Optional[int]
+    data_source_id: int
+    code: str
+    name: str
+    description: str = ""
+    schema_fields: List[Dict[str, Any]] = field(default_factory=list)
+    primary_key: List[str] = field(default_factory=list)
+    partition_strategy: str = "NONE"
+    partition_column: Optional[str] = None
+    current_schema_version: int = 0
+    is_active: bool = True
+
+    def __post_init__(self) -> None:
+        self._validate_data_source_id(self.data_source_id)
+        self._validate_code(self.code)
+        self._validate_name(self.name)
+        self._validate_schema_fields(self.schema_fields)
+
+    @staticmethod
+    def _validate_data_source_id(data_source_id: int) -> None:
+        if not data_source_id or data_source_id <= 0:
+            raise ValueError("Phải chỉ định nguồn dữ liệu (data_source_id) hợp lệ")
+
+    @staticmethod
+    def _validate_code(code: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("Mã tập dữ liệu không được để trống")
+
+    @staticmethod
+    def _validate_name(name: str) -> None:
+        if not name or not name.strip():
+            raise ValueError("Tên tập dữ liệu không được để trống")
+
+    @classmethod
+    def _validate_schema_fields(cls, schema_fields: List[Dict[str, Any]]) -> None:
+        if not schema_fields:
+            raise ValueError("Lược đồ (schema_fields) không được để trống")
+        seen_names = set()
+        for item in schema_fields:
+            name = (item or {}).get("name", "")
+            data_type = (item or {}).get("data_type", "")
+            if not name or not str(name).strip():
+                raise ValueError("Mỗi trường trong lược đồ phải có 'name'")
+            if name in seen_names:
+                raise ValueError(f"Trường '{name}' bị khai báo trùng lặp trong lược đồ")
+            seen_names.add(name)
+            if data_type not in cls.DATA_TYPES:
+                raise ValueError(
+                    f"Kiểu dữ liệu '{data_type}' của trường '{name}' không hợp lệ, "
+                    f"phải là 1 trong {cls.DATA_TYPES}"
+                )
+
+    def field_names(self) -> set:
+        return {item["name"] for item in self.schema_fields}
+
+    def define_schema(self, schema_fields: List[Dict[str, Any]]) -> None:
+        """Định nghĩa lại lược đồ (trước khi đăng ký phiên bản mới vào
+        Schema Registry). Nếu khoá chính/cột phân mảnh hiện có không còn
+        tồn tại trong lược đồ mới thì phải khai báo lại (bước 2)."""
+        self._validate_schema_fields(schema_fields)
+        self.schema_fields = schema_fields
+        new_names = self.field_names()
+        if not set(self.primary_key).issubset(new_names):
+            self.primary_key = []
+        if self.partition_column and self.partition_column not in new_names:
+            self.partition_column = None
+            self.partition_strategy = "NONE"
+
+    def configure_partitioning(
+        self,
+        primary_key: List[str],
+        partition_strategy: str,
+        partition_column: Optional[str] = None,
+    ) -> None:
+        """Khai báo khoá chính + chiến lược phân mảnh (bước 2)."""
+        if not primary_key:
+            raise ValueError("Phải khai báo ít nhất 1 trường làm khoá chính")
+        field_names = self.field_names()
+        for pk_field in primary_key:
+            if pk_field not in field_names:
+                raise ValueError(
+                    f"Trường khoá chính '{pk_field}' không tồn tại trong lược đồ"
+                )
+        if partition_strategy not in self.PARTITION_STRATEGIES:
+            raise ValueError(
+                f"Chiến lược phân mảnh '{partition_strategy}' không hợp lệ, "
+                f"phải là 1 trong {self.PARTITION_STRATEGIES}"
+            )
+        if partition_strategy != "NONE":
+            if not partition_column:
+                raise ValueError(
+                    "Phải chỉ định cột phân mảnh (partition_column) khi chiến lược "
+                    "phân mảnh khác NONE"
+                )
+            if partition_column not in field_names:
+                raise ValueError(
+                    f"Cột phân mảnh '{partition_column}' không tồn tại trong lược đồ"
+                )
+        else:
+            partition_column = None
+
+        self.primary_key = list(primary_key)
+        self.partition_strategy = partition_strategy
+        self.partition_column = partition_column
+
+    def register_schema_version(self) -> int:
+        """Đăng ký vào Schema Registry: hệ thống tăng phiên bản lược đồ lên 1.
+
+        Yêu cầu đã khai báo khoá chính (bước 2) trước khi đăng ký."""
+        if not self.primary_key:
+            raise ValueError(
+                "Phải khai báo khoá chính + chiến lược phân mảnh trước khi "
+                "đăng ký vào Schema Registry"
+            )
+        self.current_schema_version += 1
+        return self.current_schema_version
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+    def activate(self) -> None:
+        self.is_active = True
+
+
+@dataclass
+class CriticalField:
+    """Trường bắt buộc (NOT NULL) của 1 tập dữ liệu (UC-018, bước 3).
+
+    Lưu vào `metadata.critical_fields` theo yêu cầu nghiệp vụ (BCKTKT);
+    trong triển khai hiện tại được lưu ở bảng `critical_fields` cùng
+    schema Postgres với các bảng khác của `ingestion-service` — xem
+    ADR-001 trong ARCHITECTURE.md (1 schema Postgres / service).
+    """
+
+    id: Optional[int]
+    dataset_id: int
+    field_name: str
+
+    def __post_init__(self) -> None:
+        if not self.dataset_id or self.dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+        if not self.field_name or not self.field_name.strip():
+            raise ValueError("Tên trường bắt buộc (field_name) không được để trống")
+
+
+@dataclass
+class SchemaVersion:
+    """1 phiên bản lược đồ đã đăng ký vào Schema Registry (UC-018, bước 4).
+
+    `schema_snapshot` lưu lại toàn bộ trạng thái lược đồ tại thời điểm
+    đăng ký (schema_fields, primary_key, partition_strategy,
+    partition_column, critical_fields) để tra cứu lịch sử phiên bản.
+    """
+
+    id: Optional[int]
+    dataset_id: int
+    version: int
+    schema_snapshot: Dict[str, Any]
+    registered_at: str
+
+    def __post_init__(self) -> None:
+        if not self.dataset_id or self.dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+        if not self.version or self.version <= 0:
+            raise ValueError("Phiên bản lược đồ (version) phải > 0")

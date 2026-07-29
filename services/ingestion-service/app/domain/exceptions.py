@@ -75,3 +75,34 @@ class InvalidCredentialAsset(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class DatasetCodeAlreadyExists(DomainError):
+    code = "DATASET_CODE_EXISTS"
+
+    def __init__(self, code_value: str, data_source_id: int):
+        super().__init__(
+            f"Mã tập dữ liệu '{code_value}' đã tồn tại cho nguồn dữ liệu id={data_source_id}"
+        )
+
+
+class DatasetNotFound(DomainError):
+    code = "DATASET_NOT_FOUND"
+
+    def __init__(self, dataset_id: int):
+        super().__init__(f"Không tìm thấy tập dữ liệu id={dataset_id}")
+
+
+class InvalidDataset(DomainError):
+    code = "INVALID_DATASET"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class SchemaVersionNotFound(DomainError):
+    code = "SCHEMA_VERSION_NOT_FOUND"
+
+    def __init__(self, dataset_id: int, version: int):
+        super().__init__(
+            f"Không tìm thấy phiên bản lược đồ version={version} của tập dữ liệu id={dataset_id}"
+        )

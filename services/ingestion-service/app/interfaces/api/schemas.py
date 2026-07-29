@@ -161,3 +161,83 @@ class ExpiryAlertResult(BaseModel):
     days_remaining: int
     alert_sent: bool
     alert_message: str
+
+# ---------- UC-018: Định nghĩa tập dữ liệu của nguồn ----------
+
+_DATA_TYPE_PATTERN = "^(STRING|INTEGER|BIGINT|DECIMAL|BOOLEAN|DATE|DATETIME|JSON)$"
+_PARTITION_STRATEGY_PATTERN = "^(NONE|RANGE|LIST|HASH)$"
+
+
+class SchemaFieldSchema(BaseModel):
+    """1 trường trong lược đồ của tập dữ liệu."""
+
+    name: str = Field(..., min_length=1, max_length=255)
+    data_type: str = Field(..., pattern=_DATA_TYPE_PATTERN)
+    nullable: bool = Field(True)
+    description: str = Field("", max_length=500)
+
+
+class DatasetCreate(BaseModel):
+    """Bước 1: Định nghĩa tập dữ liệu + lược đồ."""
+
+    data_source_id: int = Field(..., gt=0)
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = Field("", max_length=1000)
+    schema_fields: List[SchemaFieldSchema] = Field(..., min_length=1)
+
+
+class DatasetSchemaUpdate(BaseModel):
+    """Định nghĩa lại lược đồ của tập dữ liệu đã có."""
+
+    schema_fields: List[SchemaFieldSchema] = Field(..., min_length=1)
+
+
+class DatasetPartitioningConfigure(BaseModel):
+    """Bước 2: Khai báo khoá chính + chiến lược phân mảnh."""
+
+    primary_key: List[str] = Field(..., min_length=1)
+    partition_strategy: str = Field(..., pattern=_PARTITION_STRATEGY_PATTERN)
+    partition_column: Optional[str] = Field(None, max_length=255)
+
+
+class CriticalFieldsDeclare(BaseModel):
+    """Bước 3: Khai báo trường bắt buộc (NOT NULL)."""
+
+    field_names: List[str] = Field(..., min_length=1)
+
+
+class DatasetResponse(BaseModel):
+    id: int
+    data_source_id: int
+    code: str
+    name: str
+    description: str
+    schema_fields: List[Dict[str, Any]]
+    primary_key: List[str]
+    partition_strategy: str
+    partition_column: Optional[str] = None
+    current_schema_version: int
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class CriticalFieldResponse(BaseModel):
+    id: int
+    dataset_id: int
+    field_name: str
+
+    model_config = {"from_attributes": True}
+
+
+class SchemaVersionResponse(BaseModel):
+    """Bước 4: 1 phiên bản lược đồ đã đăng ký vào Schema Registry."""
+
+    id: int
+    dataset_id: int
+    version: int
+    schema_snapshot: Dict[str, Any]
+    registered_at: str
+
+    model_config = {"from_attributes": True}

@@ -4,17 +4,31 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import Connector, CredentialAsset, DataSource, SourceConnection
+from app.domain.entities import (
+    Connector,
+    CredentialAsset,
+    CriticalField,
+    DataSource,
+    Dataset,
+    SchemaVersion,
+    SourceConnection,
+)
 from app.domain.repositories import (
     ConnectorRepository,
     CredentialAssetRepository,
+    CriticalFieldRepository,
     DataSourceRepository,
+    DatasetRepository,
+    SchemaVersionRepository,
     SourceConnectionRepository,
 )
 from app.infrastructure.db.models import (
     ConnectorModel,
     CredentialAssetModel,
+    CriticalFieldModel,
     DataSourceModel,
+    DatasetModel,
+    SchemaVersionModel,
     SourceConnectionModel,
 )
 
@@ -311,3 +325,165 @@ class SqlAlchemyCredentialAssetRepository(CredentialAssetRepository):
         self._session.commit()
         self._session.refresh(model)
         return _credential_asset_to_entity(model)
+
+def _dataset_to_entity(m: DatasetModel) -> Dataset:
+    return Dataset(
+        id=m.id,
+        data_source_id=m.data_source_id,
+        code=m.code,
+        name=m.name,
+        description=m.description,
+        schema_fields=json.loads(m.schema_fields) if m.schema_fields else [],
+        primary_key=json.loads(m.primary_key) if m.primary_key else [],
+        partition_strategy=m.partition_strategy,
+        partition_column=m.partition_column,
+        current_schema_version=m.current_schema_version,
+        is_active=m.is_active,
+    )
+
+
+class SqlAlchemyDatasetRepository(DatasetRepository):
+    """UC-018 bước 1-2: Định nghĩa tập dữ liệu + lược đồ, khoá chính +
+    chiến lược phân mảnh (bảng `dataset_catalog`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, dataset: Dataset) -> Dataset:
+        model = DatasetModel(
+            data_source_id=dataset.data_source_id,
+            code=dataset.code,
+            name=dataset.name,
+            description=dataset.description,
+            schema_fields=json.dumps(dataset.schema_fields or []),
+            primary_key=json.dumps(dataset.primary_key or []),
+            partition_strategy=dataset.partition_strategy,
+            partition_column=dataset.partition_column,
+            current_schema_version=dataset.current_schema_version,
+            is_active=dataset.is_active,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _dataset_to_entity(model)
+
+    def get_by_id(self, dataset_id: int) -> Optional[Dataset]:
+        model = self._session.get(DatasetModel, dataset_id)
+        return _dataset_to_entity(model) if model else None
+
+    def get_by_code(self, data_source_id: int, code: str) -> Optional[Dataset]:
+        stmt = select(DatasetModel).where(
+            DatasetModel.data_source_id == data_source_id, DatasetModel.code == code
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _dataset_to_entity(model) if model else None
+
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        only_active: bool = False,
+    ) -> List[Dataset]:
+        stmt = select(DatasetModel)
+        if data_source_id:
+            stmt = stmt.where(DatasetModel.data_source_id == data_source_id)
+        if only_active:
+            stmt = stmt.where(DatasetModel.is_active.is_(True))
+        stmt = stmt.order_by(DatasetModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_dataset_to_entity(m) for m in models]
+
+    def update(self, dataset: Dataset) -> Dataset:
+        model = self._session.get(DatasetModel, dataset.id)
+        model.name = dataset.name
+        model.description = dataset.description
+        model.schema_fields = json.dumps(dataset.schema_fields or [])
+        model.primary_key = json.dumps(dataset.primary_key or [])
+        model.partition_strategy = dataset.partition_strategy
+        model.partition_column = dataset.partition_column
+        model.current_schema_version = dataset.current_schema_version
+        model.is_active = dataset.is_active
+        self._session.commit()
+        self._session.refresh(model)
+        return _dataset_to_entity(model)
+
+
+def _critical_field_to_entity(m: CriticalFieldModel) -> CriticalField:
+    return CriticalField(id=m.id, dataset_id=m.dataset_id, field_name=m.field_name)
+
+
+class SqlAlchemyCriticalFieldRepository(CriticalFieldRepository):
+    """UC-018 bước 3: Khai báo trường bắt buộc (NOT NULL) (bảng
+    `critical_fields`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def replace_for_dataset(self, dataset_id: int, field_names: List[str]) -> List[CriticalField]:
+        stmt = select(CriticalFieldModel).where(CriticalFieldModel.dataset_id == dataset_id)
+        existing = self._session.execute(stmt).scalars().all()
+        for m in existing:
+            self._session.delete(m)
+        self._session.flush()
+
+        new_models = [
+            CriticalFieldModel(dataset_id=dataset_id, field_name=name) for name in field_names
+        ]
+        for m in new_models:
+            self._session.add(m)
+        self._session.commit()
+        for m in new_models:
+            self._session.refresh(m)
+        return [_critical_field_to_entity(m) for m in new_models]
+
+    def list_for_dataset(self, dataset_id: int) -> List[CriticalField]:
+        stmt = select(CriticalFieldModel).where(
+            CriticalFieldModel.dataset_id == dataset_id
+        ).order_by(CriticalFieldModel.id.asc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_critical_field_to_entity(m) for m in models]
+
+
+def _schema_version_to_entity(m: SchemaVersionModel) -> SchemaVersion:
+    return SchemaVersion(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        version=m.version,
+        schema_snapshot=json.loads(m.schema_snapshot) if m.schema_snapshot else {},
+        registered_at=m.registered_at,
+    )
+
+
+class SqlAlchemySchemaVersionRepository(SchemaVersionRepository):
+    """UC-018 bước 4: Đăng ký vào Schema Registry (bảng
+    `dataset_schema_versions`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, schema_version: SchemaVersion) -> SchemaVersion:
+        model = SchemaVersionModel(
+            dataset_id=schema_version.dataset_id,
+            version=schema_version.version,
+            schema_snapshot=json.dumps(schema_version.schema_snapshot or {}),
+            registered_at=schema_version.registered_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _schema_version_to_entity(model)
+
+    def list_for_dataset(self, dataset_id: int) -> List[SchemaVersion]:
+        stmt = (
+            select(SchemaVersionModel)
+            .where(SchemaVersionModel.dataset_id == dataset_id)
+            .order_by(SchemaVersionModel.version.desc())
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [_schema_version_to_entity(m) for m in models]
+
+    def get_by_version(self, dataset_id: int, version: int) -> Optional[SchemaVersion]:
+        stmt = select(SchemaVersionModel).where(
+            SchemaVersionModel.dataset_id == dataset_id, SchemaVersionModel.version == version
+        )
+        model = self._session.execute(stmt).scalar_one_or_none()
+        return _schema_version_to_entity(model) if model else None
