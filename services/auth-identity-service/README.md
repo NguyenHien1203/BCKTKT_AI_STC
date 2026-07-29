@@ -7,7 +7,8 @@ Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `d
 - [x] UC-02: Quản lý người dùng (CRUD) — tạo user giờ yêu cầu `password` (băm PBKDF2).
 - [x] UC-03: Quản lý vòng đời người dùng — khoá/mở khoá, buộc đăng xuất, đồng bộ thủ công IdP, chuyển đơn vị + lưu lịch sử.
 - [x] UC-12: Đăng nhập/Đăng xuất — tạm dùng username/password nội bộ thay SSO Keycloak thật (xem ADR-003).
-- [ ] UC-04 → UC-14 (trừ 12): chưa làm (xem `PLAN.md` gốc project).
+- [x] UC-11: Quản trị tài liệu hướng dẫn sử dụng — lưu tệp qua cổng `FileStorage` (MinIO thật hoặc đĩa cục bộ dev/test), sửa tài liệu quản lý phiên bản, xoá mềm.
+- [ ] UC-04 → UC-10, UC-13, UC-14: chưa cập nhật vào README này (xem `PLAN.md` gốc project — code đã có, README này chưa liệt kê hết).
 
 (Test viết xong trong sandbox Claude nhưng chưa tự chạy được do thiếu Internet/Docker — xem `README.md` gốc project mục giới hạn môi trường.)
 
@@ -53,6 +54,19 @@ Phụ trách nhóm UC **I. Quản trị hệ thống** (UC-01 → UC-14) theo `d
 | POST | `/auth/logout` | Đăng xuất (header `Authorization: Bearer <token>`) |
 | GET | `/auth/me` | Lấy thông tin người dùng hiện tại từ token |
 
+### UC-11: Tài liệu hướng dẫn sử dụng
+| Method | Path | Mô tả |
+|---|---|---|
+| POST | `/guide-documents` | Thêm tài liệu mới (multipart: `title`, `description`, `category`, `uploaded_by`, `file`) — lưu tệp vào MinIO (hoặc đĩa cục bộ dev/test) |
+| GET | `/guide-documents` | Danh sách tài liệu (`?only_active=true`, `?category=`) |
+| GET | `/guide-documents/{id}` | Chi tiết 1 tài liệu |
+| PUT | `/guide-documents/{id}` | Sửa tài liệu (multipart, `file` tuỳ chọn — nếu có sẽ tăng `current_version` + lưu lịch sử phiên bản cũ) |
+| PATCH | `/guide-documents/{id}/meta` | Sửa nhanh tiêu đề/mô tả/danh mục (JSON, không đổi tệp/phiên bản) |
+| DELETE | `/guide-documents/{id}` | Xoá tài liệu (xoá mềm) |
+| POST | `/guide-documents/{id}/restore` | Khôi phục tài liệu đã xoá mềm |
+| GET | `/guide-documents/{id}/versions` | Lịch sử phiên bản tài liệu |
+| GET | `/guide-documents/{id}/download` | Tải tệp (`?version=` để tải phiên bản cũ, mặc định phiên bản hiện tại) |
+
 | GET | `/health` | Health check |
 
 ## Chạy local (cần Python 3.11+, có Internet để cài package)
@@ -80,6 +94,10 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 Hoặc chạy toàn bộ qua Docker: `docker compose up -d --build` ở thư mục gốc.
+
+Test toàn bộ hệ thống qua Docker: `docker compose exec auth-identity-service pytest -q` ở thư mục gốc
+
+Update Db alembic mới nhất: `docker compose exec auth-identity-service alembic upgrade head`  ở thư mục gốc
 
 ## Cấu trúc Clean Architecture
 ```

@@ -28,7 +28,7 @@ Nguyên tắc: chỉ chuyển UC tiếp theo sang `doing` khi UC trước đã `
 
 | UC | Tên | Tác nhân | Status |
 |---|---|---|---|
-| UC-015 | Đăng ký và quản lý nguồn dữ liệu | Quản trị Tích hợp | todo |
+| UC-015 | Đăng ký và quản lý nguồn dữ liệu | Quản trị Tích hợp | tested (backend `data_source_router.py`: POST đăng ký (validate `source_system` ∈ {TABMIS, QLVBDH, MISA, QL_GIA, PMSTT}, không trùng `code`), GET danh sách (lọc `only_active`, `source_system`), GET chi tiết, PATCH sửa nhà cung cấp/chủ sở hữu/mức nhạy cảm, POST activate/deactivate; migration `alembic/versions/0001_uc015_create_sources.py` (tạo schema `staging` + bảng `staging.sources`); đã fix `Dockerfile` thiếu `COPY alembic.ini`/`COPY alembic` khiến `alembic upgrade head` báo "No config file"; đã fix `alembic/env.py` dùng `version_table="alembic_version_ingestion"` riêng vì bảng `alembic_version` mặc định bị dùng chung với `auth-identity-service` trên cùng 1 Postgres database (gây lỗi "Can't locate revision"); frontend: `api/dataSources.js`, trang `/data-sources` (`pages/ingestion/DataSourcesPage.jsx` — form đăng ký/sửa, bảng lọc theo hệ thống nguồn + trạng thái, nút kích hoạt/vô hiệu hoá) + route + mục nav "Nguồn dữ liệu"; `pytest services/ingestion-service -q` đã chạy pass 8/8; `npm run build` frontend đã chạy pass; **đã sửa lỗi Dockerfile + version_table, nhưng chưa có xác nhận cuối cùng `docker compose exec ingestion-service alembic upgrade head` chạy thành công trên Postgres thật — cần bạn xác nhận trước khi chuyển sang trạng thái hoàn toàn ổn định**) |
 | UC-016 | Quản lý thư viện bộ kết nối | Quản trị Tích hợp | todo |
 | UC-017 | Cấu hình kết nối nguồn (credentials/cert) | Quản trị Tích hợp, DBA | todo |
 | UC-018 | Định nghĩa tập dữ liệu của nguồn | Quản trị Tích hợp | todo |
