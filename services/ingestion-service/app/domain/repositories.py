@@ -2,7 +2,15 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from app.domain.entities import Connector, CredentialAsset, DataSource, SourceConnection
+from app.domain.entities import (
+    Connector,
+    CredentialAsset,
+    CriticalField,
+    DataSource,
+    Dataset,
+    SchemaVersion,
+    SourceConnection,
+)
 
 
 class DataSourceRepository(ABC):
@@ -144,4 +152,64 @@ class CredentialAlertSender(ABC):
         days_remaining: int,
     ) -> tuple:
         """Trả về (sent: bool, message: str)."""
+        ...
+
+class DatasetRepository(ABC):
+    """Repository cho UC-018 bước 1-2: Định nghĩa tập dữ liệu + lược đồ,
+    khoá chính + chiến lược phân mảnh (lưu vào `dataset_catalog`)."""
+
+    @abstractmethod
+    def add(self, dataset: Dataset) -> Dataset:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, dataset_id: int) -> Optional[Dataset]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, data_source_id: int, code: str) -> Optional[Dataset]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        only_active: bool = False,
+    ) -> List[Dataset]:
+        ...
+
+    @abstractmethod
+    def update(self, dataset: Dataset) -> Dataset:
+        ...
+
+
+class CriticalFieldRepository(ABC):
+    """Repository cho UC-018 bước 3: Khai báo trường bắt buộc (NOT NULL)
+    (lưu vào `critical_fields`)."""
+
+    @abstractmethod
+    def replace_for_dataset(self, dataset_id: int, field_names: List[str]) -> List[CriticalField]:
+        """Thay toàn bộ danh sách trường bắt buộc hiện có của 1 dataset
+        bằng danh sách mới (idempotent)."""
+        ...
+
+    @abstractmethod
+    def list_for_dataset(self, dataset_id: int) -> List[CriticalField]:
+        ...
+
+
+class SchemaVersionRepository(ABC):
+    """Repository cho UC-018 bước 4: Đăng ký vào Schema Registry — hệ
+    thống quản lý phiên bản lược đồ."""
+
+    @abstractmethod
+    def add(self, schema_version: SchemaVersion) -> SchemaVersion:
+        ...
+
+    @abstractmethod
+    def list_for_dataset(self, dataset_id: int) -> List[SchemaVersion]:
+        ...
+
+    @abstractmethod
+    def get_by_version(self, dataset_id: int, version: int) -> Optional[SchemaVersion]:
         ...

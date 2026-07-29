@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, Database, FileStack, FileText, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -8,6 +8,7 @@ import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
+import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
@@ -95,6 +96,12 @@ function HomePage() {
       title: "Cấu hình kết nối nguồn",
       description: "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
       icon: PlugZap,
+    },
+    {
+      to: "/datasets",
+      title: "Định nghĩa tập dữ liệu của nguồn",
+      description: "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
+      icon: Layers,
     },
   ];
 
@@ -290,6 +297,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SourceConnectionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/datasets"
+        element={
+          <ProtectedRoute>
+            <DatasetsPage />
           </ProtectedRoute>
         }
       />
