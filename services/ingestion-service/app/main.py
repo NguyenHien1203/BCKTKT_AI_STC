@@ -2,7 +2,9 @@ from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
 from app.interfaces.api.connector_router import router as connector_router
+from app.interfaces.api.credential_asset_router import router as credential_asset_router
 from app.interfaces.api.data_source_router import router as data_source_router
+from app.interfaces.api.source_connection_router import router as source_connection_router
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
 # nhanh bằng SQLite; môi trường Postgres thật dùng Alembic migration).
@@ -16,6 +18,8 @@ app = FastAPI(
 
 app.include_router(data_source_router)
 app.include_router(connector_router)
+app.include_router(source_connection_router)
+app.include_router(credential_asset_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:
@@ -39,5 +43,6 @@ def on_startup() -> None:
 def health():
     return {"status": "ok", "service": "ingestion-service"}
 
-# UC tiếp theo của service này (UC-017..028): xem PLAN.md, thêm router theo
-# mẫu data_source_router.py / connector_router.py ở trên và SKILL.md mục A.
+# UC tiếp theo của service này (UC-018..028): xem PLAN.md, thêm router theo
+# mẫu data_source_router.py / connector_router.py / source_connection_router.py
+# ở trên và SKILL.md mục A.

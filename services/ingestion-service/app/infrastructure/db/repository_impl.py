@@ -1,11 +1,22 @@
+import json
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import Connector, DataSource
-from app.domain.repositories import ConnectorRepository, DataSourceRepository
-from app.infrastructure.db.models import ConnectorModel, DataSourceModel
+from app.domain.entities import Connector, CredentialAsset, DataSource, SourceConnection
+from app.domain.repositories import (
+    ConnectorRepository,
+    CredentialAssetRepository,
+    DataSourceRepository,
+    SourceConnectionRepository,
+)
+from app.infrastructure.db.models import (
+    ConnectorModel,
+    CredentialAssetModel,
+    DataSourceModel,
+    SourceConnectionModel,
+)
 
 
 def _to_entity(m: DataSourceModel) -> DataSource:
@@ -152,3 +163,151 @@ class SqlAlchemyConnectorRepository(ConnectorRepository):
         self._session.commit()
         self._session.refresh(model)
         return _connector_to_entity(model)
+
+
+def _connection_to_entity(m: SourceConnectionModel) -> SourceConnection:
+    return SourceConnection(
+        id=m.id,
+        data_source_id=m.data_source_id,
+        connection_type=m.connection_type,
+        config=json.loads(m.config) if m.config else {},
+        encrypted_credentials=m.encrypted_credentials,
+        last_test_status=m.last_test_status,
+        last_test_message=m.last_test_message,
+        last_tested_at=m.last_tested_at,
+        is_active=m.is_active,
+    )
+
+
+class SqlAlchemySourceConnectionRepository(SourceConnectionRepository):
+    """UC-017: Cấu hình kết nối nguồn (credentials/cert)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, connection: SourceConnection) -> SourceConnection:
+        model = SourceConnectionModel(
+            data_source_id=connection.data_source_id,
+            connection_type=connection.connection_type,
+            config=json.dumps(connection.config or {}),
+            encrypted_credentials=connection.encrypted_credentials,
+            last_test_status=connection.last_test_status,
+            last_test_message=connection.last_test_message,
+            last_tested_at=connection.last_tested_at,
+            is_active=connection.is_active,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _connection_to_entity(model)
+
+    def get_by_id(self, connection_id: int) -> Optional[SourceConnection]:
+        model = self._session.get(SourceConnectionModel, connection_id)
+        return _connection_to_entity(model) if model else None
+
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        connection_type: Optional[str] = None,
+        only_active: bool = False,
+    ) -> List[SourceConnection]:
+        stmt = select(SourceConnectionModel)
+        if data_source_id:
+            stmt = stmt.where(SourceConnectionModel.data_source_id == data_source_id)
+        if connection_type:
+            stmt = stmt.where(SourceConnectionModel.connection_type == connection_type)
+        if only_active:
+            stmt = stmt.where(SourceConnectionModel.is_active.is_(True))
+        stmt = stmt.order_by(SourceConnectionModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_connection_to_entity(m) for m in models]
+
+    def update(self, connection: SourceConnection) -> SourceConnection:
+        model = self._session.get(SourceConnectionModel, connection.id)
+        model.connection_type = connection.connection_type
+        model.config = json.dumps(connection.config or {})
+        model.encrypted_credentials = connection.encrypted_credentials
+        model.last_test_status = connection.last_test_status
+        model.last_test_message = connection.last_test_message
+        model.last_tested_at = connection.last_tested_at
+        model.is_active = connection.is_active
+        self._session.commit()
+        self._session.refresh(model)
+        return _connection_to_entity(model)
+
+
+def _credential_asset_to_entity(m: CredentialAssetModel) -> CredentialAsset:
+    return CredentialAsset(
+        id=m.id,
+        connection_id=m.connection_id,
+        asset_type=m.asset_type,
+        encrypted_value=m.encrypted_value,
+        issued_at=m.issued_at,
+        expires_at=m.expires_at,
+        rotation_period_days=m.rotation_period_days,
+        rotated_at=m.rotated_at,
+        rotation_count=m.rotation_count,
+        rotation_history=json.loads(m.rotation_history) if m.rotation_history else [],
+        is_active=m.is_active,
+    )
+
+
+class SqlAlchemyCredentialAssetRepository(CredentialAssetRepository):
+    """UC-017: Quản lý certificate/API key + lịch luân chuyển."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, asset: CredentialAsset) -> CredentialAsset:
+        model = CredentialAssetModel(
+            connection_id=asset.connection_id,
+            asset_type=asset.asset_type,
+            encrypted_value=asset.encrypted_value,
+            issued_at=asset.issued_at,
+            expires_at=asset.expires_at,
+            rotation_period_days=asset.rotation_period_days,
+            rotated_at=asset.rotated_at,
+            rotation_count=asset.rotation_count,
+            rotation_history=json.dumps(asset.rotation_history or []),
+            is_active=asset.is_active,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _credential_asset_to_entity(model)
+
+    def get_by_id(self, asset_id: int) -> Optional[CredentialAsset]:
+        model = self._session.get(CredentialAssetModel, asset_id)
+        return _credential_asset_to_entity(model) if model else None
+
+    def list(
+        self,
+        connection_id: Optional[int] = None,
+        asset_type: Optional[str] = None,
+        only_active: bool = False,
+    ) -> List[CredentialAsset]:
+        stmt = select(CredentialAssetModel)
+        if connection_id:
+            stmt = stmt.where(CredentialAssetModel.connection_id == connection_id)
+        if asset_type:
+            stmt = stmt.where(CredentialAssetModel.asset_type == asset_type)
+        if only_active:
+            stmt = stmt.where(CredentialAssetModel.is_active.is_(True))
+        stmt = stmt.order_by(CredentialAssetModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_credential_asset_to_entity(m) for m in models]
+
+    def update(self, asset: CredentialAsset) -> CredentialAsset:
+        model = self._session.get(CredentialAssetModel, asset.id)
+        model.asset_type = asset.asset_type
+        model.encrypted_value = asset.encrypted_value
+        model.issued_at = asset.issued_at
+        model.expires_at = asset.expires_at
+        model.rotation_period_days = asset.rotation_period_days
+        model.rotated_at = asset.rotated_at
+        model.rotation_count = asset.rotation_count
+        model.rotation_history = json.dumps(asset.rotation_history or [])
+        model.is_active = asset.is_active
+        self._session.commit()
+        self._session.refresh(model)
+        return _credential_asset_to_entity(model)

@@ -1,6 +1,7 @@
 """Domain entities cho ingestion-service."""
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -144,6 +145,144 @@ class Connector:
         self._validate_version(new_version)
         self.version = new_version.strip()
         self.restart_count += 1
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+    def activate(self) -> None:
+        self.is_active = True
+
+
+@dataclass
+class SourceConnection:
+    """Cấu hình kết nối tới nguồn dữ liệu (UC-017): API / DB / File.
+
+    `config` chỉ chứa thông tin KHÔNG nhạy cảm (host, port, base_url,
+    database, path...). Thông tin xác thực (username/password/api_key/
+    token...) được mã hoá và lưu riêng ở `encrypted_credentials` (chuỗi
+    đã mã hoá qua cổng `CredentialCrypto`) — domain layer không bao giờ
+    giữ bản rõ (plaintext) sau khi mã hoá xong.
+    """
+
+    CONNECTION_TYPES = ("API", "DB", "FILE")
+    TEST_STATUSES = ("UNTESTED", "SUCCESS", "FAILED")
+
+    id: Optional[int]
+    data_source_id: int
+    connection_type: str
+    config: Dict[str, Any] = field(default_factory=dict)
+    encrypted_credentials: str = ""
+    last_test_status: str = "UNTESTED"
+    last_test_message: str = ""
+    last_tested_at: Optional[str] = None
+    is_active: bool = True
+
+    def __post_init__(self) -> None:
+        self._validate_data_source_id(self.data_source_id)
+        self._validate_connection_type(self.connection_type)
+
+    @staticmethod
+    def _validate_data_source_id(data_source_id: int) -> None:
+        if not data_source_id or data_source_id <= 0:
+            raise ValueError("Phải chỉ định nguồn dữ liệu (data_source_id) hợp lệ")
+
+    @classmethod
+    def _validate_connection_type(cls, connection_type: str) -> None:
+        if connection_type not in cls.CONNECTION_TYPES:
+            raise ValueError(
+                f"Loại kết nối '{connection_type}' không hợp lệ, "
+                f"phải là 1 trong {cls.CONNECTION_TYPES}"
+            )
+
+    def record_test_result(self, success: bool, message: str, tested_at: str) -> None:
+        """Ghi nhận kết quả sau khi hệ thống gọi thử kết nối."""
+        self.last_test_status = "SUCCESS" if success else "FAILED"
+        self.last_test_message = message
+        self.last_tested_at = tested_at
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+    def activate(self) -> None:
+        self.is_active = True
+
+
+@dataclass
+class CredentialAsset:
+    """Certificate / API key gắn với 1 cấu hình kết nối (UC-017).
+
+    Lưu lịch luân chuyển (`rotation_history`) mỗi lần certificate/API key
+    được thay mới, phục vụ truy vết + làm căn cứ cảnh báo trước khi hết
+    hạn (`expires_at`).
+    """
+
+    ASSET_TYPES = ("CERTIFICATE", "API_KEY")
+
+    id: Optional[int]
+    connection_id: int
+    asset_type: str
+    encrypted_value: str
+    issued_at: str
+    expires_at: str
+    rotation_period_days: int = 90
+    rotated_at: Optional[str] = None
+    rotation_count: int = 0
+    rotation_history: List[Dict[str, str]] = field(default_factory=list)
+    is_active: bool = True
+
+    def __post_init__(self) -> None:
+        self._validate_connection_id(self.connection_id)
+        self._validate_asset_type(self.asset_type)
+        self._validate_expires_at(self.expires_at)
+
+    @staticmethod
+    def _validate_connection_id(connection_id: int) -> None:
+        if not connection_id or connection_id <= 0:
+            raise ValueError("Phải chỉ định cấu hình kết nối (connection_id) hợp lệ")
+
+    @classmethod
+    def _validate_asset_type(cls, asset_type: str) -> None:
+        if asset_type not in cls.ASSET_TYPES:
+            raise ValueError(
+                f"Loại tài sản xác thực '{asset_type}' không hợp lệ, "
+                f"phải là 1 trong {cls.ASSET_TYPES}"
+            )
+
+    @staticmethod
+    def _validate_expires_at(expires_at: str) -> None:
+        if not expires_at:
+            raise ValueError("Ngày hết hạn (expires_at) không được để trống")
+        try:
+            datetime.fromisoformat(expires_at)
+        except ValueError as exc:
+            raise ValueError(
+                "Ngày hết hạn (expires_at) phải theo định dạng ISO-8601"
+            ) from exc
+
+    def rotate(self, new_encrypted_value: str, new_expires_at: str, rotated_at: str) -> None:
+        """Luân chuyển (rotate) certificate/API key: lưu bản cũ vào lịch sử
+        luân chuyển rồi thay bằng bản mới."""
+        self._validate_expires_at(new_expires_at)
+        self.rotation_history.append(
+            {"rotated_at": rotated_at, "previous_expires_at": self.expires_at}
+        )
+        self.encrypted_value = new_encrypted_value
+        self.expires_at = new_expires_at
+        self.rotated_at = rotated_at
+        self.rotation_count += 1
+
+    def days_until_expiry(self, now: datetime) -> int:
+        """Số ngày còn lại tới khi hết hạn (âm nếu đã hết hạn)."""
+        expires = datetime.fromisoformat(self.expires_at)
+        if expires.tzinfo is None and now.tzinfo is not None:
+            now = now.replace(tzinfo=None)
+        elif expires.tzinfo is not None and now.tzinfo is None:
+            expires = expires.replace(tzinfo=None)
+        return (expires - now).days
+
+    def is_expiring_within(self, days_ahead: int, now: datetime) -> bool:
+        """True nếu còn hoạt động và sẽ hết hạn trong vòng `days_ahead` ngày tới."""
+        return self.is_active and self.days_until_expiry(now) <= days_ahead
 
     def deactivate(self) -> None:
         self.is_active = False
