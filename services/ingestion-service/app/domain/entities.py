@@ -669,6 +669,12 @@ class IngestionRun:
     control_totals: Dict[str, Any] = field(default_factory=dict)
     error_message: str = ""
     log_entries: List[Dict[str, str]] = field(default_factory=list)
+    retry_of_run_id: Optional[int] = None
+    """UC-021: nếu phiên này là 1 lần "chạy lại" của 1 phiên lỗi trước đó,
+    trường này trỏ tới `id` của phiên gốc bị lỗi. `trigger` khi đó luôn là
+    "RETRY". Dùng để: (1) hiển thị lịch sử chạy lại của 1 phiên, (2) làm
+    khoá chống trùng — không cho phép có 2 phiên RETRY cùng đang RUNNING
+    cho cùng 1 phiên gốc tại 1 thời điểm."""
 
     def __post_init__(self) -> None:
         self._validate_dataset_id(self.dataset_id)
@@ -677,6 +683,8 @@ class IngestionRun:
         self._validate_status(self.status)
         if not self.started_at:
             raise ValueError("Thời điểm bắt đầu (started_at) không được để trống")
+        if self.retry_of_run_id is not None and self.trigger != "RETRY":
+            raise ValueError("Phiên gắn retry_of_run_id phải có trigger='RETRY'")
 
     @staticmethod
     def _validate_dataset_id(dataset_id: int) -> None:

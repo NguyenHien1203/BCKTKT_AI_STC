@@ -103,3 +103,5 @@ Invoke-RestMethod -Uri "http://localhost:8001/users" -Method Post -ContentType "
     role        = "ADMIN"
     password    = "12345678"
 } | ConvertTo-Json)
+
+- Test: py -m pytest services/ingestion-service -q 

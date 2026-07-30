@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, History, X } from "lucide-react";
+import { AlertCircle, CalendarDays, History, RotateCcw, X } from "lucide-react";
 import AppLayout from "../../components/AppLayout.jsx";
 import { listDatasets } from "../../api/datasets.js";
-import { getDataCalendar, getRunDetail, listRunHistory } from "../../api/ingestionRuns.js";
+import {
+  getDataCalendar,
+  getFailureReason,
+  getRunDetail,
+  listRetries,
+  listRunHistory,
+  retryIngestionRun,
+} from "../../api/ingestionRuns.js";
 
 const STATUS_BADGE = {
   RUNNING: "badge-warning",
@@ -70,6 +77,11 @@ export default function IngestionRunsPage() {
   // ---- Chi tiết phiên ----
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // ---- UC-021: Chạy lại phiên ingest lỗi ----
+  const [failureReason, setFailureReason] = useState(null);
+  const [retries, setRetries] = useState([]);
+  const [retrying, setRetrying] = useState(false);
 
   async function loadDatasets() {
     try {
@@ -139,14 +151,39 @@ export default function IngestionRunsPage() {
 
   async function openDetail(runId) {
     setDetailLoading(true);
+    setFailureReason(null);
+    setRetries([]);
     try {
       const data = await getRunDetail(runId);
       setDetail(data);
       setError(null);
+      // UC-021: nếu phiên này (hoặc lịch sử chạy lại của nó) liên quan tới
+      // 1 phiên lỗi, tải thêm nguyên nhân + lịch sử chạy lại.
+      const originalId = data.retry_of_run_id || data.id;
+      const [reason, retryHistory] = await Promise.all([
+        data.status === "FAILED" ? getFailureReason(data.id) : Promise.resolve(null),
+        listRetries(originalId),
+      ]);
+      setFailureReason(reason);
+      setRetries(retryHistory);
     } catch (e) {
       setError(e?.response?.data?.detail?.message || e.message);
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function handleRetry(runId) {
+    setRetrying(true);
+    try {
+      const newRun = await retryIngestionRun(runId);
+      setError(null);
+      await reloadHistory();
+      await openDetail(newRun.id);
+    } catch (e) {
+      setError(e?.response?.data?.detail?.message || e.message);
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -158,7 +195,7 @@ export default function IngestionRunsPage() {
   return (
     <AppLayout
       title="Lịch đầy đủ dữ liệu + Lịch sử chạy"
-      subtitle="UC-020 — Xem lịch sử các phiên ingest, heatmap kỳ thiếu dữ liệu và chi tiết log + tổng kiểm soát của từng phiên."
+      subtitle="UC-020 — Xem lịch sử các phiên ingest, heatmap kỳ thiếu dữ liệu và chi tiết log + tổng kiểm soát của từng phiên. UC-021 — Chạy lại phiên ingest lỗi (xem nguyên nhân + kích hoạt Bộ điều phối chạy lại, có khoá chống trùng)."
     >
       {error && (
         <div className="alert alert-error">
@@ -272,6 +309,18 @@ export default function IngestionRunsPage() {
                         <button className="btn" onClick={() => openDetail(r.id)}>
                           Xem chi tiết
                         </button>
+                        {r.status === "FAILED" && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ marginLeft: 8 }}
+                            disabled={retrying}
+                            onClick={() => handleRetry(r.id)}
+                            title="Chọn phiên bị lỗi này và kích hoạt Bộ điều phối chạy lại"
+                          >
+                            <RotateCcw size={14} />
+                            Chạy lại
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -459,7 +508,116 @@ export default function IngestionRunsPage() {
                         <strong>Lỗi:</strong> {detail.error_message}
                       </div>
                     )}
+                    {detail.retry_of_run_id && (
+                      <div>
+                        <strong>Chạy lại của phiên:</strong>{" "}
+                        <button
+                          className="btn"
+                          style={{ padding: "2px 8px" }}
+                          onClick={() => openDetail(detail.retry_of_run_id)}
+                        >
+                          #{detail.retry_of_run_id}
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {detail.status === "FAILED" && (
+                    <div
+                      className="card"
+                      style={{
+                        marginBottom: 16,
+                        background: "var(--color-danger-soft, #fde2e2)",
+                        border: "none",
+                      }}
+                    >
+                      <div className="card-body">
+                        <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+                          UC-021 — Nguyên nhân lỗi
+                        </h3>
+                        {!failureReason ? (
+                          <div className="empty-state">Đang tải nguyên nhân...</div>
+                        ) : (
+                          <>
+                            <div style={{ marginBottom: 8 }}>
+                              {failureReason.error_message || "Không có mô tả lỗi cụ thể."}
+                            </div>
+                            {failureReason.error_log_entries.length > 0 && (
+                              <div
+                                style={{
+                                  fontFamily: "monospace",
+                                  fontSize: 12,
+                                  background: "#fff",
+                                  borderRadius: 8,
+                                  padding: 10,
+                                  marginBottom: 12,
+                                  maxHeight: 160,
+                                  overflow: "auto",
+                                }}
+                              >
+                                {failureReason.error_log_entries.map((l, i) => (
+                                  <div key={i}>
+                                    [{l.timestamp}] {l.message}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {failureReason.retryable ? (
+                              <button
+                                className="btn btn-primary"
+                                disabled={retrying}
+                                onClick={() => handleRetry(detail.id)}
+                              >
+                                <RotateCcw size={14} />
+                                {retrying ? "Đang kích hoạt Bộ điều phối..." : "Chạy lại phiên này"}
+                              </button>
+                            ) : (
+                              <div style={{ fontSize: 13 }}>
+                                Đã có 1 lượt chạy lại đang thực thi cho phiên này (khoá chống
+                                trùng) — vui lòng đợi hoàn tất.
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {retries.length > 0 && (
+                    <>
+                      <h3 style={{ fontSize: 14, marginBottom: 8 }}>
+                        Lịch sử chạy lại ({retries.length})
+                      </h3>
+                      <table className="data-table" style={{ marginBottom: 16 }}>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Bắt đầu</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {retries.map((r) => (
+                            <tr key={r.id}>
+                              <td>{r.id}</td>
+                              <td>{r.started_at}</td>
+                              <td>
+                                <span className={`badge ${STATUS_BADGE[r.status] || "badge-neutral"}`}>
+                                  {STATUS_LABEL[r.status] || r.status}
+                                </span>
+                              </td>
+                              <td>
+                                <button className="btn" onClick={() => openDetail(r.id)}>
+                                  Xem
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
 
                   <h3 style={{ fontSize: 14, marginBottom: 8 }}>Tổng kiểm soát (control totals)</h3>
                   <table className="data-table" style={{ marginBottom: 16 }}>

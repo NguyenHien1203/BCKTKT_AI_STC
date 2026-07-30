@@ -593,6 +593,7 @@ def _ingestion_run_to_entity(m: IngestionRunModel) -> IngestionRun:
         control_totals=json.loads(m.control_totals) if m.control_totals else {},
         error_message=m.error_message,
         log_entries=json.loads(m.log_entries) if m.log_entries else [],
+        retry_of_run_id=m.retry_of_run_id,
     )
 
 
@@ -618,6 +619,7 @@ class SqlAlchemyIngestionRunRepository(IngestionRunRepository):
             control_totals=json.dumps(run.control_totals or {}),
             error_message=run.error_message,
             log_entries=json.dumps(run.log_entries or []),
+            retry_of_run_id=run.retry_of_run_id,
         )
         self._session.add(model)
         self._session.commit()
@@ -662,5 +664,24 @@ class SqlAlchemyIngestionRunRepository(IngestionRunRepository):
         if date_to:
             stmt = stmt.where(IngestionRunModel.started_at <= date_to)
         stmt = stmt.order_by(IngestionRunModel.started_at.desc(), IngestionRunModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_ingestion_run_to_entity(m) for m in models]
+
+    def find_active_retry(self, run_id: int) -> Optional[IngestionRun]:
+        stmt = (
+            select(IngestionRunModel)
+            .where(IngestionRunModel.retry_of_run_id == run_id)
+            .where(IngestionRunModel.status == "RUNNING")
+            .order_by(IngestionRunModel.id.desc())
+        )
+        model = self._session.execute(stmt).scalars().first()
+        return _ingestion_run_to_entity(model) if model else None
+
+    def list_retries(self, run_id: int) -> List[IngestionRun]:
+        stmt = (
+            select(IngestionRunModel)
+            .where(IngestionRunModel.retry_of_run_id == run_id)
+            .order_by(IngestionRunModel.id.desc())
+        )
         models = self._session.execute(stmt).scalars().all()
         return [_ingestion_run_to_entity(m) for m in models]

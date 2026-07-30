@@ -4,16 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.application.use_cases.manage_ingestion_run import IngestionRunService
+from app.application.use_cases.retry_ingestion_run import RetryIngestionRunService
 from app.domain.exceptions import DomainError
 from app.infrastructure.db.repository_impl import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyIngestionRunRepository,
 )
 from app.infrastructure.db.session import get_db
+from app.infrastructure.retry_executor import NoOpIngestionRetryExecutor
 from app.interfaces.api.schemas import (
     CalendarDayResponse,
     ErrorResponse,
     IngestionRunComplete,
+    IngestionRunFailureReasonResponse,
     IngestionRunListItemResponse,
     IngestionRunLogAppend,
     IngestionRunResponse,
@@ -27,6 +30,16 @@ def get_service(db: Session = Depends(get_db)) -> IngestionRunService:
     return IngestionRunService(
         run_repo=SqlAlchemyIngestionRunRepository(db),
         dataset_repo=SqlAlchemyDatasetRepository(db),
+    )
+
+
+def get_retry_service(db: Session = Depends(get_db)) -> RetryIngestionRunService:
+    """UC-021: Chạy lại phiên ingest lỗi. Đổi `NoOpIngestionRetryExecutor`
+    thành implementation gọi Bộ điều phối thật khi tích hợp — không cần
+    sửa domain/application."""
+    return RetryIngestionRunService(
+        run_repo=SqlAlchemyIngestionRunRepository(db),
+        retry_executor=NoOpIngestionRetryExecutor(),
     )
 
 
@@ -168,5 +181,53 @@ def get_run_detail(run_id: int, service: IngestionRunService = Depends(get_servi
     """Xem chi tiết phiên cụ thể: hệ thống hiển thị log + tổng kiểm soát."""
     try:
         return service.get_run_detail(run_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+# ---------- UC-021: Chạy lại phiên ingest lỗi ----------
+
+
+@router.get(
+    "/{run_id}/failure-reason",
+    response_model=IngestionRunFailureReasonResponse,
+    responses={404: {"model": ErrorResponse}},
+    tags=["UC-021 Chạy lại phiên ingest lỗi"],
+)
+def get_failure_reason(run_id: int, service: RetryIngestionRunService = Depends(get_retry_service)):
+    """Bước 1: Chọn phiên bị lỗi -> hệ thống hiển thị nguyên nhân."""
+    try:
+        return service.get_failure_reason(run_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@router.post(
+    "/{run_id}/retry",
+    response_model=IngestionRunResponse,
+    status_code=201,
+    responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+    tags=["UC-021 Chạy lại phiên ingest lỗi"],
+)
+def retry_ingestion_run(run_id: int, service: RetryIngestionRunService = Depends(get_retry_service)):
+    """Bước 2-4: Kích hoạt Bộ điều phối chạy lại (có khoá chống trùng) ->
+    hệ thống chạy lại + ghi lịch sử -> cập nhật trạng thái vào
+    ingestion.runs. Trả về phiên RETRY mới được tạo."""
+    try:
+        return service.retry_run(run_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+@router.get(
+    "/{run_id}/retries",
+    response_model=List[IngestionRunListItemResponse],
+    responses={404: {"model": ErrorResponse}},
+    tags=["UC-021 Chạy lại phiên ingest lỗi"],
+)
+def list_retries(run_id: int, service: RetryIngestionRunService = Depends(get_retry_service)):
+    """Xem lịch sử các lượt chạy lại (RETRY) đã kích hoạt cho 1 phiên gốc."""
+    try:
+        return service.list_retries(run_id)
     except DomainError as exc:
         raise _domain_error_to_http(exc)

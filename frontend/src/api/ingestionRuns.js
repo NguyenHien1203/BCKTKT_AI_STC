@@ -60,3 +60,20 @@ export async function completeIngestionRun(runId, payload) {
   const { data } = await ingestionClient.post(`/ingestion-runs/${runId}/complete`, payload);
   return data;
 }
+
+// ---------- UC-021: Chạy lại phiên ingest lỗi ----------
+
+export async function getFailureReason(runId) {
+  const { data } = await ingestionClient.get(`/ingestion-runs/${runId}/failure-reason`);
+  return data;
+}
+
+export async function retryIngestionRun(runId) {
+  const { data } = await ingestionClient.post(`/ingestion-runs/${runId}/retry`);
+  return data;
+}
+
+export async function listRetries(runId) {
+  const { data } = await ingestionClient.get(`/ingestion-runs/${runId}/retries`);
+  return data;
+}

@@ -376,6 +376,7 @@ class IngestionRunResponse(BaseModel):
     control_totals: Dict[str, Any]
     error_message: str
     log_entries: List[Dict[str, str]]
+    retry_of_run_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -396,6 +397,26 @@ class IngestionRunListItemResponse(BaseModel):
     records_loaded: int
     records_failed: int
     error_message: str
+    retry_of_run_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ---------- UC-021: Chạy lại phiên ingest lỗi ----------
+
+
+class IngestionRunFailureReasonResponse(BaseModel):
+    """Bước 1 UC-021: hệ thống hiển thị nguyên nhân của 1 phiên bị lỗi."""
+
+    run_id: int
+    dataset_id: int
+    status: str
+    error_message: str
+    records_read: int
+    records_loaded: int
+    records_failed: int
+    error_log_entries: List[Dict[str, str]]
+    retryable: bool
 
     model_config = {"from_attributes": True}
 
