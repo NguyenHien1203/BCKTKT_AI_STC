@@ -74,6 +74,15 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      # Cố định hostname để "iss" (issuer) trong token luôn nhất quán, bất kể
+      # request gọi tới Keycloak từ mạng nội bộ Docker (http://keycloak:8080,
+      # dùng bởi backend) hay từ trình duyệt (http://localhost:8080). Nếu
+      # không set, Keycloak tự suy ra issuer theo Host header của từng request
+      # -> 2 bên tính ra issuer khác nhau -> lỗi "Token verification failed".
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: "8080"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
@@ -102,9 +111,9 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
       KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_PUBLIC_BASE_URL: ${KEYCLOAK_PUBLIC_BASE_URL:-http://localhost:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-hungyen-financial}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-auth-identity-service}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-dev-secret-change-me}
       KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       MINIO_ENDPOINT: minio:9000

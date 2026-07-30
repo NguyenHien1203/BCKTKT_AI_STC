@@ -334,6 +334,11 @@ table.data-table {
   color: var(--color-success);
 }
 
+.alert-info {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
 .empty-state {
   padding: 40px 20px;
   text-align: center;

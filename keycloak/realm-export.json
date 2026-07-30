@@ -5,9 +5,18 @@
   "registrationAllowed": false,
   "roles": {
     "realm": [
-      { "name": "ADMIN", "description": "Quản trị hệ thống" },
-      { "name": "STAFF", "description": "Cán bộ nghiệp vụ" },
-      { "name": "VIEWER", "description": "Chỉ xem" }
+      {
+        "name": "ADMIN",
+        "description": "Quản trị hệ thống"
+      },
+      {
+        "name": "STAFF",
+        "description": "Cán bộ nghiệp vụ"
+      },
+      {
+        "name": "VIEWER",
+        "description": "Chỉ xem"
+      }
     ]
   },
   "clients": [
@@ -16,13 +25,20 @@
       "name": "Auth Identity Service",
       "enabled": true,
       "protocol": "openid-connect",
-      "publicClient": false,
-      "secret": "dev-secret-change-me",
-      "directAccessGrantsEnabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": false,
       "standardFlowEnabled": true,
-      "serviceAccountsEnabled": true,
-      "redirectUris": ["http://localhost:5173/*"],
-      "webOrigins": ["http://localhost:5173"]
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
     }
   ],
   "users": [
@@ -33,9 +49,15 @@
       "lastName": "Trị Viên",
       "email": "admin@hungyen.gov.vn",
       "credentials": [
-        { "type": "password", "value": "ChangeMe123!", "temporary": false }
+        {
+          "type": "password",
+          "value": "ChangeMe123!",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["ADMIN"]
+      "realmRoles": [
+        "ADMIN"
+      ]
     }
   ]
 }
