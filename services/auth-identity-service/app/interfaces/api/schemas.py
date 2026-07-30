@@ -101,6 +101,30 @@ class CurrentUserResponse(UserResponse):
     pass
 
 
+# ---------- UC-12 (Keycloak SSO): Authorization Code Flow + PKCE ----------
+
+
+class OidcConfigResponse(BaseModel):
+    enabled: bool
+    auth_base_url: Optional[str] = None
+    realm: Optional[str] = None
+    client_id: Optional[str] = None
+    # UC-13: khi enabled=true, app KHÔNG tự đổi/cấp lại mật khẩu nữa — trỏ
+    # người dùng sang Keycloak Account Console (đã có sẵn màn hình đổi mật
+    # khẩu, chính sách mật khẩu, MFA...). Tránh phải cấp cho backend quyền
+    # Keycloak Admin API chỉ để làm lại việc Keycloak đã làm sẵn.
+    account_console_url: Optional[str] = None
+
+
+class OidcSessionRequest(BaseModel):
+    access_token: str = Field(..., min_length=1)
+
+
+class OidcSessionResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+
 # ---------- UC-13: Đổi mật khẩu / Cấp lại mật khẩu ----------
 
 

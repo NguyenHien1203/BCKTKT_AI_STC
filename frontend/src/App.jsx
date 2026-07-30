@@ -19,6 +19,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import OidcCallbackPage from "./pages/OidcCallbackPage.jsx";
 import NotificationChannelsPage from "./pages/NotificationChannelsPage.jsx";
 import OrgUnitsPage from "./pages/OrgUnitsPage.jsx";
 import PermissionsPage from "./pages/PermissionsPage.jsx";
@@ -199,6 +200,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<OidcCallbackPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route

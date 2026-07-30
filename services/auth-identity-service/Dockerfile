@@ -1,5 +1,7 @@
 FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 COPY requirements.txt .
@@ -9,6 +11,7 @@ COPY app ./app
 COPY alembic.ini ./alembic.ini
 COPY alembic ./alembic
 COPY tests ./tests
+COPY scripts ./scripts
 
 EXPOSE 8000
 

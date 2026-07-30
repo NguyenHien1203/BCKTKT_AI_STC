@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +15,7 @@ from app.infrastructure.db.repository_impl import (
 )
 from app.infrastructure.db.session import get_db
 from app.infrastructure.identity_provider import NoOpIdentityProviderClient
+from app.infrastructure.keycloak_identity_provider import KeycloakIdentityProviderClient
 from app.infrastructure.security import Pbkdf2PasswordHasher
 from app.interfaces.api.schemas import (
     ForceLogoutResponse,
@@ -29,8 +31,12 @@ from app.interfaces.api.schemas import (
 router = APIRouter(prefix="/users", tags=["UC-02 Quản lý người dùng"])
 lifecycle_router = APIRouter(prefix="/users", tags=["UC-03 Vòng đời người dùng"])
 
-# NoOp cho tới khi tích hợp Keycloak thật (xem app/infrastructure/identity_provider.py).
-_identity_provider = NoOpIdentityProviderClient()
+# AUTH_PROVIDER=keycloak -> đồng bộ tạo/sửa/khoá user thật sang Keycloak (xem auth_router.py, ADR-004).
+# AUTH_PROVIDER=local (mặc định) -> NoOp, không cần dựng Keycloak (dev/test).
+_AUTH_PROVIDER = os.getenv("AUTH_PROVIDER", "local").lower()
+_identity_provider = (
+    KeycloakIdentityProviderClient() if _AUTH_PROVIDER == "keycloak" else NoOpIdentityProviderClient()
+)
 _password_hasher = Pbkdf2PasswordHasher()
 
 

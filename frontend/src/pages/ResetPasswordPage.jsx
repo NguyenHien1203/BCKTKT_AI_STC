@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertCircle, CheckCircle2, KeyRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, KeyRound, ShieldCheck } from "lucide-react";
 import { resetPassword } from "../api/password.js";
+import { getOidcConfig } from "../api/oidc.js";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,17 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // null = đang tải cấu hình; false = flow cấp lại mật khẩu nội bộ (AUTH_PROVIDER=local);
+  // object = SSO Keycloak bật -> link cấp lại mật khẩu nội bộ (nếu ai đó còn giữ/mở lại)
+  // không còn dùng được nữa, Keycloak tự lo việc "quên mật khẩu" ngay tại trang đăng nhập.
+  const [oidcConfig, setOidcConfig] = useState(null);
+
+  useEffect(() => {
+    getOidcConfig()
+      .then((cfg) => setOidcConfig(cfg.enabled ? cfg : false))
+      .catch(() => setOidcConfig(false));
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -64,70 +76,100 @@ export default function ResetPasswordPage() {
           </div>
         </div>
 
-        {!token && (
-          <div className="alert alert-error" style={{ marginBottom: 20 }}>
-            <AlertCircle size={16} />
-            <span>Không tìm thấy token trong đường dẫn. Vui lòng mở lại link từ email.</span>
-          </div>
-        )}
-        {error && (
-          <div className="alert alert-error" style={{ marginBottom: 20 }}>
-            <AlertCircle size={16} />
-            <span>{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="alert alert-success" style={{ marginBottom: 20 }}>
-            <CheckCircle2 size={16} />
-            <span>{success}</span>
+        {oidcConfig === null && (
+          <div style={{ textAlign: "center", padding: "12px 0", color: "var(--color-text-secondary)" }}>
+            Đang tải cấu hình đăng nhập...
           </div>
         )}
 
-        {!success && (
-          <form onSubmit={handleSubmit}>
-            <div className="field" style={{ marginBottom: 14 }}>
-              <label htmlFor="new_password">Mật khẩu mới</label>
-              <input
-                id="new_password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                minLength={8}
-                autoFocus
-                required
-              />
+        {oidcConfig && (
+          <>
+            <div className="alert alert-info" style={{ marginBottom: 20 }}>
+              <ShieldCheck size={16} />
+              <span>
+                Hệ thống đang đăng nhập qua SSO Keycloak. Link cấp lại mật khẩu nội bộ này
+                không còn được sử dụng — vui lòng dùng chức năng "Quên mật khẩu" ngay tại
+                trang đăng nhập Keycloak.
+              </span>
             </div>
-            <div className="field" style={{ marginBottom: 20 }}>
-              <label htmlFor="confirm_password">Xác nhận mật khẩu mới</label>
-              <input
-                id="confirm_password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                minLength={8}
-                required
-              />
-            </div>
-            <button
-              type="submit"
+            <Link
+              to="/login"
               className="btn btn-primary"
               style={{ width: "100%", justifyContent: "center" }}
-              disabled={submitting}
             >
-              <KeyRound size={15} />
-              {submitting ? "Đang xử lý..." : "Đặt lại mật khẩu"}
-            </button>
-          </form>
+              Về trang đăng nhập
+            </Link>
+          </>
         )}
 
-        <div style={{ marginTop: 18, textAlign: "center" }}>
-          <Link
-            to="/login"
-            style={{ fontSize: 13, color: "var(--color-primary)", textDecoration: "none" }}
-          >
-            Quay lại đăng nhập
-          </Link>
-        </div>
+        {oidcConfig === false && (
+          <>
+            {!token && (
+              <div className="alert alert-error" style={{ marginBottom: 20 }}>
+                <AlertCircle size={16} />
+                <span>Không tìm thấy token trong đường dẫn. Vui lòng mở lại link từ email.</span>
+              </div>
+            )}
+            {error && (
+              <div className="alert alert-error" style={{ marginBottom: 20 }}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
+            {success && (
+              <div className="alert alert-success" style={{ marginBottom: 20 }}>
+                <CheckCircle2 size={16} />
+                <span>{success}</span>
+              </div>
+            )}
+
+            {!success && (
+              <form onSubmit={handleSubmit}>
+                <div className="field" style={{ marginBottom: 14 }}>
+                  <label htmlFor="new_password">Mật khẩu mới</label>
+                  <input
+                    id="new_password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={8}
+                    autoFocus
+                    required
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 20 }}>
+                  <label htmlFor="confirm_password">Xác nhận mật khẩu mới</label>
+                  <input
+                    id="confirm_password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  disabled={submitting}
+                >
+                  <KeyRound size={15} />
+                  {submitting ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+                </button>
+              </form>
+            )}
+
+            <div style={{ marginTop: 18, textAlign: "center" }}>
+              <Link
+                to="/login"
+                style={{ fontSize: 13, color: "var(--color-primary)", textDecoration: "none" }}
+              >
+                Quay lại đăng nhập
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
