@@ -627,3 +627,116 @@ class ScheduledTask:
         self.status = status
         self.last_run_message = message
         self.last_run_at = run_at
+
+
+@dataclass
+class IngestionRun:
+    """1 phiên chạy ingest (ingestion run) của 1 tập dữ liệu (UC-020,
+    dùng bởi UC-021 chạy lại phiên lỗi và UC-025 đồng bộ tăng dần).
+
+    Lưu vào bảng nghiệp vụ "ingestion.runs" (đặt tên `ingestion_runs`
+    trong schema `staging` — xem ghi chú ADR-001 ở models.py). Mỗi phiên
+    gắn với 1 `dataset_id` (bắt buộc), có thể gắn thêm 1 `scheduled_task_id`
+    nếu phiên do Bộ điều phối tự động kích hoạt.
+
+    Luồng nghiệp vụ UC-020:
+    1. "Xem lịch sử chạy": hệ thống truy vấn danh sách các `IngestionRun`
+       đã ghi nhận (lọc theo dataset/tác vụ/trạng thái/khoảng thời gian).
+    2. "Xem lịch đầy đủ dữ liệu (kỳ thiếu dữ liệu)": hệ thống tổng hợp các
+       phiên theo từng ngày trong khoảng thời gian để vẽ heatmap — ngày
+       không có phiên nào SUCCESS được coi là "kỳ thiếu dữ liệu".
+    3. "Xem chi tiết phiên cụ thể": hệ thống hiển thị `log_entries` +
+       `control_totals` (tổng kiểm soát: số bản ghi đọc được/nạp thành
+       công/lỗi, checksum...) của 1 `IngestionRun`.
+    """
+
+    TRIGGERS = ("MANUAL", "SCHEDULED", "RETRY")
+    SYNC_MODES = ("FULL", "INCREMENTAL")
+    STATUSES = ("RUNNING", "SUCCESS", "FAILED", "PARTIAL")
+    LOG_LEVELS = ("INFO", "WARNING", "ERROR")
+
+    id: Optional[int]
+    dataset_id: int
+    scheduled_task_id: Optional[int]
+    trigger: str
+    sync_mode: str
+    started_at: str
+    status: str = "RUNNING"
+    finished_at: Optional[str] = None
+    records_read: int = 0
+    records_loaded: int = 0
+    records_failed: int = 0
+    control_totals: Dict[str, Any] = field(default_factory=dict)
+    error_message: str = ""
+    log_entries: List[Dict[str, str]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self._validate_dataset_id(self.dataset_id)
+        self._validate_trigger(self.trigger)
+        self._validate_sync_mode(self.sync_mode)
+        self._validate_status(self.status)
+        if not self.started_at:
+            raise ValueError("Thời điểm bắt đầu (started_at) không được để trống")
+
+    @staticmethod
+    def _validate_dataset_id(dataset_id: int) -> None:
+        if not dataset_id or dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+
+    @classmethod
+    def _validate_trigger(cls, trigger: str) -> None:
+        if trigger not in cls.TRIGGERS:
+            raise ValueError(
+                f"Kiểu kích hoạt phiên '{trigger}' không hợp lệ, "
+                f"phải là 1 trong {cls.TRIGGERS}"
+            )
+
+    @classmethod
+    def _validate_sync_mode(cls, sync_mode: str) -> None:
+        if sync_mode not in cls.SYNC_MODES:
+            raise ValueError(
+                f"Chế độ đồng bộ '{sync_mode}' không hợp lệ, phải là 1 trong {cls.SYNC_MODES}"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trạng thái phiên '{status}' không hợp lệ")
+
+    @classmethod
+    def _validate_log_level(cls, level: str) -> None:
+        if level not in cls.LOG_LEVELS:
+            raise ValueError(f"Mức log '{level}' không hợp lệ, phải là 1 trong {cls.LOG_LEVELS}")
+
+    def append_log(self, level: str, message: str, timestamp: str) -> None:
+        """Ghi thêm 1 dòng log vào phiên (dùng khi phiên đang RUNNING)."""
+        self._validate_log_level(level)
+        if not message or not message.strip():
+            raise ValueError("Nội dung log (message) không được để trống")
+        self.log_entries.append({"timestamp": timestamp, "level": level, "message": message})
+
+    def complete(
+        self,
+        status: str,
+        finished_at: str,
+        records_read: int,
+        records_loaded: int,
+        records_failed: int,
+        control_totals: Dict[str, Any],
+        error_message: str = "",
+    ) -> None:
+        """Kết thúc phiên: hệ thống ghi nhận trạng thái cuối (SUCCESS/
+        FAILED/PARTIAL) + tổng kiểm soát (control totals)."""
+        if status not in ("SUCCESS", "FAILED", "PARTIAL"):
+            raise ValueError(
+                "Trạng thái kết thúc phiên phải là 1 trong (SUCCESS, FAILED, PARTIAL)"
+            )
+        if records_read < 0 or records_loaded < 0 or records_failed < 0:
+            raise ValueError("Số bản ghi (records_*) không được âm")
+        self.status = status
+        self.finished_at = finished_at
+        self.records_read = records_read
+        self.records_loaded = records_loaded
+        self.records_failed = records_failed
+        self.control_totals = control_totals or {}
+        self.error_message = error_message

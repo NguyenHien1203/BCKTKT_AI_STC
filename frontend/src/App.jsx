@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -9,6 +9,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
+import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
@@ -109,6 +110,12 @@ function HomePage() {
       title: "Cấu hình tác vụ điều phối",
       description: "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
       icon: CalendarClock,
+    },
+    {
+      to: "/ingestion-runs",
+      title: "Lịch đầy đủ dữ liệu + Lịch sử chạy",
+      description: "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
+      icon: History,
     },
   ];
 
@@ -320,6 +327,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ScheduledTasksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ingestion-runs"
+        element={
+          <ProtectedRoute>
+            <IngestionRunsPage />
           </ProtectedRoute>
         }
       />

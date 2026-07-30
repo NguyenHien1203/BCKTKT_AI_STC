@@ -127,3 +127,17 @@ class InvalidScheduledTask(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class IngestionRunNotFound(DomainError):
+    code = "INGESTION_RUN_NOT_FOUND"
+
+    def __init__(self, run_id: int):
+        super().__init__(f"Không tìm thấy phiên ingest id={run_id}")
+
+
+class InvalidIngestionRun(DomainError):
+    code = "INVALID_INGESTION_RUN"
+
+    def __init__(self, message: str):
+        super().__init__(message)

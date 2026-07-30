@@ -182,3 +182,32 @@ class ScheduledTaskModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="IDLE")
     last_run_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
     last_run_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+
+class IngestionRunModel(Base):
+    """UC-020: Xem lịch đầy đủ dữ liệu + lịch sử chạy. Tên bảng theo yêu
+    cầu nghiệp vụ: "ingestion.runs" — đặt là `ingestion_runs` trong schema
+    `staging` (xem ghi chú ADR-001 ở đầu file, nhất quán với các bảng
+    khác của ingestion-service)."""
+
+    __tablename__ = "ingestion_runs"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dataset_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}dataset_catalog.id"), nullable=False, index=True
+    )
+    scheduled_task_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}scheduled_tasks.id"), nullable=True, index=True
+    )
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False, default="MANUAL")
+    sync_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="FULL")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="RUNNING", index=True)
+    started_at: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    finished_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    records_read: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_loaded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    records_failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    control_totals: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    log_entries: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
