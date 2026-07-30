@@ -318,3 +318,95 @@ class ScheduledTaskResponse(BaseModel):
     last_run_message: str
 
     model_config = {"from_attributes": True}
+
+
+# ---------- UC-020: Xem lịch đầy đủ dữ liệu + lịch sử chạy ----------
+
+_TRIGGER_PATTERN = "^(MANUAL|SCHEDULED|RETRY)$"
+_RUN_FULL_STATUS_PATTERN = "^(RUNNING|SUCCESS|FAILED|PARTIAL)$"
+_RUN_COMPLETE_STATUS_PATTERN = "^(SUCCESS|FAILED|PARTIAL)$"
+_LOG_LEVEL_PATTERN = "^(INFO|WARNING|ERROR)$"
+
+
+class IngestionRunStart(BaseModel):
+    """Bắt đầu 1 phiên ingest mới (dùng bởi UC-021/UC-025 hoặc kích hoạt
+    thủ công để kiểm thử)."""
+
+    dataset_id: int = Field(..., gt=0)
+    scheduled_task_id: Optional[int] = Field(None, gt=0)
+    trigger: str = Field("MANUAL", pattern=_TRIGGER_PATTERN)
+    sync_mode: str = Field("FULL", pattern=_SYNC_MODE_PATTERN)
+    started_at: Optional[str] = None
+
+
+class IngestionRunLogAppend(BaseModel):
+    level: str = Field("INFO", pattern=_LOG_LEVEL_PATTERN)
+    message: str = Field(..., min_length=1, max_length=4000)
+    timestamp: Optional[str] = None
+
+
+class IngestionRunComplete(BaseModel):
+    status: str = Field(..., pattern=_RUN_COMPLETE_STATUS_PATTERN)
+    records_read: int = Field(0, ge=0)
+    records_loaded: int = Field(0, ge=0)
+    records_failed: int = Field(0, ge=0)
+    control_totals: Dict[str, Any] = Field(default_factory=dict)
+    error_message: str = Field("", max_length=4000)
+    finished_at: Optional[str] = None
+
+
+class IngestionRunLogEntryResponse(BaseModel):
+    timestamp: str
+    level: str
+    message: str
+
+
+class IngestionRunResponse(BaseModel):
+    id: int
+    dataset_id: int
+    scheduled_task_id: Optional[int] = None
+    trigger: str
+    sync_mode: str
+    status: str
+    started_at: str
+    finished_at: Optional[str] = None
+    records_read: int
+    records_loaded: int
+    records_failed: int
+    control_totals: Dict[str, Any]
+    error_message: str
+    log_entries: List[Dict[str, str]]
+
+    model_config = {"from_attributes": True}
+
+
+class IngestionRunListItemResponse(BaseModel):
+    """Bản rút gọn cho danh sách lịch sử chạy (không kèm log_entries đầy
+    đủ để danh sách nhẹ hơn; xem chi tiết log qua `GET /{run_id}`)."""
+
+    id: int
+    dataset_id: int
+    scheduled_task_id: Optional[int] = None
+    trigger: str
+    sync_mode: str
+    status: str
+    started_at: str
+    finished_at: Optional[str] = None
+    records_read: int
+    records_loaded: int
+    records_failed: int
+    error_message: str
+
+    model_config = {"from_attributes": True}
+
+
+class CalendarDayResponse(BaseModel):
+    date: str
+    run_count: int
+    success_count: int
+    failed_count: int
+    running_count: int
+    partial_count: int
+    is_missing: bool
+
+    model_config = {"from_attributes": True}

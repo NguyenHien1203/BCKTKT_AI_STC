@@ -10,6 +10,7 @@ from app.domain.entities import (
     CriticalField,
     DataSource,
     Dataset,
+    IngestionRun,
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
@@ -20,6 +21,7 @@ from app.domain.repositories import (
     CriticalFieldRepository,
     DataSourceRepository,
     DatasetRepository,
+    IngestionRunRepository,
     ScheduledTaskRepository,
     SchemaVersionRepository,
     SourceConnectionRepository,
@@ -30,6 +32,7 @@ from app.infrastructure.db.models import (
     CriticalFieldModel,
     DataSourceModel,
     DatasetModel,
+    IngestionRunModel,
     ScheduledTaskModel,
     SchemaVersionModel,
     SourceConnectionModel,
@@ -573,3 +576,91 @@ class SqlAlchemyScheduledTaskRepository(ScheduledTaskRepository):
         self._session.commit()
         self._session.refresh(model)
         return _scheduled_task_to_entity(model)
+
+def _ingestion_run_to_entity(m: IngestionRunModel) -> IngestionRun:
+    return IngestionRun(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        scheduled_task_id=m.scheduled_task_id,
+        trigger=m.trigger,
+        sync_mode=m.sync_mode,
+        started_at=m.started_at,
+        status=m.status,
+        finished_at=m.finished_at,
+        records_read=m.records_read,
+        records_loaded=m.records_loaded,
+        records_failed=m.records_failed,
+        control_totals=json.loads(m.control_totals) if m.control_totals else {},
+        error_message=m.error_message,
+        log_entries=json.loads(m.log_entries) if m.log_entries else [],
+    )
+
+
+class SqlAlchemyIngestionRunRepository(IngestionRunRepository):
+    """UC-020: Xem lịch đầy đủ dữ liệu + lịch sử chạy (bảng `ingestion_runs`,
+    tương ứng bảng nghiệp vụ "ingestion.runs")."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, run: IngestionRun) -> IngestionRun:
+        model = IngestionRunModel(
+            dataset_id=run.dataset_id,
+            scheduled_task_id=run.scheduled_task_id,
+            trigger=run.trigger,
+            sync_mode=run.sync_mode,
+            status=run.status,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+            records_read=run.records_read,
+            records_loaded=run.records_loaded,
+            records_failed=run.records_failed,
+            control_totals=json.dumps(run.control_totals or {}),
+            error_message=run.error_message,
+            log_entries=json.dumps(run.log_entries or []),
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _ingestion_run_to_entity(model)
+
+    def get_by_id(self, run_id: int) -> Optional[IngestionRun]:
+        model = self._session.get(IngestionRunModel, run_id)
+        return _ingestion_run_to_entity(model) if model else None
+
+    def update(self, run: IngestionRun) -> IngestionRun:
+        model = self._session.get(IngestionRunModel, run.id)
+        model.status = run.status
+        model.finished_at = run.finished_at
+        model.records_read = run.records_read
+        model.records_loaded = run.records_loaded
+        model.records_failed = run.records_failed
+        model.control_totals = json.dumps(run.control_totals or {})
+        model.error_message = run.error_message
+        model.log_entries = json.dumps(run.log_entries or [])
+        self._session.commit()
+        self._session.refresh(model)
+        return _ingestion_run_to_entity(model)
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        scheduled_task_id: Optional[int] = None,
+        status: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[IngestionRun]:
+        stmt = select(IngestionRunModel)
+        if dataset_id:
+            stmt = stmt.where(IngestionRunModel.dataset_id == dataset_id)
+        if scheduled_task_id:
+            stmt = stmt.where(IngestionRunModel.scheduled_task_id == scheduled_task_id)
+        if status:
+            stmt = stmt.where(IngestionRunModel.status == status)
+        if date_from:
+            stmt = stmt.where(IngestionRunModel.started_at >= date_from)
+        if date_to:
+            stmt = stmt.where(IngestionRunModel.started_at <= date_to)
+        stmt = stmt.order_by(IngestionRunModel.started_at.desc(), IngestionRunModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_ingestion_run_to_entity(m) for m in models]

@@ -8,6 +8,7 @@ from app.domain.entities import (
     CriticalField,
     DataSource,
     Dataset,
+    IngestionRun,
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
@@ -241,4 +242,35 @@ class ScheduledTaskRepository(ABC):
 
     @abstractmethod
     def update(self, task: ScheduledTask) -> ScheduledTask:
+        ...
+
+
+class IngestionRunRepository(ABC):
+    """Repository cho UC-020: Xem lịch đầy đủ dữ liệu + lịch sử chạy
+    (bảng nghiệp vụ "ingestion.runs")."""
+
+    @abstractmethod
+    def add(self, run: IngestionRun) -> IngestionRun:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, run_id: int) -> Optional[IngestionRun]:
+        ...
+
+    @abstractmethod
+    def update(self, run: IngestionRun) -> IngestionRun:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        scheduled_task_id: Optional[int] = None,
+        status: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[IngestionRun]:
+        """Lọc theo dataset/tác vụ điều phối/trạng thái/khoảng thời gian
+        (`date_from`/`date_to` so sánh trên `started_at`, định dạng
+        ISO-8601, dùng cho cả lịch sử chạy lẫn heatmap lịch dữ liệu)."""
         ...

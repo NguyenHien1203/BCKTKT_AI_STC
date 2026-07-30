@@ -10,16 +10,25 @@ Phụ trách nhóm UC **II. Tiếp nhận và đồng bộ dữ liệu** (`UC-01
 - **UC-017 (Cấu hình kết nối nguồn — credentials/cert): đã implement.** Xem
   `app/interfaces/api/source_connection_router.py` và
   `app/interfaces/api/credential_asset_router.py`.
-- UC-018 .. UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC
+- **UC-018 (Định nghĩa tập dữ liệu của nguồn): đã implement.** Xem
+  `app/interfaces/api/dataset_router.py`.
+- **UC-019 (Cấu hình tác vụ điều phối): đã implement.** Xem
+  `app/interfaces/api/scheduled_task_router.py`.
+- **UC-020 (Xem lịch đầy đủ dữ liệu + lịch sử chạy): đã implement.** Xem
+  `app/interfaces/api/ingestion_run_router.py`.
+- UC-021 .. UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC
   nào cần làm tiếp theo, và `SKILL.md` mục A để biết cách thêm UC vào service
   đã có.
 
 Schema Postgres riêng: `staging` (xem ARCHITECTURE.md mục 2). Bảng
 `sources` (UC-015), `connectors` (UC-016), `source_connections` +
-`credential_assets` (UC-017) nằm trong schema này, tạo bằng Alembic
-migration `alembic/versions/0001_uc015_create_sources.py`,
-`alembic/versions/0002_uc016_create_connectors.py` và
-`alembic/versions/0003_uc017_create_source_connections.py`.
+`credential_assets` (UC-017), `dataset_catalog` + `critical_fields` +
+`dataset_schema_versions` (UC-018), `scheduled_tasks` (UC-019) và
+`ingestion_runs` (UC-020, bảng nghiệp vụ "ingestion.runs") nằm trong
+schema này, tạo bằng Alembic migration `alembic/versions/0001_uc015_create_sources.py`,
+`0002_uc016_create_connectors.py`, `0003_uc017_create_source_connections.py`,
+`0004_uc018_create_dataset_catalog.py`, `0005_uc019_create_scheduled_tasks.py`
+và `0006_uc020_create_ingestion_runs.py`.
 
 **Lưu ý quan trọng — chạy migration qua Docker Compose:** nhiều service
 dùng chung 1 database Postgres (`financial_dw`), nên bảng theo dõi phiên
