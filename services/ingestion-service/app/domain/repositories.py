@@ -12,6 +12,8 @@ from app.domain.entities import (
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
+    TabmisIntakeSession,
+    TemplateValidationResult,
 )
 
 
@@ -302,4 +304,62 @@ class IngestionRetryExecutor(ABC):
         """Thực thi lại phiên ingest cho phiên gốc `original_run`. Trả về
         dict gồm: status (SUCCESS/FAILED/PARTIAL), records_read,
         records_loaded, records_failed, control_totals (dict), error_message."""
+        ...
+
+class FileStorage(ABC):
+    """Cổng lưu trữ tệp nhị phân (UC-022 lưu tệp gốc TABMIS vào MinIO).
+
+    Implement thật (MinIO qua thư viện `minio`) hoặc giả (lưu đĩa cục bộ
+    cho dev/test) đặt ở `infrastructure/file_storage.py` — domain/
+    application không phụ thuộc trực tiếp vào MinIO SDK.
+    """
+
+    @abstractmethod
+    def upload(self, key: str, content: bytes, content_type: str) -> None:
+        ...
+
+    @abstractmethod
+    def download(self, key: str) -> bytes:
+        ...
+
+    @abstractmethod
+    def delete(self, key: str) -> None:
+        ...
+
+
+class ExcelTemplateValidator(ABC):
+    """Cổng sinh biểu mẫu Excel chuẩn + kiểm tra tệp tải lên đúng biểu mẫu
+    (UC-022). Implement thật dùng `openpyxl` — xem
+    `infrastructure/template_validator.py`.
+    """
+
+    @abstractmethod
+    def build_template(self, columns: List[str]) -> bytes:
+        """Sinh nội dung tệp .xlsx với dòng tiêu đề là `columns`."""
+        ...
+
+    @abstractmethod
+    def validate(self, content: bytes, expected_columns: List[str]) -> TemplateValidationResult:
+        """Đọc dòng tiêu đề + đếm số dòng dữ liệu của tệp `content`, so
+        sánh với `expected_columns` (lấy từ lược đồ dataset)."""
+        ...
+
+
+class TabmisIntakeSessionRepository(ABC):
+    """Repository cho UC-022: Tiếp nhận file thủ công TABMIS (upload)."""
+
+    @abstractmethod
+    def add(self, session: TabmisIntakeSession) -> TabmisIntakeSession:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, session_id: int) -> Optional[TabmisIntakeSession]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[TabmisIntakeSession]:
         ...

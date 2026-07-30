@@ -488,6 +488,87 @@ class SchemaVersion:
 
 
 @dataclass
+class TemplateValidationResult:
+    """Kết quả kiểm tra 1 tệp Excel tải lên so với biểu mẫu chuẩn (UC-022).
+
+    `found_columns` là các cột đọc được ở dòng tiêu đề của tệp; `missing_columns`
+    là các cột bắt buộc theo lược đồ dataset nhưng không có trong tệp;
+    `row_count` là số dòng dữ liệu (không tính dòng tiêu đề) — dùng làm 1 phần
+    của tổng kiểm soát (control totals).
+    """
+
+    valid: bool
+    message: str
+    found_columns: List[str]
+    missing_columns: List[str]
+    row_count: int
+
+
+@dataclass
+class TabmisIntakeSession:
+    """1 phiên tiếp nhận file thủ công TABMIS qua upload (UC-022).
+
+    Luồng nghiệp vụ (docs/use_cases.json id=22):
+    1. Cán bộ nộp file tải biểu mẫu Excel chuẩn (sinh từ lược đồ dataset
+       TABMIS tương ứng) -> hệ thống trả về tệp biểu mẫu chuẩn.
+    2. Cán bộ tải tệp đã điền lên -> hệ thống lưu tệp gốc (raw) vào MinIO,
+       kiểm tra tệp đúng biểu mẫu (`TemplateValidationResult`) và tính tổng
+       kiểm soát (control totals: số dòng đọc được, số cột khớp/thiếu...).
+    3. Hệ thống tạo 1 phiên tiếp nhận mới (entity này).
+    4. Hệ thống ghi 1 bản ghi tương ứng vào `ingestion.runs` — liên kết qua
+       `ingestion_run_id`.
+
+    `status` = "RECEIVED" khi tệp đúng biểu mẫu (đủ cột bắt buộc), hoặc
+    "TEMPLATE_INVALID" khi tệp thiếu cột/không đọc được — trong cả 2
+    trường hợp hệ thống vẫn tạo phiên + ghi `ingestion.runs` (trạng thái
+    SUCCESS/FAILED tương ứng) để có thể tra cứu lại. UC-023 (Xem trạng
+    thái + sửa lỗi intake TABMIS) sẽ mở rộng máy trạng thái này thêm các
+    bước xem lỗi dòng dữ liệu + tải lại tệp đã sửa.
+    """
+
+    STATUSES = ("RECEIVED", "TEMPLATE_INVALID")
+
+    id: Optional[int]
+    dataset_id: int
+    file_name: str
+    raw_object_key: str
+    status: str
+    control_totals: Dict[str, Any] = field(default_factory=dict)
+    error_message: str = ""
+    uploaded_by: str = ""
+    uploaded_at: str = ""
+    ingestion_run_id: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        self._validate_dataset_id(self.dataset_id)
+        self._validate_file_name(self.file_name)
+        self._validate_raw_object_key(self.raw_object_key)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_dataset_id(dataset_id: int) -> None:
+        if not dataset_id or dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+
+    @staticmethod
+    def _validate_file_name(file_name: str) -> None:
+        if not file_name or not file_name.strip():
+            raise ValueError("Tên tệp (file_name) không được để trống")
+
+    @staticmethod
+    def _validate_raw_object_key(raw_object_key: str) -> None:
+        if not raw_object_key or not raw_object_key.strip():
+            raise ValueError(
+                "Đường dẫn lưu trữ tệp gốc trên MinIO (raw_object_key) không được để trống"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trạng thái phiên tiếp nhận '{status}' không hợp lệ")
+
+
+@dataclass
 class ScheduledTask:
     """Tác vụ điều phối (scheduler job) đồng bộ 1 tập dữ liệu (UC-019).
 

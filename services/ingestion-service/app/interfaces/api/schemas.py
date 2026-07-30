@@ -431,3 +431,22 @@ class CalendarDayResponse(BaseModel):
     is_missing: bool
 
     model_config = {"from_attributes": True}
+
+# ---------- UC-022: Tiếp nhận file thủ công TABMIS (upload) ----------
+
+_TABMIS_INTAKE_STATUS_PATTERN = "^(RECEIVED|TEMPLATE_INVALID)$"
+
+
+class TabmisIntakeSessionResponse(BaseModel):
+    id: int
+    dataset_id: int
+    file_name: str
+    raw_object_key: str
+    status: str
+    control_totals: Dict[str, Any]
+    error_message: str
+    uploaded_by: str
+    uploaded_at: str
+    ingestion_run_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}

@@ -14,6 +14,7 @@ from app.domain.entities import (
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
+    TabmisIntakeSession,
 )
 from app.domain.repositories import (
     ConnectorRepository,
@@ -25,6 +26,7 @@ from app.domain.repositories import (
     ScheduledTaskRepository,
     SchemaVersionRepository,
     SourceConnectionRepository,
+    TabmisIntakeSessionRepository,
 )
 from app.infrastructure.db.models import (
     ConnectorModel,
@@ -36,6 +38,7 @@ from app.infrastructure.db.models import (
     ScheduledTaskModel,
     SchemaVersionModel,
     SourceConnectionModel,
+    TabmisIntakeSessionModel,
 )
 
 
@@ -685,3 +688,60 @@ class SqlAlchemyIngestionRunRepository(IngestionRunRepository):
         )
         models = self._session.execute(stmt).scalars().all()
         return [_ingestion_run_to_entity(m) for m in models]
+
+def _tabmis_intake_session_to_entity(model: TabmisIntakeSessionModel) -> TabmisIntakeSession:
+    return TabmisIntakeSession(
+        id=model.id,
+        dataset_id=model.dataset_id,
+        file_name=model.file_name,
+        raw_object_key=model.raw_object_key,
+        status=model.status,
+        control_totals=json.loads(model.control_totals or "{}"),
+        error_message=model.error_message,
+        uploaded_by=model.uploaded_by,
+        uploaded_at=model.uploaded_at,
+        ingestion_run_id=model.ingestion_run_id,
+    )
+
+
+class SqlAlchemyTabmisIntakeSessionRepository(TabmisIntakeSessionRepository):
+    """UC-022: Tiếp nhận file thủ công TABMIS (upload) (bảng
+    `tabmis_intake_sessions`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, session: TabmisIntakeSession) -> TabmisIntakeSession:
+        model = TabmisIntakeSessionModel(
+            dataset_id=session.dataset_id,
+            file_name=session.file_name,
+            raw_object_key=session.raw_object_key,
+            status=session.status,
+            control_totals=json.dumps(session.control_totals or {}),
+            error_message=session.error_message,
+            uploaded_by=session.uploaded_by,
+            uploaded_at=session.uploaded_at,
+            ingestion_run_id=session.ingestion_run_id,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _tabmis_intake_session_to_entity(model)
+
+    def get_by_id(self, session_id: int) -> Optional[TabmisIntakeSession]:
+        model = self._session.get(TabmisIntakeSessionModel, session_id)
+        return _tabmis_intake_session_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[TabmisIntakeSession]:
+        stmt = select(TabmisIntakeSessionModel)
+        if dataset_id:
+            stmt = stmt.where(TabmisIntakeSessionModel.dataset_id == dataset_id)
+        if status:
+            stmt = stmt.where(TabmisIntakeSessionModel.status == status)
+        stmt = stmt.order_by(TabmisIntakeSessionModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_tabmis_intake_session_to_entity(m) for m in models]

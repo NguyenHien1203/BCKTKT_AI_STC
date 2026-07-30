@@ -8,6 +8,7 @@ from app.interfaces.api.dataset_router import router as dataset_router
 from app.interfaces.api.ingestion_run_router import router as ingestion_run_router
 from app.interfaces.api.scheduled_task_router import router as scheduled_task_router
 from app.interfaces.api.source_connection_router import router as source_connection_router
+from app.interfaces.api.tabmis_intake_router import router as tabmis_intake_router
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
 # nhanh bằng SQLite; môi trường Postgres thật dùng Alembic migration).
@@ -26,6 +27,7 @@ app.include_router(credential_asset_router)
 app.include_router(dataset_router)
 app.include_router(scheduled_task_router)
 app.include_router(ingestion_run_router)
+app.include_router(tabmis_intake_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:
