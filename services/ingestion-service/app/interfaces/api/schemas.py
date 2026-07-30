@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ---------- UC-015: Đăng ký và quản lý nguồn dữ liệu ----------
 
@@ -263,6 +263,16 @@ class ScheduledTaskCreate(BaseModel):
     retry_delay_seconds: int = Field(60, ge=0)
     retry_backoff: str = Field("FIXED", pattern=_RETRY_BACKOFF_PATTERN)
 
+    @field_validator("cron_expression")
+    @classmethod
+    def _validate_cron_expression(cls, value: str) -> str:
+        if len(value.strip().split()) != 5:
+            raise ValueError(
+                "Lịch cron không hợp lệ, phải có đúng 5 trường "
+                "(phút giờ ngày-trong-tháng tháng ngày-trong-tuần)"
+            )
+        return value
+
 
 class ScheduledTaskConfigUpdate(BaseModel):
     """Sửa cấu hình tác vụ điều phối đã có."""
@@ -272,6 +282,16 @@ class ScheduledTaskConfigUpdate(BaseModel):
     retry_max_attempts: int = Field(..., ge=0)
     retry_delay_seconds: int = Field(..., ge=0)
     retry_backoff: str = Field(..., pattern=_RETRY_BACKOFF_PATTERN)
+
+    @field_validator("cron_expression")
+    @classmethod
+    def _validate_cron_expression(cls, value: str) -> str:
+        if len(value.strip().split()) != 5:
+            raise ValueError(
+                "Lịch cron không hợp lệ, phải có đúng 5 trường "
+                "(phút giờ ngày-trong-tháng tháng ngày-trong-tuần)"
+            )
+        return value
 
 
 class ScheduledTaskRunStatusUpdate(BaseModel):

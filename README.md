@@ -85,3 +85,21 @@ Sandbox chạy Claude **không có Internet** và **không có Docker** để t�
 - Code được viết đầy đủ, có thể chạy `docker-compose up` **trên máy/server của bạn**.
 - Test đơn vị (unit test) dùng SQLite in-memory để tôi tự verify logic ngay trong sandbox (không cần Docker).
 - Khi bạn có môi trường Docker, chạy `docker-compose up -d postgres redis` rồi `pytest` với biến môi trường trỏ Postgres thật để test tích hợp đầy đủ.
+
+- Sau khi chaỵ docker compose down thì phải chạy lại alembic từng service để cấu hình lại DB
+- Sau đó tạo đơn vị
+Invoke-RestMethod -Uri "http://localhost:8001/org-units" -Method Post -ContentType "application/json" -Body (@{
+    code = "SO01"
+    name = "So Tai chinh Hung Yen"
+    unit_type = "SO"
+} | ConvertTo-Json)
+
+- Sau đó tạo tài khoản admin lại bằng câu
+Invoke-RestMethod -Uri "http://localhost:8001/users" -Method Post -ContentType "application/json" -Body (@{
+    username    = "admin"
+    full_name   = "Quan tri he thong"
+    email       = "admin@example.com"
+    org_unit_id = 1
+    role        = "ADMIN"
+    password    = "12345678"
+} | ConvertTo-Json)
