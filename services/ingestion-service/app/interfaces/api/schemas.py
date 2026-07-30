@@ -470,3 +470,25 @@ class TabmisIntakeStatusResponse(BaseModel):
     session: TabmisIntakeSessionResponse
     allowed_actions: List[str]
     row_error_count: int
+
+
+# ---------- UC-024: Tiếp nhận thủ công văn bản từ QLVBĐH (upload định kỳ) ----------
+
+_VAN_BAN_INTAKE_STATUS_PATTERN = "^(RECEIVED|DUPLICATE_SKIPPED)$"
+
+
+class VanBanIntakeResponse(BaseModel):
+    id: int
+    data_source_id: int
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str
+    don_vi_ban_hanh: str
+    raw_object_key: str
+    status: str
+    ocr_event_published: bool
+    uploaded_by: str
+    uploaded_at: str
+
+    model_config = {"from_attributes": True}

@@ -20,6 +20,7 @@ import {
   Users,
   FileBarChart,
   FileText,
+  FileUp,
   KeyRound,
   UserCog,
 } from "lucide-react";
@@ -53,6 +54,7 @@ export const NAV_SECTIONS = [
       { to: "/scheduled-tasks", label: "Cấu hình tác vụ điều phối", icon: CalendarClock },
       { to: "/ingestion-runs", label: "Lịch đầy đủ dữ liệu + Lịch sử chạy", icon: History },
       { to: "/tabmis-intake", label: "Tiếp nhận file thủ công TABMIS", icon: UploadCloud },
+      { to: "/qlvbdh-intake", label: "Tiếp nhận văn bản QLVBĐH", icon: FileUp },
       { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
     ],
   },

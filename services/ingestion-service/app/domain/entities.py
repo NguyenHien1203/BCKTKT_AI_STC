@@ -619,6 +619,70 @@ class TabmisIntakeRowError:
 
 
 @dataclass
+class VanBanIntake:
+    """1 văn bản được tiếp nhận thủ công từ QLVBĐH theo định kỳ (UC-024),
+    lưu vào `staging.stg_van_ban`.
+
+    Luồng nghiệp vụ (docs/use_cases.json id=24):
+    1. Cán bộ nộp văn bản tải biểu mẫu chuẩn và nhập siêu dữ liệu văn bản
+       (số ký hiệu, loại văn bản, trích yếu, ngày ban hành, đơn vị ban
+       hành) -> hệ thống lưu vào `staging.stg_van_ban`.
+    2. Cán bộ tải tệp PDF/bản quét đính kèm -> hệ thống lưu vào MinIO
+       (bucket `raw-documents`).
+    3. Hệ thống khử trùng lặp theo `so_ky_hieu`: nếu đã tồn tại 1 văn bản
+       khác cùng `so_ky_hieu` thì bỏ qua bản trùng (không tạo bản ghi mới,
+       không lưu lại tệp, không phát sự kiện) -> trả về bản ghi đã có kèm
+       `status = "DUPLICATE_SKIPPED"`.
+    4. Nếu không trùng: hệ thống kích hoạt sự kiện `ocr.requested` (để
+       data-quality-service UC-29+ nhận và OCR/phân tích văn bản) ->
+       `status = "RECEIVED"`.
+    """
+
+    STATUSES = ("RECEIVED", "DUPLICATE_SKIPPED")
+
+    id: Optional[int]
+    data_source_id: int
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str
+    don_vi_ban_hanh: str
+    raw_object_key: str
+    status: str = "RECEIVED"
+    ocr_event_published: bool = False
+    uploaded_by: str = ""
+    uploaded_at: str = ""
+
+    def __post_init__(self) -> None:
+        self._validate_data_source_id(self.data_source_id)
+        self._validate_so_ky_hieu(self.so_ky_hieu)
+        self._validate_raw_object_key(self.raw_object_key)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_data_source_id(data_source_id: int) -> None:
+        if not data_source_id or data_source_id <= 0:
+            raise ValueError("Phải chỉ định nguồn dữ liệu (data_source_id) hợp lệ")
+
+    @staticmethod
+    def _validate_so_ky_hieu(so_ky_hieu: str) -> None:
+        if not so_ky_hieu or not so_ky_hieu.strip():
+            raise ValueError("Số ký hiệu văn bản (so_ky_hieu) không được để trống")
+
+    @staticmethod
+    def _validate_raw_object_key(raw_object_key: str) -> None:
+        if not raw_object_key or not raw_object_key.strip():
+            raise ValueError(
+                "Đường dẫn lưu trữ tệp đính kèm trên MinIO (raw_object_key) không được để trống"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trạng thái tiếp nhận văn bản '{status}' không hợp lệ")
+
+
+@dataclass
 class ScheduledTask:
     """Tác vụ điều phối (scheduler job) đồng bộ 1 tập dữ liệu (UC-019).
 

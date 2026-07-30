@@ -254,3 +254,26 @@ class TabmisIntakeRowErrorModel(Base):
     row_number: Mapped[int] = mapped_column(Integer, nullable=False)
     field_name: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class VanBanIntakeModel(Base):
+    """UC-024: Tiếp nhận thủ công văn bản từ QLVBĐH (upload định kỳ) — 1
+    văn bản tiếp nhận, lưu vào `staging.stg_van_ban`."""
+
+    __tablename__ = "stg_van_ban"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    data_source_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}sources.id"), nullable=False, index=True
+    )
+    so_ky_hieu: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    loai_van_ban: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    trich_yeu: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ngay_ban_hanh: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    don_vi_ban_hanh: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    raw_object_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="RECEIVED", index=True)
+    ocr_event_published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    uploaded_at: Mapped[str] = mapped_column(String(40), nullable=False)
