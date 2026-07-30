@@ -141,3 +141,28 @@ class InvalidIngestionRun(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class IngestionRunNotFailed(DomainError):
+    """UC-021: chỉ được chạy lại phiên đang ở trạng thái FAILED."""
+
+    code = "INGESTION_RUN_NOT_FAILED"
+
+    def __init__(self, run_id: int, status: str):
+        super().__init__(
+            f"Phiên id={run_id} đang ở trạng thái '{status}', chỉ được chạy lại "
+            "phiên ở trạng thái FAILED"
+        )
+
+
+class IngestionRunRetryInProgress(DomainError):
+    """UC-021: khoá chống trùng — không cho phép kích hoạt chạy lại khi đã có
+    1 phiên chạy lại (RETRY) khác của cùng phiên gốc đang RUNNING."""
+
+    code = "INGESTION_RUN_RETRY_IN_PROGRESS"
+
+    def __init__(self, run_id: int, active_retry_run_id: int):
+        super().__init__(
+            f"Phiên id={run_id} đã có 1 lượt chạy lại (id={active_retry_run_id}) "
+            "đang thực thi — vui lòng đợi hoàn tất trước khi chạy lại tiếp"
+        )

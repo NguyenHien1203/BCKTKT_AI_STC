@@ -211,3 +211,6 @@ class IngestionRunModel(Base):
     control_totals: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
     error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
     log_entries: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    retry_of_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}ingestion_runs.id"), nullable=True, index=True
+    )  # UC-021: Chạy lại phiên ingest lỗi

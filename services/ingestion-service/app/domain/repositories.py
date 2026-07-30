@@ -274,3 +274,32 @@ class IngestionRunRepository(ABC):
         (`date_from`/`date_to` so sánh trên `started_at`, định dạng
         ISO-8601, dùng cho cả lịch sử chạy lẫn heatmap lịch dữ liệu)."""
         ...
+
+    @abstractmethod
+    def find_active_retry(self, run_id: int) -> Optional[IngestionRun]:
+        """UC-021: tìm 1 phiên RETRY đang RUNNING gắn `retry_of_run_id ==
+        run_id` (nếu có). Dùng làm khoá chống trùng khi kích hoạt Bộ điều
+        phối chạy lại — không cho phép 2 lượt chạy lại cùng lúc cho cùng 1
+        phiên gốc."""
+        ...
+
+    @abstractmethod
+    def list_retries(self, run_id: int) -> List[IngestionRun]:
+        """UC-021: liệt kê toàn bộ các phiên đã từng chạy lại (RETRY) của
+        1 phiên gốc `run_id`, mới nhất trước — dùng để xem lịch sử chạy lại."""
+        ...
+
+
+class IngestionRetryExecutor(ABC):
+    """Cổng kích hoạt Bộ điều phối (Orchestrator) chạy lại 1 phiên ingest lỗi
+    (UC-021). Triển khai thật sẽ gọi API/queue của Bộ điều phối để thực thi
+    lại pipeline ingest cho `dataset_id` của phiên gốc; ở đây chỉ khai báo
+    hợp đồng, xem `app/infrastructure/retry_executor.py` cho bản NoOp
+    dùng cho dev/test."""
+
+    @abstractmethod
+    def execute_retry(self, original_run: IngestionRun) -> dict:
+        """Thực thi lại phiên ingest cho phiên gốc `original_run`. Trả về
+        dict gồm: status (SUCCESS/FAILED/PARTIAL), records_read,
+        records_loaded, records_failed, control_totals (dict), error_message."""
+        ...
