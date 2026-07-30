@@ -11,6 +11,8 @@
   --color-danger-soft: #fef3f2;
   --color-success: #17b26a;
   --color-success-soft: #ecfdf3;
+  --color-warning: #b54708;
+  --color-warning-soft: #fffaeb;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -305,6 +307,11 @@ table.data-table {
 .badge-danger {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+.badge-warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
 }
 
 .alert {

@@ -1,5 +1,23 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UploadCloud, UserCog, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  Database,
+  FileStack,
+  FileText,
+  History,
+  KeyRound,
+  Layers,
+  MonitorSmartphone,
+  Plug,
+  PlugZap,
+  ScanSearch,
+  Settings,
+  UploadCloud,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -25,13 +43,15 @@ import RolesPage from "./pages/RolesPage.jsx";
 import SessionsPage from "./pages/SessionsPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
+import TabmisIntakeDetailPage from "./pages/ingestion/TabmisIntakeDetailPage.jsx";
 
 function HomePage() {
   const modules = [
     {
       to: "/org-units",
       title: "Cơ cấu tổ chức",
-      description: "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
+      description:
+        "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
       icon: Building2,
     },
     {
@@ -43,85 +63,99 @@ function HomePage() {
     {
       to: "/permissions",
       title: "Quyền người dùng",
-      description: "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
+      description:
+        "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
       icon: KeyRound,
     },
     {
       to: "/roles",
       title: "Vai trò người dùng",
-      description: "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
+      description:
+        "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
       icon: UserCog,
     },
     {
       to: "/system-config",
       title: "Cấu hình hệ thống chung",
-      description: "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
+      description:
+        "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
       icon: Settings,
     },
     {
       to: "/audit-logs",
       title: "Nhật ký truy cập và thao tác",
-      description: "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
+      description:
+        "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
       icon: FileText,
     },
     {
       to: "/ai-audit-logs",
       title: "Quản trị AI Audit Log",
-      description: "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
+      description:
+        "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
       icon: ScanSearch,
     },
     {
       to: "/guide-documents",
       title: "Tài liệu hướng dẫn sử dụng",
-      description: "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
+      description:
+        "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
       icon: FileStack,
     },
     {
       to: "/sessions",
       title: "Quản lý phiên đăng nhập",
-      description: "UC-14 — Xem và thu hồi từng phiên đăng nhập đang hoạt động trong hệ thống.",
+      description:
+        "UC-14 — Xem và thu hồi từng phiên đăng nhập đang hoạt động trong hệ thống.",
       icon: MonitorSmartphone,
     },
     {
       to: "/data-sources",
       title: "Nguồn dữ liệu",
-      description: "UC-015 — Đăng ký, xem, sửa và vô hiệu hoá nguồn dữ liệu (TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).",
+      description:
+        "UC-015 — Đăng ký, xem, sửa và vô hiệu hoá nguồn dữ liệu (TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).",
       icon: Database,
     },
     {
       to: "/connectors",
       title: "Thư viện bộ kết nối",
-      description: "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
+      description:
+        "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
       icon: Plug,
     },
     {
       to: "/source-connections",
       title: "Cấu hình kết nối nguồn",
-      description: "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
+      description:
+        "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
       icon: PlugZap,
     },
     {
       to: "/datasets",
       title: "Định nghĩa tập dữ liệu của nguồn",
-      description: "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
+      description:
+        "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
       icon: Layers,
     },
     {
       to: "/scheduled-tasks",
       title: "Cấu hình tác vụ điều phối",
-      description: "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
+      description:
+        "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
       icon: CalendarClock,
     },
     {
       to: "/ingestion-runs",
       title: "Lịch đầy đủ dữ liệu + Lịch sử chạy",
-      description: "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
+      description:
+        "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
       icon: History,
     },
     {
       to: "/tabmis-intake",
       title: "Tiếp nhận file thủ công TABMIS",
-      description: "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
+      description:
+        "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
       icon: UploadCloud,
     },
   ];
@@ -163,7 +197,9 @@ function HomePage() {
                 <Icon size={20} />
               </div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.title}</div>
-              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
+              <div
+                style={{ fontSize: 13, color: "var(--color-text-secondary)" }}
+              >
                 {m.description}
               </div>
               <div
@@ -350,6 +386,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TabmisIntakePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tabmis-intake/:id"
+        element={
+          <ProtectedRoute>
+            <TabmisIntakeDetailPage />
           </ProtectedRoute>
         }
       />
