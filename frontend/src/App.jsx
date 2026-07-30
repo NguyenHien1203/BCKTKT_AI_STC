@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -12,6 +12,7 @@ import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
 import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
+import TabmisIntakePage from "./pages/ingestion/TabmisIntakePage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -116,6 +117,12 @@ function HomePage() {
       title: "Lịch đầy đủ dữ liệu + Lịch sử chạy",
       description: "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
       icon: History,
+    },
+    {
+      to: "/tabmis-intake",
+      title: "Tiếp nhận file thủ công TABMIS",
+      description: "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
+      icon: UploadCloud,
     },
   ];
 
@@ -335,6 +342,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IngestionRunsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tabmis-intake"
+        element={
+          <ProtectedRoute>
+            <TabmisIntakePage />
           </ProtectedRoute>
         }
       />

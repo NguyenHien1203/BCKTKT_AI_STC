@@ -166,3 +166,29 @@ class IngestionRunRetryInProgress(DomainError):
             f"Phiên id={run_id} đã có 1 lượt chạy lại (id={active_retry_run_id}) "
             "đang thực thi — vui lòng đợi hoàn tất trước khi chạy lại tiếp"
         )
+
+class DatasetSourceSystemMismatch(DomainError):
+    """UC-022: dataset dùng để tiếp nhận TABMIS phải thuộc nguồn có
+    `source_system == 'TABMIS'`."""
+
+    code = "DATASET_SOURCE_SYSTEM_MISMATCH"
+
+    def __init__(self, dataset_id: int, expected_source_system: str):
+        super().__init__(
+            f"Tập dữ liệu id={dataset_id} không thuộc hệ thống nguồn "
+            f"'{expected_source_system}'"
+        )
+
+
+class InvalidTabmisIntakeUpload(DomainError):
+    code = "INVALID_TABMIS_INTAKE_UPLOAD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class TabmisIntakeSessionNotFound(DomainError):
+    code = "TABMIS_INTAKE_SESSION_NOT_FOUND"
+
+    def __init__(self, session_id: int):
+        super().__init__(f"Không tìm thấy phiên tiếp nhận TABMIS id={session_id}")

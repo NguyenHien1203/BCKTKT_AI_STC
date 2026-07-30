@@ -214,3 +214,27 @@ class IngestionRunModel(Base):
     retry_of_run_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey(f"{_fk_prefix}ingestion_runs.id"), nullable=True, index=True
     )  # UC-021: Chạy lại phiên ingest lỗi
+
+
+class TabmisIntakeSessionModel(Base):
+    """UC-022: Tiếp nhận file thủ công TABMIS (upload) — 1 phiên tiếp nhận
+    ứng với 1 lần tải tệp Excel lên, gắn với 1 bản ghi `ingestion_runs`
+    (`ingestion_run_id`)."""
+
+    __tablename__ = "tabmis_intake_sessions"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dataset_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}dataset_catalog.id"), nullable=False, index=True
+    )
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    raw_object_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="RECEIVED", index=True)
+    control_totals: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    error_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    uploaded_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    ingestion_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}ingestion_runs.id"), nullable=True, index=True
+    )
