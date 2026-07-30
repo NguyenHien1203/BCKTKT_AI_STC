@@ -15,6 +15,7 @@ from app.domain.entities import (
     TabmisIntakeRowError,
     TabmisIntakeSession,
     TemplateValidationResult,
+    VanBanIntake,
 )
 
 
@@ -402,4 +403,48 @@ class TabmisIntakeRowErrorRepository(ABC):
 
     @abstractmethod
     def list_for_session(self, session_id: int) -> List[TabmisIntakeRowError]:
+        ...
+
+
+class VanBanIntakeRepository(ABC):
+    """Repository cho UC-024: Tiếp nhận thủ công văn bản từ QLVBĐH (bảng
+    `staging.stg_van_ban`)."""
+
+    @abstractmethod
+    def add(self, intake: VanBanIntake) -> VanBanIntake:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, intake_id: int) -> Optional[VanBanIntake]:
+        ...
+
+    @abstractmethod
+    def get_by_so_ky_hieu(
+        self, data_source_id: int, so_ky_hieu: str
+    ) -> Optional[VanBanIntake]:
+        """Dùng để khử trùng lặp (bước 3, UC-024): tìm văn bản đã tiếp nhận
+        trước đó của cùng nguồn dữ liệu với cùng `so_ky_hieu`."""
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[VanBanIntake]:
+        ...
+
+
+class EventPublisher(ABC):
+    """Cổng phát sự kiện bất đồng bộ (UC-024 bước 4: kích hoạt sự kiện
+    `ocr.requested`; xem ARCHITECTURE.md mục 3 — giao tiếp bất đồng bộ qua
+    RabbitMQ/Celery giữa `ingestion-service` và `data-quality-service`).
+
+    Implement thật (RabbitMQ) hoặc giả (ghi log cho dev/test) đặt ở
+    `infrastructure/event_publisher.py` — domain/application không phụ
+    thuộc trực tiếp vào thư viện message broker.
+    """
+
+    @abstractmethod
+    def publish(self, event_name: str, payload: Dict[str, Any]) -> None:
         ...

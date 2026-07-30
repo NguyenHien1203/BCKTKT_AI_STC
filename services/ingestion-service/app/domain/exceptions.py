@@ -192,3 +192,30 @@ class TabmisIntakeSessionNotFound(DomainError):
 
     def __init__(self, session_id: int):
         super().__init__(f"Không tìm thấy phiên tiếp nhận TABMIS id={session_id}")
+
+
+class DataSourceSystemMismatch(DomainError):
+    """UC-024: nguồn dữ liệu dùng để tiếp nhận văn bản phải thuộc hệ thống
+    nguồn `QLVBDH`."""
+
+    code = "DATA_SOURCE_SYSTEM_MISMATCH"
+
+    def __init__(self, data_source_id: int, expected_source_system: str):
+        super().__init__(
+            f"Nguồn dữ liệu id={data_source_id} không thuộc hệ thống nguồn "
+            f"'{expected_source_system}'"
+        )
+
+
+class InvalidVanBanIntakeUpload(DomainError):
+    code = "INVALID_VAN_BAN_INTAKE_UPLOAD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class VanBanIntakeNotFound(DomainError):
+    code = "VAN_BAN_INTAKE_NOT_FOUND"
+
+    def __init__(self, intake_id: int):
+        super().__init__(f"Không tìm thấy văn bản tiếp nhận id={intake_id}")

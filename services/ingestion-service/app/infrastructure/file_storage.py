@@ -112,3 +112,13 @@ def get_file_storage() -> FileStorage:
     if os.getenv("MINIO_ENDPOINT"):
         return MinioFileStorage()
     return LocalDiskFileStorage()
+
+
+def get_document_file_storage() -> FileStorage:
+    """Factory cho UC-024 (Tiếp nhận thủ công văn bản từ QLVBĐH): lưu tệp
+    PDF/bản quét đính kèm vào bucket `raw-documents` (khác bucket
+    `tabmis-intake` của UC-022) — chọn MinIO thật nếu có cấu hình
+    `MINIO_ENDPOINT`, ngược lại dùng đĩa cục bộ (dev/test)."""
+    if os.getenv("MINIO_ENDPOINT"):
+        return MinioFileStorage(bucket=os.getenv("MINIO_BUCKET_RAW_DOCUMENTS", "raw-documents"))
+    return LocalDiskFileStorage(base_dir=os.getenv("VAN_BAN_INTAKE_LOCAL_DIR", "./data/raw-documents"))

@@ -16,6 +16,7 @@ from app.domain.entities import (
     SourceConnection,
     TabmisIntakeRowError,
     TabmisIntakeSession,
+    VanBanIntake,
 )
 from app.domain.repositories import (
     ConnectorRepository,
@@ -29,6 +30,7 @@ from app.domain.repositories import (
     SourceConnectionRepository,
     TabmisIntakeRowErrorRepository,
     TabmisIntakeSessionRepository,
+    VanBanIntakeRepository,
 )
 from app.infrastructure.db.models import (
     ConnectorModel,
@@ -42,6 +44,7 @@ from app.infrastructure.db.models import (
     SourceConnectionModel,
     TabmisIntakeRowErrorModel,
     TabmisIntakeSessionModel,
+    VanBanIntakeModel,
 )
 
 
@@ -810,3 +813,72 @@ class SqlAlchemyTabmisIntakeRowErrorRepository(TabmisIntakeRowErrorRepository):
         )
         models = self._session.execute(stmt).scalars().all()
         return [_tabmis_intake_row_error_to_entity(m) for m in models]
+
+
+def _van_ban_intake_to_entity(model: VanBanIntakeModel) -> VanBanIntake:
+    return VanBanIntake(
+        id=model.id,
+        data_source_id=model.data_source_id,
+        so_ky_hieu=model.so_ky_hieu,
+        loai_van_ban=model.loai_van_ban,
+        trich_yeu=model.trich_yeu,
+        ngay_ban_hanh=model.ngay_ban_hanh,
+        don_vi_ban_hanh=model.don_vi_ban_hanh,
+        raw_object_key=model.raw_object_key,
+        status=model.status,
+        ocr_event_published=model.ocr_event_published,
+        uploaded_by=model.uploaded_by,
+        uploaded_at=model.uploaded_at,
+    )
+
+
+class SqlAlchemyVanBanIntakeRepository(VanBanIntakeRepository):
+    """UC-024: Tiếp nhận thủ công văn bản từ QLVBĐH (bảng `stg_van_ban`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, intake: VanBanIntake) -> VanBanIntake:
+        model = VanBanIntakeModel(
+            data_source_id=intake.data_source_id,
+            so_ky_hieu=intake.so_ky_hieu,
+            loai_van_ban=intake.loai_van_ban,
+            trich_yeu=intake.trich_yeu,
+            ngay_ban_hanh=intake.ngay_ban_hanh,
+            don_vi_ban_hanh=intake.don_vi_ban_hanh,
+            raw_object_key=intake.raw_object_key,
+            status=intake.status,
+            ocr_event_published=intake.ocr_event_published,
+            uploaded_by=intake.uploaded_by,
+            uploaded_at=intake.uploaded_at,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _van_ban_intake_to_entity(model)
+
+    def get_by_id(self, intake_id: int) -> Optional[VanBanIntake]:
+        model = self._session.get(VanBanIntakeModel, intake_id)
+        return _van_ban_intake_to_entity(model) if model else None
+
+    def get_by_so_ky_hieu(self, data_source_id: int, so_ky_hieu: str) -> Optional[VanBanIntake]:
+        stmt = select(VanBanIntakeModel).where(
+            VanBanIntakeModel.data_source_id == data_source_id,
+            VanBanIntakeModel.so_ky_hieu == so_ky_hieu,
+        )
+        model = self._session.execute(stmt).scalars().first()
+        return _van_ban_intake_to_entity(model) if model else None
+
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[VanBanIntake]:
+        stmt = select(VanBanIntakeModel)
+        if data_source_id is not None:
+            stmt = stmt.where(VanBanIntakeModel.data_source_id == data_source_id)
+        if status is not None:
+            stmt = stmt.where(VanBanIntakeModel.status == status)
+        stmt = stmt.order_by(VanBanIntakeModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_van_ban_intake_to_entity(m) for m in models]
