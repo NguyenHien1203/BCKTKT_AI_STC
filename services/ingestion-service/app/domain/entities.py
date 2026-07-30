@@ -1,7 +1,7 @@
 """Domain entities cho ingestion-service."""
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 
 @dataclass
@@ -526,7 +526,24 @@ class TabmisIntakeSession:
     bước xem lỗi dòng dữ liệu + tải lại tệp đã sửa.
     """
 
-    STATUSES = ("RECEIVED", "TEMPLATE_INVALID")
+    # UC-023 mở rộng máy trạng thái:
+    # - RECEIVED: tệp đúng biểu mẫu, không có dòng nào sai.
+    # - TEMPLATE_INVALID: tệp sai biểu mẫu (thiếu cột bắt buộc/không đọc được).
+    # - ROW_ERRORS: tệp đúng biểu mẫu nhưng có ít nhất 1 dòng dữ liệu sai
+    #   (thiếu trường bắt buộc hoặc sai kiểu dữ liệu) -> cần xem chi tiết lỗi
+    #   dòng rồi sửa + tải lại tệp.
+    # - CORRECTED: đã tải lại tệp đã sửa (bước 3 UC-023) và lần kiểm tra lại
+    #   này không còn lỗi (biểu mẫu đúng + không còn dòng sai).
+    STATUSES = ("RECEIVED", "TEMPLATE_INVALID", "ROW_ERRORS", "CORRECTED")
+
+    # Máy trạng thái UC-023 bước 1 "Xem trạng thái tiếp nhận: hệ thống hiển
+    # thị máy trạng thái" — với mỗi trạng thái, các hành động còn hợp lệ.
+    STATE_TRANSITIONS: ClassVar[Dict[str, List[str]]] = {
+        "TEMPLATE_INVALID": ["VIEW_ROW_ERRORS", "REUPLOAD"],
+        "ROW_ERRORS": ["VIEW_ROW_ERRORS", "REUPLOAD"],
+        "RECEIVED": ["REUPLOAD"],
+        "CORRECTED": ["REUPLOAD"],
+    }
 
     id: Optional[int]
     dataset_id: int
@@ -544,6 +561,11 @@ class TabmisIntakeSession:
         self._validate_file_name(self.file_name)
         self._validate_raw_object_key(self.raw_object_key)
         self._validate_status(self.status)
+
+    def allowed_actions(self) -> List[str]:
+        """UC-023 bước 1: các hành động hợp lệ từ trạng thái hiện tại."""
+        return self.STATE_TRANSITIONS.get(self.status, [])
+
 
     @staticmethod
     def _validate_dataset_id(dataset_id: int) -> None:
@@ -566,6 +588,34 @@ class TabmisIntakeSession:
     def _validate_status(cls, status: str) -> None:
         if status not in cls.STATUSES:
             raise ValueError(f"Trạng thái phiên tiếp nhận '{status}' không hợp lệ")
+
+
+@dataclass
+class TabmisIntakeRowError:
+    """1 dòng dữ liệu sai trong 1 phiên tiếp nhận TABMIS (UC-023, bước 2
+    "Xem chi tiết lỗi dòng: hệ thống hiển thị các dòng sai").
+
+    `row_number` đếm từ 1, ứng với dòng dữ liệu trong tệp Excel (không tính
+    dòng tiêu đề). `field_name` là tên cột (trường) bị sai theo lược đồ
+    dataset; `message` mô tả lỗi (thiếu trường bắt buộc hoặc sai kiểu dữ
+    liệu so với `data_type` khai báo ở UC-018).
+    """
+
+    id: Optional[int]
+    session_id: int
+    row_number: int
+    field_name: str
+    message: str
+
+    def __post_init__(self) -> None:
+        if not self.session_id or self.session_id <= 0:
+            raise ValueError("Phải chỉ định phiên tiếp nhận (session_id) hợp lệ")
+        if not self.row_number or self.row_number <= 0:
+            raise ValueError("Số thứ tự dòng (row_number) phải > 0")
+        if not self.field_name or not self.field_name.strip():
+            raise ValueError("Tên trường (field_name) không được để trống")
+        if not self.message or not self.message.strip():
+            raise ValueError("Nội dung lỗi (message) không được để trống")
 
 
 @dataclass

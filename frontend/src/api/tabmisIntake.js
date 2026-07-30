@@ -42,3 +42,28 @@ export async function getTabmisIntakeSession(id) {
   const { data } = await ingestionClient.get(`/tabmis-intake/${id}`);
   return data;
 }
+
+// ---------- UC-023: Xem trạng thái + sửa lỗi intake TABMIS ----------
+
+// Bước 1: Xem trạng thái tiếp nhận -> hệ thống hiển thị máy trạng thái.
+export async function getTabmisIntakeStatus(id) {
+  const { data } = await ingestionClient.get(`/tabmis-intake/${id}/status`);
+  return data;
+}
+
+// Bước 2: Xem chi tiết lỗi dòng -> hệ thống hiển thị các dòng sai.
+export async function getTabmisIntakeRowErrors(id) {
+  const { data } = await ingestionClient.get(`/tabmis-intake/${id}/row-errors`);
+  return data;
+}
+
+// Bước 3: Sửa và tải lại tệp đã chỉnh -> hệ thống kiểm tra lại.
+export async function reuploadTabmisIntakeFile({ sessionId, uploadedBy, file }) {
+  const form = new FormData();
+  form.append("uploaded_by", uploadedBy);
+  form.append("file", file);
+  const { data } = await ingestionClient.post(`/tabmis-intake/${sessionId}/reupload`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}

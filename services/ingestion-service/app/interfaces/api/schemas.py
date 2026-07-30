@@ -433,8 +433,9 @@ class CalendarDayResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 # ---------- UC-022: Tiếp nhận file thủ công TABMIS (upload) ----------
+# ---------- UC-023: Xem trạng thái + sửa lỗi intake TABMIS ----------
 
-_TABMIS_INTAKE_STATUS_PATTERN = "^(RECEIVED|TEMPLATE_INVALID)$"
+_TABMIS_INTAKE_STATUS_PATTERN = "^(RECEIVED|TEMPLATE_INVALID|ROW_ERRORS|CORRECTED)$"
 
 
 class TabmisIntakeSessionResponse(BaseModel):
@@ -450,3 +451,22 @@ class TabmisIntakeSessionResponse(BaseModel):
     ingestion_run_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
+
+
+class TabmisIntakeRowErrorResponse(BaseModel):
+    id: int
+    session_id: int
+    row_number: int
+    field_name: str
+    message: str
+
+    model_config = {"from_attributes": True}
+
+
+class TabmisIntakeStatusResponse(BaseModel):
+    """UC-023 bước 1: trạng thái tiếp nhận + máy trạng thái (các hành động
+    còn hợp lệ từ trạng thái hiện tại)."""
+
+    session: TabmisIntakeSessionResponse
+    allowed_actions: List[str]
+    row_error_count: int

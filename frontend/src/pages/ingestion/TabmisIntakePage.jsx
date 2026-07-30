@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Download, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertCircle, CheckCircle2, Download, Eye, Upload } from "lucide-react";
 import AppLayout from "../../components/AppLayout.jsx";
 import { listDataSources } from "../../api/dataSources.js";
 import { listDatasets } from "../../api/datasets.js";
@@ -12,11 +13,15 @@ import {
 const STATUS_BADGE = {
   RECEIVED: "badge-success",
   TEMPLATE_INVALID: "badge-danger",
+  ROW_ERRORS: "badge-warning",
+  CORRECTED: "badge-success",
 };
 
 const STATUS_LABEL = {
   RECEIVED: "Đã tiếp nhận",
   TEMPLATE_INVALID: "Sai biểu mẫu",
+  ROW_ERRORS: "Có dòng dữ liệu sai",
+  CORRECTED: "Đã sửa & kiểm tra lại thành công",
 };
 
 function formatTime(value) {
@@ -256,6 +261,8 @@ export default function TabmisIntakePage() {
             <option value="">Tất cả trạng thái</option>
             <option value="RECEIVED">Đã tiếp nhận</option>
             <option value="TEMPLATE_INVALID">Sai biểu mẫu</option>
+            <option value="ROW_ERRORS">Có dòng dữ liệu sai</option>
+            <option value="CORRECTED">Đã sửa & kiểm tra lại thành công</option>
           </select>
         </div>
         <div className="card-body" style={{ padding: 0 }}>
@@ -277,6 +284,7 @@ export default function TabmisIntakePage() {
                   <th>Cán bộ nộp</th>
                   <th>Thời gian</th>
                   <th>Phiên ingest</th>
+                  <th>UC-023</th>
                 </tr>
               </thead>
               <tbody>
@@ -299,10 +307,26 @@ export default function TabmisIntakePage() {
                       {s.control_totals?.records_read ?? 0} dòng /{" "}
                       {s.control_totals?.columns_found ?? 0}/{s.control_totals?.columns_expected ?? 0}{" "}
                       cột
+                      {typeof s.control_totals?.row_error_count === "number" &&
+                        s.control_totals.row_error_count > 0 && (
+                          <div style={{ fontSize: 12, color: "var(--color-warning)" }}>
+                            {s.control_totals.row_error_count} dòng sai
+                          </div>
+                        )}
                     </td>
                     <td>{s.uploaded_by}</td>
                     <td>{formatTime(s.uploaded_at)}</td>
                     <td>{s.ingestion_run_id ? `#${s.ingestion_run_id}` : "—"}</td>
+                    <td>
+                      <Link
+                        to={`/tabmis-intake/${s.id}`}
+                        className="btn"
+                        style={{ padding: "4px 10px", fontSize: 12 }}
+                      >
+                        <Eye size={14} />
+                        Xem trạng thái / sửa lỗi
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

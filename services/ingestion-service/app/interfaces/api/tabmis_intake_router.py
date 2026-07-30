@@ -8,18 +8,25 @@ from app.application.use_cases.manage_ingestion_run import IngestionRunService
 from app.application.use_cases.manage_tabmis_intake import TabmisIntakeService
 from app.domain.exceptions import DomainError
 from app.infrastructure.db.repository_impl import (
+    SqlAlchemyCriticalFieldRepository,
     SqlAlchemyDataSourceRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyIngestionRunRepository,
+    SqlAlchemyTabmisIntakeRowErrorRepository,
     SqlAlchemyTabmisIntakeSessionRepository,
 )
 from app.infrastructure.db.session import get_db
 from app.infrastructure.file_storage import get_file_storage
 from app.infrastructure.template_validator import OpenpyxlExcelTemplateValidator
-from app.interfaces.api.schemas import ErrorResponse, TabmisIntakeSessionResponse
+from app.interfaces.api.schemas import (
+    ErrorResponse,
+    TabmisIntakeRowErrorResponse,
+    TabmisIntakeSessionResponse,
+    TabmisIntakeStatusResponse,
+)
 
 router = APIRouter(
-    prefix="/tabmis-intake", tags=["UC-022 Tiếp nhận file thủ công TABMIS (upload)"]
+    prefix="/tabmis-intake", tags=["UC-022/UC-023 Tiếp nhận + xử lý lỗi intake TABMIS"]
 )
 
 
@@ -39,6 +46,8 @@ def get_service(db: Session = Depends(get_db)) -> TabmisIntakeService:
         ingestion_run_service=ingestion_run_service,
         file_storage=get_file_storage(),
         template_validator=OpenpyxlExcelTemplateValidator(),
+        row_error_repo=SqlAlchemyTabmisIntakeRowErrorRepository(db),
+        critical_field_repo=SqlAlchemyCriticalFieldRepository(db),
     )
 
 
@@ -100,7 +109,7 @@ async def upload_tabmis_file(
         raise _domain_error_to_http(exc)
 
 
-# ---------- Xem lại phiên tiếp nhận (hạ tầng cho UC-023) ----------
+# ---------- Xem lại phiên tiếp nhận ----------
 
 
 @router.get("", response_model=List[TabmisIntakeSessionResponse])
@@ -124,5 +133,77 @@ def get_intake_session(
     """Xem chi tiết 1 phiên tiếp nhận TABMIS."""
     try:
         return service.get(session_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+# ---------- UC-023 bước 1: Xem trạng thái tiếp nhận (máy trạng thái) ----------
+
+
+@router.get(
+    "/{session_id}/status",
+    response_model=TabmisIntakeStatusResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+def get_intake_status(
+    session_id: int, service: TabmisIntakeService = Depends(get_service)
+):
+    """Xem trạng thái tiếp nhận: hệ thống hiển thị máy trạng thái (trạng
+    thái hiện tại + các hành động còn hợp lệ: xem lỗi dòng / tải lại tệp)."""
+    try:
+        view = service.get_status_view(session_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+    return TabmisIntakeStatusResponse(
+        session=view["session"],
+        allowed_actions=view["allowed_actions"],
+        row_error_count=view["row_error_count"],
+    )
+
+
+# ---------- UC-023 bước 2: Xem chi tiết lỗi dòng ----------
+
+
+@router.get(
+    "/{session_id}/row-errors",
+    response_model=List[TabmisIntakeRowErrorResponse],
+    responses={404: {"model": ErrorResponse}},
+)
+def get_intake_row_errors(
+    session_id: int, service: TabmisIntakeService = Depends(get_service)
+):
+    """Xem chi tiết lỗi dòng: hệ thống hiển thị các dòng sai (số thứ tự
+    dòng, tên trường, nội dung lỗi) của phiên tiếp nhận `session_id`."""
+    try:
+        return service.get_row_errors(session_id)
+    except DomainError as exc:
+        raise _domain_error_to_http(exc)
+
+
+# ---------- UC-023 bước 3: Sửa và tải lại tệp đã chỉnh ----------
+
+
+@router.post(
+    "/{session_id}/reupload",
+    response_model=TabmisIntakeSessionResponse,
+    responses={404: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+async def reupload_corrected_file(
+    session_id: int,
+    uploaded_by: str = Form(...),
+    file: UploadFile = File(...),
+    service: TabmisIntakeService = Depends(get_service),
+):
+    """Sửa và tải lại tệp đã chỉnh: hệ thống kiểm tra lại (validate biểu
+    mẫu + tổng kiểm soát + lỗi từng dòng) trên cùng phiên tiếp nhận
+    `session_id`, tạo phiên ingest mới ghi vào ingestion.runs."""
+    content = await file.read()
+    try:
+        return service.resubmit_corrected_file(
+            session_id=session_id,
+            file_name=file.filename or "tabmis-corrected.xlsx",
+            content=content,
+            uploaded_by=uploaded_by,
+        )
     except DomainError as exc:
         raise _domain_error_to_http(exc)

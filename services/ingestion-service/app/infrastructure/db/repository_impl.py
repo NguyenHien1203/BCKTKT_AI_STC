@@ -14,6 +14,7 @@ from app.domain.entities import (
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
+    TabmisIntakeRowError,
     TabmisIntakeSession,
 )
 from app.domain.repositories import (
@@ -26,6 +27,7 @@ from app.domain.repositories import (
     ScheduledTaskRepository,
     SchemaVersionRepository,
     SourceConnectionRepository,
+    TabmisIntakeRowErrorRepository,
     TabmisIntakeSessionRepository,
 )
 from app.infrastructure.db.models import (
@@ -38,6 +40,7 @@ from app.infrastructure.db.models import (
     ScheduledTaskModel,
     SchemaVersionModel,
     SourceConnectionModel,
+    TabmisIntakeRowErrorModel,
     TabmisIntakeSessionModel,
 )
 
@@ -732,6 +735,20 @@ class SqlAlchemyTabmisIntakeSessionRepository(TabmisIntakeSessionRepository):
         model = self._session.get(TabmisIntakeSessionModel, session_id)
         return _tabmis_intake_session_to_entity(model) if model else None
 
+    def update(self, session: TabmisIntakeSession) -> TabmisIntakeSession:
+        model = self._session.get(TabmisIntakeSessionModel, session.id)
+        model.file_name = session.file_name
+        model.raw_object_key = session.raw_object_key
+        model.status = session.status
+        model.control_totals = json.dumps(session.control_totals or {})
+        model.error_message = session.error_message
+        model.uploaded_by = session.uploaded_by
+        model.uploaded_at = session.uploaded_at
+        model.ingestion_run_id = session.ingestion_run_id
+        self._session.commit()
+        self._session.refresh(model)
+        return _tabmis_intake_session_to_entity(model)
+
     def list(
         self,
         dataset_id: Optional[int] = None,
@@ -745,3 +762,51 @@ class SqlAlchemyTabmisIntakeSessionRepository(TabmisIntakeSessionRepository):
         stmt = stmt.order_by(TabmisIntakeSessionModel.id.desc())
         models = self._session.execute(stmt).scalars().all()
         return [_tabmis_intake_session_to_entity(m) for m in models]
+
+
+def _tabmis_intake_row_error_to_entity(model: TabmisIntakeRowErrorModel) -> TabmisIntakeRowError:
+    return TabmisIntakeRowError(
+        id=model.id,
+        session_id=model.session_id,
+        row_number=model.row_number,
+        field_name=model.field_name,
+        message=model.message,
+    )
+
+
+class SqlAlchemyTabmisIntakeRowErrorRepository(TabmisIntakeRowErrorRepository):
+    """UC-023: Xem trạng thái + sửa lỗi intake TABMIS (bảng
+    `tabmis_intake_row_errors`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def replace_for_session(
+        self, session_id: int, errors: List[TabmisIntakeRowError]
+    ) -> List[TabmisIntakeRowError]:
+        self._session.query(TabmisIntakeRowErrorModel).filter(
+            TabmisIntakeRowErrorModel.session_id == session_id
+        ).delete()
+        models = [
+            TabmisIntakeRowErrorModel(
+                session_id=session_id,
+                row_number=err.row_number,
+                field_name=err.field_name,
+                message=err.message,
+            )
+            for err in errors
+        ]
+        self._session.add_all(models)
+        self._session.commit()
+        for model in models:
+            self._session.refresh(model)
+        return [_tabmis_intake_row_error_to_entity(m) for m in models]
+
+    def list_for_session(self, session_id: int) -> List[TabmisIntakeRowError]:
+        stmt = (
+            select(TabmisIntakeRowErrorModel)
+            .where(TabmisIntakeRowErrorModel.session_id == session_id)
+            .order_by(TabmisIntakeRowErrorModel.row_number.asc())
+        )
+        models = self._session.execute(stmt).scalars().all()
+        return [_tabmis_intake_row_error_to_entity(m) for m in models]

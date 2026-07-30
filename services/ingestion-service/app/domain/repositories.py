@@ -1,6 +1,6 @@
 """Repository interfaces (ports) — implement ở infrastructure layer."""
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.domain.entities import (
     Connector,
@@ -12,6 +12,7 @@ from app.domain.entities import (
     ScheduledTask,
     SchemaVersion,
     SourceConnection,
+    TabmisIntakeRowError,
     TabmisIntakeSession,
     TemplateValidationResult,
 )
@@ -344,12 +345,35 @@ class ExcelTemplateValidator(ABC):
         sánh với `expected_columns` (lấy từ lược đồ dataset)."""
         ...
 
+    @abstractmethod
+    def validate_rows(
+        self,
+        content: bytes,
+        schema_fields: List[Dict[str, Any]],
+        critical_field_names: List[str],
+    ) -> List[Dict[str, Any]]:
+        """UC-023 bước 2: đọc từng dòng dữ liệu của tệp `content` (bỏ dòng
+        tiêu đề), đối chiếu từng ô với lược đồ dataset (`schema_fields`,
+        mỗi phần tử `{"name","data_type",...}`) + danh sách trường bắt
+        buộc `critical_field_names` (UC-018 bước 3). Trả về danh sách dict
+        `{"row_number": int, "field_name": str, "message": str}` mô tả
+        từng dòng/trường sai (thiếu trường bắt buộc hoặc sai kiểu dữ liệu).
+        Chỉ nên gọi khi `validate()` ở trên đã xác định tệp đúng biểu mẫu
+        (đủ cột)."""
+        ...
+
 
 class TabmisIntakeSessionRepository(ABC):
     """Repository cho UC-022: Tiếp nhận file thủ công TABMIS (upload)."""
 
     @abstractmethod
     def add(self, session: TabmisIntakeSession) -> TabmisIntakeSession:
+        ...
+
+    @abstractmethod
+    def update(self, session: TabmisIntakeSession) -> TabmisIntakeSession:
+        """UC-023 bước 3: cập nhật phiên tiếp nhận sau khi sửa + tải lại
+        tệp đã chỉnh (hệ thống kiểm tra lại)."""
         ...
 
     @abstractmethod
@@ -362,4 +386,20 @@ class TabmisIntakeSessionRepository(ABC):
         dataset_id: Optional[int] = None,
         status: Optional[str] = None,
     ) -> List[TabmisIntakeSession]:
+        ...
+
+
+class TabmisIntakeRowErrorRepository(ABC):
+    """Repository cho UC-023: các dòng sai của 1 phiên tiếp nhận TABMIS."""
+
+    @abstractmethod
+    def replace_for_session(
+        self, session_id: int, errors: List[TabmisIntakeRowError]
+    ) -> List[TabmisIntakeRowError]:
+        """Xoá toàn bộ lỗi dòng cũ của `session_id` (nếu có, vd sau khi tải
+        lại tệp đã sửa) rồi lưu danh sách lỗi dòng mới."""
+        ...
+
+    @abstractmethod
+    def list_for_session(self, session_id: int) -> List[TabmisIntakeRowError]:
         ...

@@ -238,3 +238,19 @@ class TabmisIntakeSessionModel(Base):
     ingestion_run_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey(f"{_fk_prefix}ingestion_runs.id"), nullable=True, index=True
     )
+
+
+class TabmisIntakeRowErrorModel(Base):
+    """UC-023: Xem trạng thái + sửa lỗi intake TABMIS — các dòng dữ liệu
+    sai của 1 phiên tiếp nhận (`tabmis_intake_sessions`)."""
+
+    __tablename__ = "tabmis_intake_row_errors"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}tabmis_intake_sessions.id"), nullable=False, index=True
+    )
+    row_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    field_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
