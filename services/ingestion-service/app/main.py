@@ -5,6 +5,7 @@ from app.interfaces.api.connector_router import router as connector_router
 from app.interfaces.api.credential_asset_router import router as credential_asset_router
 from app.interfaces.api.data_source_router import router as data_source_router
 from app.interfaces.api.dataset_router import router as dataset_router
+from app.interfaces.api.incremental_sync_router import router as incremental_sync_router
 from app.interfaces.api.ingestion_run_router import router as ingestion_run_router
 from app.interfaces.api.scheduled_task_router import router as scheduled_task_router
 from app.interfaces.api.source_connection_router import router as source_connection_router
@@ -28,6 +29,7 @@ app.include_router(credential_asset_router)
 app.include_router(dataset_router)
 app.include_router(scheduled_task_router)
 app.include_router(ingestion_run_router)
+app.include_router(incremental_sync_router)
 app.include_router(tabmis_intake_router)
 app.include_router(van_ban_intake_router)
 

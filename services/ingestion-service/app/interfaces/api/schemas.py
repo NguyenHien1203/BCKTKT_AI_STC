@@ -432,6 +432,27 @@ class CalendarDayResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+# ---------- UC-025: Đồng bộ tăng dần từ API/DB ----------
+
+_INCREMENTAL_TRIGGER_PATTERN = "^(MANUAL|SCHEDULED)$"
+
+
+class IncrementalSyncTrigger(BaseModel):
+    """Kích hoạt 1 phiên đồng bộ tăng dần cho 1 tập dữ liệu. `trigger`
+    mặc định `SCHEDULED` (Bộ điều phối tự động); dùng `MANUAL` khi kích
+    hoạt thủ công để kiểm thử/chạy bù."""
+
+    scheduled_task_id: Optional[int] = Field(None, gt=0)
+    trigger: str = Field("SCHEDULED", pattern=_INCREMENTAL_TRIGGER_PATTERN)
+
+
+class IncrementalSyncCheckpointResponse(BaseModel):
+    """Điểm kiểm tra (checkpoint) hiện tại đọc từ ingestion.runs (bước 1)."""
+
+    dataset_id: int
+    checkpoint: Optional[str] = None
+
+
 # ---------- UC-022: Tiếp nhận file thủ công TABMIS (upload) ----------
 # ---------- UC-023: Xem trạng thái + sửa lỗi intake TABMIS ----------
 

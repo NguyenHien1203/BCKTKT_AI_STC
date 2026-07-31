@@ -943,3 +943,28 @@ class IngestionRun:
         self.records_failed = records_failed
         self.control_totals = control_totals or {}
         self.error_message = error_message
+
+
+@dataclass
+class IncrementalRecord:
+    """1 bản ghi mới/thay đổi mà bộ kết nối lấy được từ nguồn API/DB khi
+    truy vấn tăng dần theo `updated_at` (UC-025, bước 2 "Bộ kết nối lấy dữ
+    liệu mới/thay đổi").
+
+    `record_id` là định danh bản ghi tại hệ thống nguồn (dùng để log/truy
+    vết, KHÔNG dùng làm khoá chính ở kho tổng hợp — việc đó thuộc UC-029
+    "Phân tích dữ liệu có cấu trúc" chạy sau khi nhận sự kiện
+    `parsing.requested`). `updated_at` là mốc thời gian cập nhật tại nguồn
+    (ISO-8601), dùng để tính điểm kiểm tra (checkpoint) mới cho lần đồng bộ
+    tiếp theo. `payload` là dữ liệu thô (chưa phân tích/ánh xạ) của bản ghi.
+    """
+
+    record_id: str
+    updated_at: str
+    payload: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.record_id or not str(self.record_id).strip():
+            raise ValueError("record_id không được để trống")
+        if not self.updated_at or not str(self.updated_at).strip():
+            raise ValueError("updated_at không được để trống")
