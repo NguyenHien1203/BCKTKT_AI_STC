@@ -160,6 +160,30 @@ class SchemaVersionModel(Base):
     registered_at: Mapped[str] = mapped_column(String(40), nullable=False)
 
 
+class SchemaRegistryCheckModel(Base):
+    """UC-026: Kiểm tra Schema Registry — 1 lượt đối chiếu lược đồ nguồn
+    (trước khi phân tích) so với lược đồ đã đăng ký gần nhất."""
+
+    __tablename__ = "schema_registry_checks"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dataset_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}dataset_catalog.id"), nullable=False, index=True
+    )
+    registered_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    incoming_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    added_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    removed_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    changed_type_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    checked_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    ingestion_run_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}ingestion_runs.id"), nullable=True, index=True
+    )
+
+
 class ScheduledTaskModel(Base):
     """UC-019: Cấu hình tác vụ điều phối (lịch cron, đầy đủ/tăng dần,
     chính sách thử lại; bật/tắt; hệ thống cập nhật trạng thái)."""

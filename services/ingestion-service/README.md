@@ -16,19 +16,47 @@ Phụ trách nhóm UC **II. Tiếp nhận và đồng bộ dữ liệu** (`UC-01
   `app/interfaces/api/scheduled_task_router.py`.
 - **UC-020 (Xem lịch đầy đủ dữ liệu + lịch sử chạy): đã implement.** Xem
   `app/interfaces/api/ingestion_run_router.py`.
-- UC-021 .. UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC
+- **UC-021 (Chạy lại phiên ingest lỗi): đã implement.** Xem
+  `app/interfaces/api/ingestion_run_router.py` (`/retry`, `/failure-reason`, `/retries`).
+- **UC-022 (Tiếp nhận file thủ công TABMIS): đã implement.** Xem
+  `app/interfaces/api/tabmis_intake_router.py`.
+- **UC-023 (Xem trạng thái + sửa lỗi intake TABMIS): đã implement.** Xem
+  `app/interfaces/api/tabmis_intake_router.py`.
+- **UC-024 (Tiếp nhận thủ công văn bản từ QLVBĐH): đã implement.** Xem
+  `app/interfaces/api/van_ban_intake_router.py`.
+- **UC-025 (Đồng bộ tăng dần từ API/DB): đã implement.** Xem
+  `app/interfaces/api/incremental_sync_router.py`.
+- **UC-026 (Kiểm tra Schema Registry): đã implement.** Xem
+  `app/interfaces/api/schema_registry_router.py`.
+- UC-027 .. UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC
   nào cần làm tiếp theo, và `SKILL.md` mục A để biết cách thêm UC vào service
   đã có.
 
-Schema Postgres riêng: `staging` (xem ARCHITECTURE.md mục 2). Bảng
-`sources` (UC-015), `connectors` (UC-016), `source_connections` +
-`credential_assets` (UC-017), `dataset_catalog` + `critical_fields` +
-`dataset_schema_versions` (UC-018), `scheduled_tasks` (UC-019) và
-`ingestion_runs` (UC-020, bảng nghiệp vụ "ingestion.runs") nằm trong
-schema này, tạo bằng Alembic migration `alembic/versions/0001_uc015_create_sources.py`,
-`0002_uc016_create_connectors.py`, `0003_uc017_create_source_connections.py`,
-`0004_uc018_create_dataset_catalog.py`, `0005_uc019_create_scheduled_tasks.py`
-và `0006_uc020_create_ingestion_runs.py`.
+Schema Postgres riêng: `staging` (xem ARCHITECTURE.md mục 2). Ngoài các
+bảng đã liệt kê ở trên, `schema_registry_checks` (UC-026, lịch sử các lượt
+đối chiếu lược đồ nguồn với lược đồ đã đăng ký) được tạo bằng migration
+`0011_uc026_create_schema_registry_checks.py`.
+
+## UC-026: Kiểm tra Schema Registry
+
+Actor: **Hệ thống tự động**. Trước khi phân tích, so sánh lược đồ nguồn
+(`schema_fields` đọc được từ dữ liệu vừa tiếp nhận) với lược đồ đã đăng ký
+gần nhất của dataset (UC-018 bước 4, không tạo bảng lược đồ mới). Mất trường
+đã đăng ký hoặc đổi kiểu dữ liệu 1 trường đã có -> `BREAKING` (hệ thống
+DỪNG quy trình xử lý + phát sự kiện `schema_registry.compatibility_broken`
+cảnh báo Quản trị Tích hợp). Chỉ bổ sung trường mới -> `COMPATIBLE` (hệ
+thống chuyển tiếp + ghi nhận `added_fields`).
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| POST | `/schema-registry/{dataset_id}/check` | So sánh lược đồ nguồn với lược đồ đã đăng ký |
+| GET | `/schema-registry/{dataset_id}/checks` | Lịch sử kiểm tra (lọc `status`) |
+| GET | `/schema-registry/checks/{id}` | Xem chi tiết 1 lượt kiểm tra |
+
+Test: `pytest services/ingestion-service -q` (`tests/test_uc026_schema_registry_check.py`).
+
+Frontend: trang `frontend/src/pages/ingestion/SchemaRegistryChecksPage.jsx`,
+route `/schema-registry-checks` (menu "Dữ liệu" → "Kiểm tra Schema Registry").
 
 **Lưu ý quan trọng — chạy migration qua Docker Compose:** nhiều service
 dùng chung 1 database Postgres (`financial_dw`), nên bảng theo dõi phiên
