@@ -606,4 +606,60 @@ class IntakeReconciliationResponse(BaseModel):
     closed_at: Optional[str] = None
     close_note: str
 
+
+# ---------- UC-028: Xu ly ticket doi soat voi chu quan nguon ----------
+
+_RECONCILIATION_TICKET_STATUS_PATTERN = "^(OPEN|IN_PROGRESS|RESOLVED|CLOSED)$"
+_RECONCILIATION_TICKET_PROGRESS_STATUS_PATTERN = "^(OPEN|IN_PROGRESS|RESOLVED)$"
+
+
+class ReconciliationTicketOpenRequest(BaseModel):
+    """Bước 1: Mở ticket xử lý với chủ quản nguồn."""
+
+    reconciliation_id: int = Field(..., gt=0)
+    source_owner: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1)
+    description: str = ""
+    opened_by: str = ""
+
+
+class ReconciliationTicketProgressRequest(BaseModel):
+    """Bước 2: Cập nhật tiến độ xử lý ticket."""
+
+    note: str = Field(..., min_length=1)
+    updated_by: str = Field(..., min_length=1)
+    status: Optional[str] = Field(
+        default=None, pattern=_RECONCILIATION_TICKET_PROGRESS_STATUS_PATTERN
+    )
+
+
+class ReconciliationTicketCloseRequest(BaseModel):
+    """Bước 3: Đóng ticket khi resolved."""
+
+    closed_by: str = Field(..., min_length=1)
+    close_note: str = ""
+
+
+class ReconciliationTicketHistoryResponse(BaseModel):
+    note: str
+    updated_by: str
+    status: str
+    updated_at: str
+
+
+class ReconciliationTicketResponse(BaseModel):
+    id: int
+    reconciliation_id: int
+    source_owner: str
+    title: str
+    description: str
+    status: str
+    history: List[ReconciliationTicketHistoryResponse]
+    opened_by: str
+    opened_at: str
+    notified: bool
+    closed_by: str
+    closed_at: Optional[str] = None
+    close_note: str
+
     model_config = {"from_attributes": True}

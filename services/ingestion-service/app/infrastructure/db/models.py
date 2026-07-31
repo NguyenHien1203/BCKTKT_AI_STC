@@ -321,3 +321,27 @@ class IntakeReconciliationModel(Base):
     closed_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     closed_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
     close_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+
+class ReconciliationTicketModel(Base):
+    """UC-028: Xu ly ticket doi soat voi chu quan nguon -- 1 ticket gan
+    voi 1 phien doi soat (`intake_reconciliations`)."""
+
+    __tablename__ = "reconciliation_tickets"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    reconciliation_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}intake_reconciliations.id"), nullable=False, index=True
+    )
+    source_owner: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    title: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="OPEN", index=True)
+    history: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    opened_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    opened_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    notified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    closed_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    closed_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    close_note: Mapped[str] = mapped_column(Text, nullable=False, default="")

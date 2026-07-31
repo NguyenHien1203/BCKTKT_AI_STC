@@ -12,6 +12,7 @@ from app.domain.entities import (
     Dataset,
     IngestionRun,
     IntakeReconciliation,
+    ReconciliationTicket,
     ScheduledTask,
     SchemaRegistryCheck,
     SchemaVersion,
@@ -28,6 +29,7 @@ from app.domain.repositories import (
     DatasetRepository,
     IngestionRunRepository,
     IntakeReconciliationRepository,
+    ReconciliationTicketRepository,
     ScheduledTaskRepository,
     SchemaRegistryCheckRepository,
     SchemaVersionRepository,
@@ -44,6 +46,7 @@ from app.infrastructure.db.models import (
     DatasetModel,
     IngestionRunModel,
     IntakeReconciliationModel,
+    ReconciliationTicketModel,
     ScheduledTaskModel,
     SchemaRegistryCheckModel,
     SchemaVersionModel,
@@ -1027,3 +1030,84 @@ class SqlAlchemyIntakeReconciliationRepository(IntakeReconciliationRepository):
         stmt = stmt.order_by(IntakeReconciliationModel.id.desc())
         models = self._session.execute(stmt).scalars().all()
         return [_intake_reconciliation_to_entity(m) for m in models]
+
+
+def _reconciliation_ticket_to_entity(model: ReconciliationTicketModel) -> ReconciliationTicket:
+    return ReconciliationTicket(
+        id=model.id,
+        reconciliation_id=model.reconciliation_id,
+        source_owner=model.source_owner,
+        title=model.title,
+        description=model.description,
+        status=model.status,
+        history=json.loads(model.history or "[]"),
+        opened_by=model.opened_by,
+        opened_at=model.opened_at,
+        notified=model.notified,
+        closed_by=model.closed_by,
+        closed_at=model.closed_at,
+        close_note=model.close_note,
+    )
+
+
+class SqlAlchemyReconciliationTicketRepository(ReconciliationTicketRepository):
+    """UC-028: Xu ly ticket doi soat voi chu quan nguon (bang
+    `reconciliation_tickets`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, ticket: ReconciliationTicket) -> ReconciliationTicket:
+        model = ReconciliationTicketModel(
+            reconciliation_id=ticket.reconciliation_id,
+            source_owner=ticket.source_owner,
+            title=ticket.title,
+            description=ticket.description,
+            status=ticket.status,
+            history=json.dumps(ticket.history or [], ensure_ascii=False),
+            opened_by=ticket.opened_by,
+            opened_at=ticket.opened_at,
+            notified=ticket.notified,
+            closed_by=ticket.closed_by,
+            closed_at=ticket.closed_at,
+            close_note=ticket.close_note,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _reconciliation_ticket_to_entity(model)
+
+    def update(self, ticket: ReconciliationTicket) -> ReconciliationTicket:
+        model = self._session.get(ReconciliationTicketModel, ticket.id)
+        model.source_owner = ticket.source_owner
+        model.title = ticket.title
+        model.description = ticket.description
+        model.status = ticket.status
+        model.history = json.dumps(ticket.history or [], ensure_ascii=False)
+        model.opened_by = ticket.opened_by
+        model.opened_at = ticket.opened_at
+        model.notified = ticket.notified
+        model.closed_by = ticket.closed_by
+        model.closed_at = ticket.closed_at
+        model.close_note = ticket.close_note
+        self._session.commit()
+        self._session.refresh(model)
+        return _reconciliation_ticket_to_entity(model)
+
+    def get_by_id(self, ticket_id: int) -> Optional[ReconciliationTicket]:
+        model = self._session.get(ReconciliationTicketModel, ticket_id)
+        return _reconciliation_ticket_to_entity(model) if model else None
+
+    def list(
+        self,
+        reconciliation_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[ReconciliationTicket]:
+        stmt = select(ReconciliationTicketModel)
+        if reconciliation_id:
+            stmt = stmt.where(ReconciliationTicketModel.reconciliation_id == reconciliation_id)
+        if status:
+            stmt = stmt.where(ReconciliationTicketModel.status == status)
+        stmt = stmt.order_by(ReconciliationTicketModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_reconciliation_ticket_to_entity(m) for m in models]

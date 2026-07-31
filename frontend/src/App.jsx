@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -12,6 +12,7 @@ import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
 import IncrementalSyncPage from "./pages/ingestion/IncrementalSyncPage.jsx";
 import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
 import IntakeReconciliationPage from "./pages/ingestion/IntakeReconciliationPage.jsx";
+import ReconciliationTicketPage from "./pages/ingestion/ReconciliationTicketPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SchemaRegistryChecksPage from "./pages/ingestion/SchemaRegistryChecksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
@@ -147,6 +148,12 @@ function HomePage() {
       title: "Đối soát phiên intake",
       description: "UC-027 — Chọn phiên tiếp nhận cần đối soát, xem tổng kiểm soát, đánh dấu phát hiện thiếu/sai, đóng phiên đối soát đạt yêu cầu để hệ thống cập nhật trạng thái.",
       icon: ClipboardCheck,
+    },
+    {
+      to: "/reconciliation-tickets",
+      title: "Xử lý ticket đối soát với chủ quản nguồn",
+      description: "UC-028 — Mở ticket xử lý với chủ quản nguồn của phiên đối soát (lưu + thông báo), cập nhật tiến độ xử lý (lưu lịch sử), đóng ticket khi resolved (cập nhật trạng thái + ghi nhật ký).",
+      icon: Ticket,
     },
     {
       to: "/qlvbdh-intake",
@@ -413,6 +420,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IntakeReconciliationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reconciliation-tickets"
+        element={
+          <ProtectedRoute>
+            <ReconciliationTicketPage />
           </ProtectedRoute>
         }
       />

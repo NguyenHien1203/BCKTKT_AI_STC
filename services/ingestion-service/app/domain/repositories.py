@@ -11,6 +11,7 @@ from app.domain.entities import (
     IncrementalRecord,
     IngestionRun,
     IntakeReconciliation,
+    ReconciliationTicket,
     ScheduledTask,
     SchemaRegistryCheck,
     SchemaVersion,
@@ -531,4 +532,29 @@ class IntakeReconciliationRepository(ABC):
         session_id: Optional[int] = None,
         status: Optional[str] = None,
     ) -> List[IntakeReconciliation]:
+        ...
+
+
+class ReconciliationTicketRepository(ABC):
+    """Repository cho UC-028: Xu ly ticket doi soat voi chu quan nguon
+    (bang `reconciliation_tickets`)."""
+
+    @abstractmethod
+    def add(self, ticket: ReconciliationTicket) -> ReconciliationTicket:
+        ...
+
+    @abstractmethod
+    def update(self, ticket: ReconciliationTicket) -> ReconciliationTicket:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, ticket_id: int) -> Optional[ReconciliationTicket]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        reconciliation_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[ReconciliationTicket]:
         ...

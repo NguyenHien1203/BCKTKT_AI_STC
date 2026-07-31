@@ -332,3 +332,37 @@ class IntakeReconciliationFindingNotFound(DomainError):
             f"Khong tim thay phat hien index={finding_index} trong phien doi soat "
             f"id={reconciliation_id}"
         )
+
+
+class ReconciliationTicketNotFound(DomainError):
+    code = "RECONCILIATION_TICKET_NOT_FOUND"
+
+    def __init__(self, ticket_id: int):
+        super().__init__(f"Khong tim thay ticket doi soat id={ticket_id}")
+
+
+class InvalidReconciliationTicket(DomainError):
+    code = "INVALID_RECONCILIATION_TICKET"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ReconciliationTicketAlreadyClosed(DomainError):
+    """UC-028: ticket da dong, khong the cap nhat tien do hoac dong lai."""
+
+    code = "RECONCILIATION_TICKET_ALREADY_CLOSED"
+
+    def __init__(self, ticket_id: int):
+        super().__init__(f"Ticket doi soat id={ticket_id} da dong truoc do")
+
+
+class ReconciliationTicketNotResolved(DomainError):
+    """UC-028: chi duoc dong ticket khi da o trang thai RESOLVED."""
+
+    code = "RECONCILIATION_TICKET_NOT_RESOLVED"
+
+    def __init__(self, ticket_id: int):
+        super().__init__(
+            f"Ticket doi soat id={ticket_id} chua o trang thai RESOLVED, khong the dong"
+        )
