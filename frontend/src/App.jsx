@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -11,6 +11,7 @@ import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
 import IncrementalSyncPage from "./pages/ingestion/IncrementalSyncPage.jsx";
 import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
+import IntakeReconciliationPage from "./pages/ingestion/IntakeReconciliationPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SchemaRegistryChecksPage from "./pages/ingestion/SchemaRegistryChecksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
@@ -140,6 +141,12 @@ function HomePage() {
       title: "Tiếp nhận file thủ công TABMIS",
       description: "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
       icon: UploadCloud,
+    },
+    {
+      to: "/intake-reconciliation",
+      title: "Đối soát phiên intake",
+      description: "UC-027 — Chọn phiên tiếp nhận cần đối soát, xem tổng kiểm soát, đánh dấu phát hiện thiếu/sai, đóng phiên đối soát đạt yêu cầu để hệ thống cập nhật trạng thái.",
+      icon: ClipboardCheck,
     },
     {
       to: "/qlvbdh-intake",
@@ -398,6 +405,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TabmisIntakeDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intake-reconciliation"
+        element={
+          <ProtectedRoute>
+            <IntakeReconciliationPage />
           </ProtectedRoute>
         }
       />

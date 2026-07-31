@@ -28,14 +28,17 @@ Phụ trách nhóm UC **II. Tiếp nhận và đồng bộ dữ liệu** (`UC-01
   `app/interfaces/api/incremental_sync_router.py`.
 - **UC-026 (Kiểm tra Schema Registry): đã implement.** Xem
   `app/interfaces/api/schema_registry_router.py`.
-- UC-027 .. UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC
-  nào cần làm tiếp theo, và `SKILL.md` mục A để biết cách thêm UC vào service
-  đã có.
+- **UC-027 (Đối soát phiên intake): đã implement.** Xem
+  `app/interfaces/api/intake_reconciliation_router.py`.
+- UC-028: chưa implement — xem `PLAN.md` ở gốc project để biết UC nào cần
+  làm tiếp theo, và `SKILL.md` mục A để biết cách thêm UC vào service đã có.
 
 Schema Postgres riêng: `staging` (xem ARCHITECTURE.md mục 2). Ngoài các
 bảng đã liệt kê ở trên, `schema_registry_checks` (UC-026, lịch sử các lượt
 đối chiếu lược đồ nguồn với lược đồ đã đăng ký) được tạo bằng migration
-`0011_uc026_create_schema_registry_checks.py`.
+`0011_uc026_create_schema_registry_checks.py`; `intake_reconciliations`
+(UC-027, lịch sử các lượt đối soát phiên tiếp nhận TABMIS) được tạo bằng
+migration `0012_uc027_create_intake_reconciliations.py`.
 
 ## UC-026: Kiểm tra Schema Registry
 
@@ -57,6 +60,32 @@ Test: `pytest services/ingestion-service -q` (`tests/test_uc026_schema_registry_
 
 Frontend: trang `frontend/src/pages/ingestion/SchemaRegistryChecksPage.jsx`,
 route `/schema-registry-checks` (menu "Dữ liệu" → "Kiểm tra Schema Registry").
+
+## UC-027: Đối soát phiên intake
+
+Actor: **Quản trị Tích hợp, Phụ trách Dữ liệu**. Tái sử dụng
+`TabmisIntakeSession` (UC-022/023) — không tạo lại hạ tầng "phiên tiếp
+nhận". Luồng: (1) chọn phiên tiếp nhận cần đối soát -> hệ thống mở 1 phiên
+đối soát (hoặc dùng lại phiên đang mở, không tạo trùng); (2) hệ thống hiển
+thị tổng kiểm soát (snapshot `control_totals` của phiên tiếp nhận); (3)
+đánh dấu phát hiện thiếu (`MISSING`)/sai (`INCORRECT`); (4) hệ thống lưu
+ngay; (5) đóng phiên đối soát đạt yêu cầu — chỉ cho phép khi không còn
+phát hiện nào chưa xử lý xong; (6) hệ thống cập nhật trạng thái
+`OPEN -> CLOSED`.
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| POST | `/intake-reconciliations` | Bước 1-2: chọn phiên cần đối soát -> hiển thị tổng kiểm soát |
+| GET | `/intake-reconciliations` | Danh sách phiên đối soát (lọc `session_id`/`status`) |
+| GET | `/intake-reconciliations/{id}` | Xem chi tiết 1 phiên đối soát |
+| POST | `/intake-reconciliations/{id}/findings` | Bước 3-4: đánh dấu phát hiện thiếu/sai -> hệ thống lưu |
+| POST | `/intake-reconciliations/{id}/findings/{index}/resolve` | Đánh dấu 1 phát hiện đã xử lý xong |
+| POST | `/intake-reconciliations/{id}/close` | Bước 5-6: đóng phiên đối soát đạt yêu cầu -> cập nhật trạng thái |
+
+Test: `pytest services/ingestion-service -q` (`tests/test_uc027_intake_reconciliation.py`).
+
+Frontend: trang `frontend/src/pages/ingestion/IntakeReconciliationPage.jsx`,
+route `/intake-reconciliation` (menu "Dữ liệu" → "Đối soát phiên intake").
 
 **Lưu ý quan trọng — chạy migration qua Docker Compose:** nhiều service
 dùng chung 1 database Postgres (`financial_dw`), nên bảng theo dõi phiên

@@ -556,3 +556,54 @@ class SchemaRegistryCheckResponse(BaseModel):
     ingestion_run_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
+
+# ---------- UC-027: Doi soat phien intake ----------
+
+_INTAKE_RECONCILIATION_STATUS_PATTERN = "^(OPEN|CLOSED)$"
+_INTAKE_RECONCILIATION_FINDING_TYPE_PATTERN = "^(MISSING|INCORRECT)$"
+
+
+class IntakeReconciliationOpenRequest(BaseModel):
+    """Buoc 1: Chon phien can doi soat."""
+
+    session_id: int = Field(..., gt=0)
+    reconciled_by: str = Field(..., min_length=1)
+
+
+class IntakeReconciliationFindingRequest(BaseModel):
+    """Buoc 3: Danh dau phat hien thieu/sai."""
+
+    finding_type: str = Field(..., pattern=_INTAKE_RECONCILIATION_FINDING_TYPE_PATTERN)
+    field_name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+
+
+class IntakeReconciliationCloseRequest(BaseModel):
+    """Buoc 5: Dong phien doi soat dat yeu cau."""
+
+    closed_by: str = Field(..., min_length=1)
+    close_note: str = ""
+
+
+class IntakeReconciliationFindingResponse(BaseModel):
+    finding_type: str
+    field_name: str
+    description: str
+    status: str
+    recorded_at: str
+    resolved_at: Optional[str] = None
+
+
+class IntakeReconciliationResponse(BaseModel):
+    id: int
+    session_id: int
+    status: str
+    control_totals: Dict[str, Any]
+    findings: List[IntakeReconciliationFindingResponse]
+    reconciled_by: str
+    opened_at: str
+    closed_by: str
+    closed_at: Optional[str] = None
+    close_note: str
+
+    model_config = {"from_attributes": True}
