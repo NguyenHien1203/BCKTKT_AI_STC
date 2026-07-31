@@ -8,6 +8,7 @@ from app.domain.entities import (
     CriticalField,
     DataSource,
     Dataset,
+    IncrementalRecord,
     IngestionRun,
     ScheduledTask,
     SchemaVersion,
@@ -447,4 +448,33 @@ class EventPublisher(ABC):
 
     @abstractmethod
     def publish(self, event_name: str, payload: Dict[str, Any]) -> None:
+        ...
+
+
+class IncrementalSourceConnector(ABC):
+    """Cổng "Bộ kết nối" lấy dữ liệu mới/thay đổi theo `updated_at`
+    (UC-025: Đồng bộ tăng dần từ API/DB). Áp dụng cho các nguồn cho phép
+    kết nối API/DB: MISA (nếu nhà cung cấp cho phép kết nối API), QL Giá,
+    PMSTT (`DataSource.source_system` tương ứng `MISA`/`QL_GIA`/`PMSTT`).
+
+    Implement thật sẽ có 1 lớp theo từng `connection_type` (`RestApi...`/
+    `Jdbc...`) chọn qua `entry_point` của `Connector` (UC-016) tương ứng
+    `source_connection.connection_type`; ở đây chỉ khai báo hợp đồng — xem
+    `app/infrastructure/incremental_connector.py` cho bản mô phỏng dùng
+    cho dev/test.
+    """
+
+    @abstractmethod
+    def fetch_changes(
+        self,
+        connection: SourceConnection,
+        credentials: Dict[str, Any],
+        since: Optional[str],
+    ) -> List[IncrementalRecord]:
+        """Truy vấn tăng dần theo `updated_at`: trả về các bản ghi có
+        `updated_at > since` (hoặc toàn bộ nếu `since` là `None`, tức lần
+        đồng bộ đầu tiên). `connection` cung cấp `config` (host/base_url/
+        database...) KHÔNG nhạy cảm; `credentials` đã được giải mã sẵn bởi
+        use case gọi cổng này (application/domain không giữ bản rõ lâu hơn
+        mức cần thiết để gọi bộ kết nối)."""
         ...

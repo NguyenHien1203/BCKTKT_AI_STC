@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, ScanSearch, Settings, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -9,6 +9,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
+import IncrementalSyncPage from "./pages/ingestion/IncrementalSyncPage.jsx";
 import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
@@ -120,6 +121,12 @@ function HomePage() {
       title: "Lịch đầy đủ dữ liệu + Lịch sử chạy",
       description: "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
       icon: History,
+    },
+    {
+      to: "/incremental-sync",
+      title: "Đồng bộ tăng dần từ API/DB",
+      description: "UC-025 — Đọc điểm kiểm tra từ ingestion.runs, lấy dữ liệu mới/thay đổi (MISA/QL Giá/PMSTT), lưu MinIO + đẩy sự kiện parsing.requested.",
+      icon: RefreshCw,
     },
     {
       to: "/tabmis-intake",
@@ -352,6 +359,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IngestionRunsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/incremental-sync"
+        element={
+          <ProtectedRoute>
+            <IncrementalSyncPage />
           </ProtectedRoute>
         }
       />

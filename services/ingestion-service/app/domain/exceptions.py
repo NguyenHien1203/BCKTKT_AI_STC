@@ -219,3 +219,42 @@ class VanBanIntakeNotFound(DomainError):
 
     def __init__(self, intake_id: int):
         super().__init__(f"Không tìm thấy văn bản tiếp nhận id={intake_id}")
+
+
+class IncrementalSyncSourceSystemNotSupported(DomainError):
+    """UC-025: chỉ áp dụng đồng bộ tăng dần cho các nguồn MISA/QL_GIA/PMSTT."""
+
+    code = "INCREMENTAL_SYNC_SOURCE_SYSTEM_NOT_SUPPORTED"
+
+    def __init__(self, source_system: str, supported: tuple):
+        super().__init__(
+            f"Đồng bộ tăng dần từ API/DB không áp dụng cho hệ thống nguồn "
+            f"'{source_system}', chỉ áp dụng cho {supported}"
+        )
+
+
+class IncrementalSyncConnectionNotConfigured(DomainError):
+    """UC-025: chưa cấu hình kết nối API/DB cho nguồn (vd MISA khi nhà cung
+    cấp chưa cho phép kết nối API)."""
+
+    code = "INCREMENTAL_SYNC_CONNECTION_NOT_CONFIGURED"
+
+    def __init__(self, data_source_id: int):
+        super().__init__(
+            f"Nguồn dữ liệu id={data_source_id} chưa có cấu hình kết nối "
+            "API/DB đang hoạt động (nhà cung cấp chưa cho phép kết nối hoặc "
+            "chưa cấu hình ở UC-017) — không thể đồng bộ tăng dần"
+        )
+
+
+class IncrementalSyncAlreadyRunning(DomainError):
+    """UC-025: khoá chống trùng — không cho phép 2 phiên đồng bộ tăng dần
+    cùng chạy song song cho cùng 1 tập dữ liệu."""
+
+    code = "INCREMENTAL_SYNC_ALREADY_RUNNING"
+
+    def __init__(self, dataset_id: int, running_run_id: int):
+        super().__init__(
+            f"Tập dữ liệu id={dataset_id} đang có 1 phiên đồng bộ tăng dần "
+            f"khác (id={running_run_id}) chạy — vui lòng đợi hoàn tất"
+        )
