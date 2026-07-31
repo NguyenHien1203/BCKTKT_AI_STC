@@ -10,6 +10,9 @@ from app.interfaces.api.ingestion_run_router import router as ingestion_run_rout
 from app.interfaces.api.intake_reconciliation_router import (
     router as intake_reconciliation_router,
 )
+from app.interfaces.api.reconciliation_ticket_router import (
+    router as reconciliation_ticket_router,
+)
 from app.interfaces.api.scheduled_task_router import router as scheduled_task_router
 from app.interfaces.api.schema_registry_router import router as schema_registry_router
 from app.interfaces.api.source_connection_router import router as source_connection_router
@@ -38,6 +41,7 @@ app.include_router(schema_registry_router)
 app.include_router(tabmis_intake_router)
 app.include_router(van_ban_intake_router)
 app.include_router(intake_reconciliation_router)
+app.include_router(reconciliation_ticket_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

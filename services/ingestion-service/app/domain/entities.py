@@ -1136,4 +1136,130 @@ class IntakeReconciliation:
         self.status = "CLOSED"
         self.closed_by = closed_by.strip()
         self.closed_at = closed_at
+        self.close_note = close_note or ""
+@dataclass
+class ReconciliationTicket:
+    """1 ticket xử lý với chủ quản nguồn, phát sinh từ 1 phiên đối soát
+    (`IntakeReconciliation`, UC-027) khi phát hiện thiếu/sai cần chủ quản
+    nguồn xác nhận/xử lý (UC-028).
+
+    Luồng nghiệp vụ (docs/use_cases.json id=28), actor "Quản trị Tích hợp":
+    1. "Mở ticket xử lý với chủ quản nguồn" -> hệ thống lưu ticket +
+       thông báo (mô phỏng bằng cờ `notified`).
+    2. "Cập nhật tiến độ xử lý ticket" -> `add_progress()`: ghi 1 mốc tiến
+       độ (`note`, `updated_by`), có thể kèm chuyển trạng thái
+       OPEN -> IN_PROGRESS -> RESOLVED.
+    3. "Hệ thống lưu lịch sử" -> mỗi lần cập nhật được lưu vào `history`.
+    4. "Đóng ticket khi resolved" -> `close()`: chỉ cho phép đóng khi
+       ticket đã ở trạng thái RESOLVED (đã xử lý xong với chủ quản nguồn).
+    5. "Hệ thống cập nhật + ghi nhật ký" -> `status` chuyển sang `CLOSED`,
+       kèm 1 mốc trong `history`.
+    """
+
+    STATUSES = ("OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED")
+
+    id: Optional[int]
+    reconciliation_id: int
+    source_owner: str
+    title: str
+    description: str = ""
+    status: str = "OPEN"
+    history: List[Dict[str, Any]] = field(default_factory=list)
+    opened_by: str = ""
+    opened_at: str = ""
+    notified: bool = False
+    closed_by: str = ""
+    closed_at: Optional[str] = None
+    close_note: str = ""
+
+    def __post_init__(self) -> None:
+        self._validate_reconciliation_id(self.reconciliation_id)
+        self._validate_source_owner(self.source_owner)
+        self._validate_title(self.title)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_reconciliation_id(reconciliation_id: int) -> None:
+        if not reconciliation_id or reconciliation_id <= 0:
+            raise ValueError("Phải gắn ticket với 1 phiên đối soát (reconciliation_id) hợp lệ")
+
+    @staticmethod
+    def _validate_source_owner(source_owner: str) -> None:
+        if not source_owner or not source_owner.strip():
+            raise ValueError("Phải cho biết chủ quản nguồn (source_owner) xử lý ticket")
+
+    @staticmethod
+    def _validate_title(title: str) -> None:
+        if not title or not title.strip():
+            raise ValueError("Tiêu đề ticket (title) không được để trống")
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trạng thái ticket '{status}' không hợp lệ")
+
+    @property
+    def is_closed(self) -> bool:
+        return self.status == "CLOSED"
+
+    @property
+    def is_resolved(self) -> bool:
+        return self.status == "RESOLVED"
+
+    def add_progress(
+        self,
+        note: str,
+        updated_by: str,
+        updated_at: str,
+        status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Bước 2-3: Cập nhật tiến độ xử lý ticket -> hệ thống lưu lịch sử.
+        `status` (nếu có) chuyển trạng thái ticket sang OPEN/IN_PROGRESS/
+        RESOLVED (không dùng để đóng ticket — dùng `close()` cho việc đó)."""
+        if self.is_closed:
+            raise ValueError(f"Ticket id={self.id} đã đóng, không thể cập nhật tiến độ")
+        if not note or not note.strip():
+            raise ValueError("Nội dung cập nhật tiến độ (note) không được để trống")
+        if not updated_by or not updated_by.strip():
+            raise ValueError("Phải cho biết người cập nhật tiến độ (updated_by)")
+        if status is not None:
+            if status not in ("OPEN", "IN_PROGRESS", "RESOLVED"):
+                raise ValueError(
+                    f"Trạng thái cập nhật '{status}' không hợp lệ, "
+                    "phải là 1 trong ('OPEN', 'IN_PROGRESS', 'RESOLVED')"
+                )
+            self.status = status
+        entry = {
+            "note": note.strip(),
+            "updated_by": updated_by.strip(),
+            "status": self.status,
+            "updated_at": updated_at,
+        }
+        self.history.append(entry)
+        return entry
+
+    def close(self, closed_by: str, close_note: str, closed_at: str) -> None:
+        """Bước 4-5: Đóng ticket khi resolved -> hệ thống cập nhật trạng
+        thái + ghi nhật ký. Chỉ cho phép đóng khi ticket đã RESOLVED."""
+        if self.is_closed:
+            raise ValueError(f"Ticket id={self.id} đã đóng trước đó")
+        if not self.is_resolved:
+            raise ValueError(
+                f"Ticket id={self.id} chưa ở trạng thái RESOLVED, "
+                "không thể đóng (cần cập nhật tiến độ sang RESOLVED trước)"
+            )
+        if not closed_by or not closed_by.strip():
+            raise ValueError("Phải cho biết người đóng ticket (closed_by)")
+        self.status = "CLOSED"
+        self.closed_by = closed_by.strip()
+        self.closed_at = closed_at
+        self.close_note = (close_note or "").strip()
+        self.history.append(
+            {
+                "note": self.close_note or "Đóng ticket",
+                "updated_by": self.closed_by,
+                "status": "CLOSED",
+                "updated_at": closed_at,
+            }
+        )
         self.close_note = (close_note or "").strip()
