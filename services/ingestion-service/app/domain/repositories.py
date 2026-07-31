@@ -10,6 +10,7 @@ from app.domain.entities import (
     Dataset,
     IncrementalRecord,
     IngestionRun,
+    IntakeReconciliation,
     ScheduledTask,
     SchemaRegistryCheck,
     SchemaVersion,
@@ -499,4 +500,35 @@ class IncrementalSourceConnector(ABC):
         database...) KHÔNG nhạy cảm; `credentials` đã được giải mã sẵn bởi
         use case gọi cổng này (application/domain không giữ bản rõ lâu hơn
         mức cần thiết để gọi bộ kết nối)."""
+        ...
+
+class IntakeReconciliationRepository(ABC):
+    """Repository cho UC-027: Doi soat phien intake (bang
+    `intake_reconciliations`)."""
+
+    @abstractmethod
+    def add(self, reconciliation: IntakeReconciliation) -> IntakeReconciliation:
+        ...
+
+    @abstractmethod
+    def update(self, reconciliation: IntakeReconciliation) -> IntakeReconciliation:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, reconciliation_id: int) -> Optional[IntakeReconciliation]:
+        ...
+
+    @abstractmethod
+    def find_open_for_session(self, session_id: int) -> Optional[IntakeReconciliation]:
+        """Buoc 1 "Chon phien can doi soat": tim luot doi soat dang mo
+        (OPEN) hien co cua `session_id`, neu co thi dung lai (khong tao
+        trung)."""
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        session_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[IntakeReconciliation]:
         ...

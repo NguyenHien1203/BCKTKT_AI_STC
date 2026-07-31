@@ -286,3 +286,49 @@ class InvalidSchemaRegistryCheck(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class IntakeReconciliationNotFound(DomainError):
+    code = "INTAKE_RECONCILIATION_NOT_FOUND"
+
+    def __init__(self, reconciliation_id: int):
+        super().__init__(f"Khong tim thay phien doi soat id={reconciliation_id}")
+
+
+class InvalidIntakeReconciliation(DomainError):
+    code = "INVALID_INTAKE_RECONCILIATION"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class IntakeReconciliationAlreadyClosed(DomainError):
+    """UC-027: phien doi soat da dong, khong the danh dau phat hien moi
+    hoac dong lai lan nua."""
+
+    code = "INTAKE_RECONCILIATION_ALREADY_CLOSED"
+
+    def __init__(self, reconciliation_id: int):
+        super().__init__(f"Phien doi soat id={reconciliation_id} da dong truoc do")
+
+
+class IntakeReconciliationHasUnresolvedFindings(DomainError):
+    """UC-027: chi duoc dong phien doi soat khi khong con phat hien
+    thieu/sai nao o trang thai OPEN (dieu kien "dat yeu cau")."""
+
+    code = "INTAKE_RECONCILIATION_HAS_UNRESOLVED_FINDINGS"
+
+    def __init__(self, reconciliation_id: int, open_finding_count: int):
+        super().__init__(
+            f"Phien doi soat id={reconciliation_id} chua dat yeu cau: con "
+            f"{open_finding_count} phat hien thieu/sai chua duoc xu ly xong"
+        )
+
+
+class IntakeReconciliationFindingNotFound(DomainError):
+    code = "INTAKE_RECONCILIATION_FINDING_NOT_FOUND"
+
+    def __init__(self, reconciliation_id: int, finding_index: int):
+        super().__init__(
+            f"Khong tim thay phat hien index={finding_index} trong phien doi soat "
+            f"id={reconciliation_id}"
+        )

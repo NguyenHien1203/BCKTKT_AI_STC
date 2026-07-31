@@ -301,3 +301,23 @@ class VanBanIntakeModel(Base):
     ocr_event_published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     uploaded_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+class IntakeReconciliationModel(Base):
+    """UC-027: Doi soat phien intake -- 1 luot doi soat gan voi 1 phien
+    tiep nhan TABMIS (`tabmis_intake_sessions`)."""
+
+    __tablename__ = "intake_reconciliations"
+    __table_args__ = _table_args
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(f"{_fk_prefix}tabmis_intake_sessions.id"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="OPEN", index=True)
+    control_totals: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON dict
+    findings: Mapped[str] = mapped_column(Text, nullable=False, default="[]")  # JSON list
+    reconciled_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    opened_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    closed_by: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    closed_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    close_note: Mapped[str] = mapped_column(Text, nullable=False, default="")

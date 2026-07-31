@@ -1014,3 +1014,126 @@ class IncrementalRecord:
             raise ValueError("record_id không được để trống")
         if not self.updated_at or not str(self.updated_at).strip():
             raise ValueError("updated_at không được để trống")
+
+@dataclass
+class IntakeReconciliation:
+    """1 phien doi soat cua 1 phien tiep nhan TABMIS (UC-027).
+
+    Luong nghiep vu (docs/use_cases.json id=27), actor "Quan tri Tich hop,
+    Phu trach Du lieu":
+    1. "Chon phien can doi soat" -> he thong mo 1 `IntakeReconciliation`
+       gan voi `session_id` (`TabmisIntakeSession` cua UC-022/023). Neu
+       phien do da co 1 luot doi soat dang mo (`OPEN`) thi dung lai, khong
+       tao trung.
+    2. "He thong hien thi tong kiem soat" -> chup lai (snapshot)
+       `control_totals` cua phien tiep nhan tai thoi diem mo doi soat, de
+       Quan tri Tich hop/Phu trach Du lieu doi chieu so lieu.
+    3. "Danh dau phat hien thieu/sai" -> `mark_finding()`: ghi nhan 1 phat
+       hien (thieu du lieu `MISSING` hoac sai lech du lieu `INCORRECT`) so
+       voi tong kiem soat.
+    4. "He thong luu" -> phat hien duoc luu vao `findings` (persist o
+       repository ngay sau khi goi `mark_finding()`).
+    5. "Dong phien doi soat dat yeu cau" -> `close()`: chi cho phep dong
+       khi KHONG con phat hien nao o trang thai `OPEN` (moi thieu/sai da
+       duoc xu ly xong `RESOLVED`) -- day la dieu kien "dat yeu cau".
+    6. "He thong cap nhat trang thai" -> `status` chuyen tu `OPEN` sang
+       `CLOSED` (+ `closed_by`, `closed_at`, `close_note`).
+    """
+
+    STATUSES = ("OPEN", "CLOSED")
+    FINDING_TYPES = ("MISSING", "INCORRECT")
+    FINDING_STATUSES = ("OPEN", "RESOLVED")
+
+    id: Optional[int]
+    session_id: int
+    status: str = "OPEN"
+    control_totals: Dict[str, Any] = field(default_factory=dict)
+    findings: List[Dict[str, Any]] = field(default_factory=list)
+    reconciled_by: str = ""
+    opened_at: str = ""
+    closed_by: str = ""
+    closed_at: Optional[str] = None
+    close_note: str = ""
+
+    def __post_init__(self) -> None:
+        self._validate_session_id(self.session_id)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_session_id(session_id: int) -> None:
+        if not session_id or session_id <= 0:
+            raise ValueError("Phai chi dinh phien tiep nhan (session_id) hop le")
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trang thai phien doi soat '{status}' khong hop le")
+
+    @property
+    def is_open(self) -> bool:
+        return self.status == "OPEN"
+
+    def open_finding_count(self) -> int:
+        """So phat hien thieu/sai chua duoc xu ly xong (`OPEN`)."""
+        return len([f for f in self.findings if f.get("status") == "OPEN"])
+
+    def mark_finding(
+        self,
+        finding_type: str,
+        field_name: str,
+        description: str,
+        recorded_at: str,
+    ) -> Dict[str, Any]:
+        """Buoc 3-4: Danh dau phat hien thieu/sai -> he thong luu."""
+        if not self.is_open:
+            raise ValueError(
+                f"Phien doi soat id={self.id} da dong, khong the danh dau phat hien moi"
+            )
+        if finding_type not in self.FINDING_TYPES:
+            raise ValueError(
+                f"Loai phat hien '{finding_type}' khong hop le, "
+                f"phai la 1 trong {self.FINDING_TYPES}"
+            )
+        if not field_name or not field_name.strip():
+            raise ValueError("Ten truong/muc phat hien (field_name) khong duoc de trong")
+        if not description or not description.strip():
+            raise ValueError("Noi dung phat hien (description) khong duoc de trong")
+        finding = {
+            "finding_type": finding_type,
+            "field_name": field_name.strip(),
+            "description": description.strip(),
+            "status": "OPEN",
+            "recorded_at": recorded_at,
+            "resolved_at": None,
+        }
+        self.findings.append(finding)
+        return finding
+
+    def resolve_finding(self, finding_index: int, resolved_at: str) -> Dict[str, Any]:
+        """Danh dau 1 phat hien da duoc xu ly xong (dieu kien de dong
+        phien doi soat "dat yeu cau" o buoc 5)."""
+        if finding_index < 0 or finding_index >= len(self.findings):
+            raise ValueError(f"Khong tim thay phat hien thu tu index={finding_index}")
+        finding = self.findings[finding_index]
+        if finding.get("status") == "RESOLVED":
+            raise ValueError(f"Phat hien index={finding_index} da duoc xu ly xong truoc do")
+        finding["status"] = "RESOLVED"
+        finding["resolved_at"] = resolved_at
+        return finding
+
+    def close(self, closed_by: str, close_note: str, closed_at: str) -> None:
+        """Buoc 5-6: Dong phien doi soat dat yeu cau -> he thong cap nhat
+        trang thai. Chi cho phep dong khi khong con phat hien nao `OPEN`."""
+        if not self.is_open:
+            raise ValueError(f"Phien doi soat id={self.id} da dong truoc do")
+        if not closed_by or not closed_by.strip():
+            raise ValueError("Phai cho biet nguoi dong phien doi soat (closed_by)")
+        if self.open_finding_count() > 0:
+            raise ValueError(
+                "Phien doi soat chua dat yeu cau: con "
+                f"{self.open_finding_count()} phat hien thieu/sai chua duoc xu ly xong"
+            )
+        self.status = "CLOSED"
+        self.closed_by = closed_by.strip()
+        self.closed_at = closed_at
+        self.close_note = (close_note or "").strip()

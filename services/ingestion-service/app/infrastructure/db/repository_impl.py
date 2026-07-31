@@ -11,6 +11,7 @@ from app.domain.entities import (
     DataSource,
     Dataset,
     IngestionRun,
+    IntakeReconciliation,
     ScheduledTask,
     SchemaRegistryCheck,
     SchemaVersion,
@@ -26,6 +27,7 @@ from app.domain.repositories import (
     DataSourceRepository,
     DatasetRepository,
     IngestionRunRepository,
+    IntakeReconciliationRepository,
     ScheduledTaskRepository,
     SchemaRegistryCheckRepository,
     SchemaVersionRepository,
@@ -41,6 +43,7 @@ from app.infrastructure.db.models import (
     DataSourceModel,
     DatasetModel,
     IngestionRunModel,
+    IntakeReconciliationModel,
     ScheduledTaskModel,
     SchemaRegistryCheckModel,
     SchemaVersionModel,
@@ -944,3 +947,83 @@ class SqlAlchemyVanBanIntakeRepository(VanBanIntakeRepository):
         stmt = stmt.order_by(VanBanIntakeModel.id.desc())
         models = self._session.execute(stmt).scalars().all()
         return [_van_ban_intake_to_entity(m) for m in models]
+
+def _intake_reconciliation_to_entity(model: IntakeReconciliationModel) -> IntakeReconciliation:
+    return IntakeReconciliation(
+        id=model.id,
+        session_id=model.session_id,
+        status=model.status,
+        control_totals=json.loads(model.control_totals or "{}"),
+        findings=json.loads(model.findings or "[]"),
+        reconciled_by=model.reconciled_by,
+        opened_at=model.opened_at,
+        closed_by=model.closed_by,
+        closed_at=model.closed_at,
+        close_note=model.close_note,
+    )
+
+
+class SqlAlchemyIntakeReconciliationRepository(IntakeReconciliationRepository):
+    """UC-027: Doi soat phien intake (bang `intake_reconciliations`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, reconciliation: IntakeReconciliation) -> IntakeReconciliation:
+        model = IntakeReconciliationModel(
+            session_id=reconciliation.session_id,
+            status=reconciliation.status,
+            control_totals=json.dumps(reconciliation.control_totals or {}, ensure_ascii=False),
+            findings=json.dumps(reconciliation.findings or [], ensure_ascii=False),
+            reconciled_by=reconciliation.reconciled_by,
+            opened_at=reconciliation.opened_at,
+            closed_by=reconciliation.closed_by,
+            closed_at=reconciliation.closed_at,
+            close_note=reconciliation.close_note,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _intake_reconciliation_to_entity(model)
+
+    def update(self, reconciliation: IntakeReconciliation) -> IntakeReconciliation:
+        model = self._session.get(IntakeReconciliationModel, reconciliation.id)
+        model.status = reconciliation.status
+        model.control_totals = json.dumps(reconciliation.control_totals or {}, ensure_ascii=False)
+        model.findings = json.dumps(reconciliation.findings or [], ensure_ascii=False)
+        model.reconciled_by = reconciliation.reconciled_by
+        model.opened_at = reconciliation.opened_at
+        model.closed_by = reconciliation.closed_by
+        model.closed_at = reconciliation.closed_at
+        model.close_note = reconciliation.close_note
+        self._session.commit()
+        self._session.refresh(model)
+        return _intake_reconciliation_to_entity(model)
+
+    def get_by_id(self, reconciliation_id: int) -> Optional[IntakeReconciliation]:
+        model = self._session.get(IntakeReconciliationModel, reconciliation_id)
+        return _intake_reconciliation_to_entity(model) if model else None
+
+    def find_open_for_session(self, session_id: int) -> Optional[IntakeReconciliation]:
+        stmt = (
+            select(IntakeReconciliationModel)
+            .where(IntakeReconciliationModel.session_id == session_id)
+            .where(IntakeReconciliationModel.status == "OPEN")
+            .order_by(IntakeReconciliationModel.id.desc())
+        )
+        model = self._session.execute(stmt).scalars().first()
+        return _intake_reconciliation_to_entity(model) if model else None
+
+    def list(
+        self,
+        session_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[IntakeReconciliation]:
+        stmt = select(IntakeReconciliationModel)
+        if session_id:
+            stmt = stmt.where(IntakeReconciliationModel.session_id == session_id)
+        if status:
+            stmt = stmt.where(IntakeReconciliationModel.status == status)
+        stmt = stmt.order_by(IntakeReconciliationModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_intake_reconciliation_to_entity(m) for m in models]
