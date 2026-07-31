@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -12,6 +12,7 @@ import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
 import IncrementalSyncPage from "./pages/ingestion/IncrementalSyncPage.jsx";
 import IngestionRunsPage from "./pages/ingestion/IngestionRunsPage.jsx";
 import ScheduledTasksPage from "./pages/ingestion/ScheduledTasksPage.jsx";
+import SchemaRegistryChecksPage from "./pages/ingestion/SchemaRegistryChecksPage.jsx";
 import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import TabmisIntakePage from "./pages/ingestion/TabmisIntakePage.jsx";
 import TabmisIntakeDetailPage from "./pages/ingestion/TabmisIntakeDetailPage.jsx";
@@ -127,6 +128,12 @@ function HomePage() {
       title: "Đồng bộ tăng dần từ API/DB",
       description: "UC-025 — Đọc điểm kiểm tra từ ingestion.runs, lấy dữ liệu mới/thay đổi (MISA/QL Giá/PMSTT), lưu MinIO + đẩy sự kiện parsing.requested.",
       icon: RefreshCw,
+    },
+    {
+      to: "/schema-registry-checks",
+      title: "Kiểm tra Schema Registry",
+      description: "UC-026 — Trước khi phân tích, so sánh lược đồ nguồn với lược đồ đã đăng ký (UC-018); dừng xử lý + cảnh báo nếu phá vỡ tương thích, chuyển tiếp + ghi nhận nếu chỉ bổ sung.",
+      icon: ShieldAlert,
     },
     {
       to: "/tabmis-intake",
@@ -367,6 +374,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IncrementalSyncPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/schema-registry-checks"
+        element={
+          <ProtectedRoute>
+            <SchemaRegistryChecksPage />
           </ProtectedRoute>
         }
       />

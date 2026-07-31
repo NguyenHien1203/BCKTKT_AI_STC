@@ -513,3 +513,46 @@ class VanBanIntakeResponse(BaseModel):
     uploaded_at: str
 
     model_config = {"from_attributes": True}
+
+
+# ---------- UC-026: Kiểm tra Schema Registry ----------
+
+_SCHEMA_REGISTRY_CHECK_STATUS_PATTERN = "^(COMPATIBLE|BREAKING)$"
+
+
+class SchemaFieldInput(BaseModel):
+    """1 trường trong lược đồ nguồn đọc được (trước khi phân tích) — dùng
+    để đối chiếu với lược đồ đã đăng ký (UC-018)."""
+
+    name: str = Field(..., min_length=1)
+    data_type: str = Field(..., min_length=1)
+    nullable: bool = True
+    description: str = ""
+
+
+class SchemaRegistryCheckRequest(BaseModel):
+    schema_fields: List[SchemaFieldInput] = Field(..., min_length=1)
+    ingestion_run_id: Optional[int] = Field(None, gt=0)
+
+
+class SchemaChangedTypeField(BaseModel):
+    name: str
+    old_type: Optional[str] = None
+    new_type: Optional[str] = None
+
+
+class SchemaRegistryCheckResponse(BaseModel):
+    id: int
+    dataset_id: int
+    registered_version: int
+    incoming_fields: List[Dict[str, Any]]
+    status: str
+    allowed: bool
+    added_fields: List[str]
+    removed_fields: List[str]
+    changed_type_fields: List[SchemaChangedTypeField]
+    message: str
+    checked_at: str
+    ingestion_run_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}

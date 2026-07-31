@@ -12,6 +12,7 @@ from app.domain.entities import (
     Dataset,
     IngestionRun,
     ScheduledTask,
+    SchemaRegistryCheck,
     SchemaVersion,
     SourceConnection,
     TabmisIntakeRowError,
@@ -26,6 +27,7 @@ from app.domain.repositories import (
     DatasetRepository,
     IngestionRunRepository,
     ScheduledTaskRepository,
+    SchemaRegistryCheckRepository,
     SchemaVersionRepository,
     SourceConnectionRepository,
     TabmisIntakeRowErrorRepository,
@@ -40,6 +42,7 @@ from app.infrastructure.db.models import (
     DatasetModel,
     IngestionRunModel,
     ScheduledTaskModel,
+    SchemaRegistryCheckModel,
     SchemaVersionModel,
     SourceConnectionModel,
     TabmisIntakeRowErrorModel,
@@ -502,6 +505,65 @@ class SqlAlchemySchemaVersionRepository(SchemaVersionRepository):
         )
         model = self._session.execute(stmt).scalar_one_or_none()
         return _schema_version_to_entity(model) if model else None
+
+
+def _schema_registry_check_to_entity(m: SchemaRegistryCheckModel) -> SchemaRegistryCheck:
+    return SchemaRegistryCheck(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        registered_version=m.registered_version,
+        incoming_fields=json.loads(m.incoming_fields or "[]"),
+        status=m.status,
+        added_fields=json.loads(m.added_fields or "[]"),
+        removed_fields=json.loads(m.removed_fields or "[]"),
+        changed_type_fields=json.loads(m.changed_type_fields or "[]"),
+        message=m.message,
+        checked_at=m.checked_at,
+        ingestion_run_id=m.ingestion_run_id,
+    )
+
+
+class SqlAlchemySchemaRegistryCheckRepository(SchemaRegistryCheckRepository):
+    """UC-026: Kiểm tra Schema Registry (bảng `schema_registry_checks`)."""
+
+    def __init__(self, session: Session):
+        self._session = session
+
+    def add(self, check: SchemaRegistryCheck) -> SchemaRegistryCheck:
+        model = SchemaRegistryCheckModel(
+            dataset_id=check.dataset_id,
+            registered_version=check.registered_version,
+            incoming_fields=json.dumps(check.incoming_fields or [], ensure_ascii=False),
+            status=check.status,
+            added_fields=json.dumps(check.added_fields or [], ensure_ascii=False),
+            removed_fields=json.dumps(check.removed_fields or [], ensure_ascii=False),
+            changed_type_fields=json.dumps(check.changed_type_fields or [], ensure_ascii=False),
+            message=check.message,
+            checked_at=check.checked_at,
+            ingestion_run_id=check.ingestion_run_id,
+        )
+        self._session.add(model)
+        self._session.commit()
+        self._session.refresh(model)
+        return _schema_registry_check_to_entity(model)
+
+    def get_by_id(self, check_id: int) -> Optional[SchemaRegistryCheck]:
+        model = self._session.get(SchemaRegistryCheckModel, check_id)
+        return _schema_registry_check_to_entity(model) if model else None
+
+    def list_for_dataset(
+        self,
+        dataset_id: int,
+        status: Optional[str] = None,
+    ) -> List[SchemaRegistryCheck]:
+        stmt = select(SchemaRegistryCheckModel).where(
+            SchemaRegistryCheckModel.dataset_id == dataset_id
+        )
+        if status:
+            stmt = stmt.where(SchemaRegistryCheckModel.status == status)
+        stmt = stmt.order_by(SchemaRegistryCheckModel.id.desc())
+        models = self._session.execute(stmt).scalars().all()
+        return [_schema_registry_check_to_entity(m) for m in models]
 
 
 def _scheduled_task_to_entity(m: ScheduledTaskModel) -> ScheduledTask:

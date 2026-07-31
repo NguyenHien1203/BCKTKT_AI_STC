@@ -488,6 +488,52 @@ class SchemaVersion:
 
 
 @dataclass
+class SchemaRegistryCheck:
+    """1 lượt kiểm tra Schema Registry (UC-026): trước khi phân tích, so
+    sánh lược đồ nguồn (`incoming_fields`, đọc được từ dữ liệu vừa tiếp
+    nhận) với lược đồ đã đăng ký gần nhất của tập dữ liệu (`SchemaVersion`
+    của UC-018 bước 4).
+
+    Kết quả (`status`):
+    - `COMPATIBLE`: lược đồ chỉ thay đổi bổ sung (thêm trường mới) — hệ
+      thống chuyển tiếp (cho phép bước phân tích tiếp theo chạy) + ghi
+      nhận thay đổi (`added_fields`).
+    - `BREAKING`: lược đồ phá vỡ tương thích (xoá/mất trường đã đăng ký,
+      hoặc đổi kiểu dữ liệu 1 trường đã có) — hệ thống DỪNG quy trình xử
+      lý (`allowed=False`) + cảnh báo Quản trị Tích hợp.
+    """
+
+    STATUSES = ("COMPATIBLE", "BREAKING")
+
+    id: Optional[int]
+    dataset_id: int
+    registered_version: int
+    incoming_fields: List[Dict[str, Any]]
+    status: str
+    added_fields: List[str] = field(default_factory=list)
+    removed_fields: List[str] = field(default_factory=list)
+    changed_type_fields: List[Dict[str, str]] = field(default_factory=list)
+    message: str = ""
+    checked_at: str = ""
+    ingestion_run_id: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if not self.dataset_id or self.dataset_id <= 0:
+            raise ValueError("Phải chỉ định tập dữ liệu (dataset_id) hợp lệ")
+        if self.status not in self.STATUSES:
+            raise ValueError(
+                f"Trạng thái kiểm tra '{self.status}' không hợp lệ, phải là 1 "
+                f"trong {self.STATUSES}"
+            )
+
+    @property
+    def allowed(self) -> bool:
+        """`True` nếu hệ thống được phép chuyển tiếp sang bước phân tích
+        tiếp theo (lược đồ tương thích), `False` nếu phải dừng lại."""
+        return self.status == "COMPATIBLE"
+
+
+@dataclass
 class TemplateValidationResult:
     """Kết quả kiểm tra 1 tệp Excel tải lên so với biểu mẫu chuẩn (UC-022).
 

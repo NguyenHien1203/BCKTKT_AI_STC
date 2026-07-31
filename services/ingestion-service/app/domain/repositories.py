@@ -11,6 +11,7 @@ from app.domain.entities import (
     IncrementalRecord,
     IngestionRun,
     ScheduledTask,
+    SchemaRegistryCheck,
     SchemaVersion,
     SourceConnection,
     TabmisIntakeRowError,
@@ -219,6 +220,27 @@ class SchemaVersionRepository(ABC):
 
     @abstractmethod
     def get_by_version(self, dataset_id: int, version: int) -> Optional[SchemaVersion]:
+        ...
+
+
+class SchemaRegistryCheckRepository(ABC):
+    """Repository cho UC-026: Kiểm tra Schema Registry — lưu lịch sử các
+    lượt đối chiếu lược đồ nguồn so với lược đồ đã đăng ký."""
+
+    @abstractmethod
+    def add(self, check: SchemaRegistryCheck) -> SchemaRegistryCheck:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, check_id: int) -> Optional[SchemaRegistryCheck]:
+        ...
+
+    @abstractmethod
+    def list_for_dataset(
+        self,
+        dataset_id: int,
+        status: Optional[str] = None,
+    ) -> List[SchemaRegistryCheck]:
         ...
 
 

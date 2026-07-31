@@ -258,3 +258,31 @@ class IncrementalSyncAlreadyRunning(DomainError):
             f"Tập dữ liệu id={dataset_id} đang có 1 phiên đồng bộ tăng dần "
             f"khác (id={running_run_id}) chạy — vui lòng đợi hoàn tất"
         )
+
+
+class SchemaNotRegisteredForCheck(DomainError):
+    """UC-026: chưa đăng ký lược đồ nào vào Schema Registry (UC-018 bước 4)
+    nên chưa có gì để so sánh."""
+
+    code = "SCHEMA_NOT_REGISTERED_FOR_CHECK"
+
+    def __init__(self, dataset_id: int):
+        super().__init__(
+            f"Tập dữ liệu id={dataset_id} chưa đăng ký lược đồ nào vào "
+            "Schema Registry (UC-018 bước 4) — không có lược đồ đã đăng ký "
+            "để đối chiếu"
+        )
+
+
+class SchemaRegistryCheckNotFound(DomainError):
+    code = "SCHEMA_REGISTRY_CHECK_NOT_FOUND"
+
+    def __init__(self, check_id: int):
+        super().__init__(f"Không tìm thấy lượt kiểm tra Schema Registry id={check_id}")
+
+
+class InvalidSchemaRegistryCheck(DomainError):
+    code = "INVALID_SCHEMA_REGISTRY_CHECK"
+
+    def __init__(self, message: str):
+        super().__init__(message)
