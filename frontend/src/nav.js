@@ -25,6 +25,7 @@ import {
   FileBarChart,
   FileText,
   FileUp,
+  FileScan,
   KeyRound,
   UserCog,
 } from "lucide-react";
@@ -77,6 +78,7 @@ export const NAV_SECTIONS = [
     label: "Chuẩn hóa và quản trị dữ liệu",
     items: [
       { to: "/parsing-jobs", label: "Phân tích dữ liệu có cấu trúc", icon: ShieldCheck },
+      { to: "/ocr-jobs", label: "Phân tích PDF/bản quét + OCR", icon: FileScan },
     ],
   },
   {

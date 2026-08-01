@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -20,6 +20,7 @@ import TabmisIntakePage from "./pages/ingestion/TabmisIntakePage.jsx";
 import TabmisIntakeDetailPage from "./pages/ingestion/TabmisIntakeDetailPage.jsx";
 import VanBanIntakePage from "./pages/ingestion/VanBanIntakePage.jsx";
 import ParsingJobsPage from "./pages/dataquality/ParsingJobsPage.jsx";
+import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -161,6 +162,12 @@ function HomePage() {
       title: "Tiếp nhận văn bản QLVBĐH",
       description: "UC-024 — Nhập siêu dữ liệu + đính kèm PDF/bản quét: lưu staging.stg_van_ban + MinIO (raw-documents), khử trùng lặp theo số ký hiệu, kích hoạt sự kiện ocr.requested.",
       icon: FileUp,
+    },
+    {
+      to: "/ocr-jobs",
+      title: "Phân tích PDF/bản quét + OCR",
+      description: "UC-030 — Nhận sự kiện ocr.requested, chạy OCR PaddleOCR/olmOCR trên PDF/bản quét, trích xuất văn bản + bảng, lưu dữ liệu có cấu trúc, kích hoạt sự kiện ocr.completed + parsing.requested.",
+      icon: FileScan,
     },
   ];
 
@@ -405,6 +412,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ParsingJobsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ocr-jobs"
+        element={
+          <ProtectedRoute>
+            <OcrJobsPage />
           </ProtectedRoute>
         }
       />
