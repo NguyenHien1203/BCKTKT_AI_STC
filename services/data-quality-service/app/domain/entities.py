@@ -165,6 +165,121 @@ class ParsingRowError:
 
 
 @dataclass
+class OcrJob:
+    """UC-030: Phân tích PDF/bản quét + OCR (docs/use_cases.json id=30).
+
+    Actor: "Hệ thống tự động (OCR Quy trình xử lý)". Luồng nghiệp vụ:
+    1. Nhận sự kiện `ocr.requested` (phát bởi ingestion-service UC-024 —
+       xem `ingestion-service/app/application/use_cases/manage_van_ban_intake.py`,
+       hàm `_events.publish("ocr.requested", {...})` — sau khi lưu văn bản
+       PDF/bản quét vào MinIO bucket `raw-documents`).
+    2. Hệ thống đọc file PDF/scan (`raw_object_key`, bucket `raw-documents`)
+       -> chạy OCR (PaddleOCR/olmOCR) -> trích xuất văn bản.
+    3. Trích xuất bảng (nếu có) trong tài liệu.
+    4. Hệ thống lưu dữ liệu có cấu trúc (`extracted_text` + các bảng vào
+       `ocr_extracted_tables`).
+    5-6. Kích hoạt + đẩy 2 sự kiện `ocr.completed` và `parsing.requested`
+       (chỉ khi OCR thành công — trích được ít nhất văn bản hoặc bảng).
+
+    `1 sự kiện ocr.requested = 1 OcrJob`, cùng tinh thần vòng đời
+    `ParsingJob` (UC-029)/`IngestionRun` (start -> append_log -> complete).
+    """
+
+    ENGINES = ("PADDLEOCR", "OLMOCR")
+    STATUSES = ("RECEIVED", "RUNNING", "COMPLETED", "FAILED")
+
+    id: Optional[int]
+    raw_object_key: str
+    van_ban_intake_id: Optional[int] = None
+    data_source_id: Optional[int] = None
+    so_ky_hieu: Optional[str] = None
+    engine_requested: str = "PADDLEOCR"
+    engine_used: Optional[str] = None
+    status: str = "RECEIVED"
+    pages_processed: int = 0
+    extracted_text: str = ""
+    table_count: int = 0
+    ocr_completed_published: bool = False
+    parsing_requested_published: bool = False
+    log_entries: List[Dict[str, str]] = field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str = field(default_factory=_utc_now_iso)
+    completed_at: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self._validate_raw_object_key(self.raw_object_key)
+        self._validate_engine(self.engine_requested)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_raw_object_key(raw_object_key: str) -> None:
+        if not raw_object_key or not raw_object_key.strip():
+            raise ValueError("raw_object_key không được để trống")
+
+    @classmethod
+    def _validate_engine(cls, engine: str) -> None:
+        if engine not in cls.ENGINES:
+            raise ValueError(f"engine phải thuộc {cls.ENGINES}, nhận '{engine}'")
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"status phải thuộc {cls.STATUSES}, nhận '{status}'")
+
+    def append_log(self, level: str, message: str, timestamp: Optional[str] = None) -> None:
+        self.log_entries.append(
+            {"level": level, "message": message, "timestamp": timestamp or _utc_now_iso()}
+        )
+
+    def start_running(self) -> None:
+        self.status = "RUNNING"
+
+    def complete(
+        self,
+        status: str,
+        engine_used: Optional[str],
+        pages_processed: int,
+        extracted_text: str,
+        table_count: int,
+        ocr_completed_published: bool = False,
+        parsing_requested_published: bool = False,
+        error_message: Optional[str] = None,
+    ) -> None:
+        if status not in ("COMPLETED", "FAILED"):
+            raise ValueError("Trạng thái kết thúc chỉ có thể là COMPLETED hoặc FAILED")
+        self.status = status
+        self.engine_used = engine_used
+        self.pages_processed = pages_processed
+        self.extracted_text = extracted_text
+        self.table_count = table_count
+        self.ocr_completed_published = ocr_completed_published
+        self.parsing_requested_published = parsing_requested_published
+        self.error_message = error_message
+        self.completed_at = _utc_now_iso()
+
+
+@dataclass
+class OcrExtractedTable:
+    """1 bảng trích xuất được từ tài liệu PDF/scan (bước 3), gắn với 1
+    OcrJob — lưu ở dạng "dữ liệu có cấu trúc" (bước 4): `rows` là danh
+    sách các dòng, mỗi dòng là danh sách ô (chuỗi)."""
+
+    id: Optional[int]
+    ocr_job_id: int
+    table_index: int
+    page_number: int
+    rows: List[List[Any]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.table_index < 0:
+            raise ValueError("table_index không được âm")
+        if self.page_number < 1:
+            raise ValueError("page_number phải >= 1")
+        if not self.rows:
+            raise ValueError("Bảng trích xuất phải có ít nhất 1 dòng")
+
+
+@dataclass
 class ParsedRecord:
     """1 bản ghi đã ánh xạ tên trường + ép kiểu (đầu ra bước 4), lưu vào
     bảng `parsed_structured_records` để UC-031 (Ánh xạ trường sang dạng

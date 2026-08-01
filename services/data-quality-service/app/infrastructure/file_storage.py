@@ -124,3 +124,26 @@ def get_raw_data_storage() -> FileStorage:
     if os.getenv("MINIO_ENDPOINT"):
         return MinioFileStorage()
     return LocalDiskFileStorage()
+
+
+def get_document_file_storage() -> FileStorage:
+    """UC-030 (Phân tích PDF/bản quét + OCR) bước 2 cần đọc tệp PDF/bản
+    quét mà ingestion-service (UC-024) đã lưu vào MinIO bucket
+    `raw-documents` (KHÁC bucket `tabmis-intake` dùng cho dữ liệu có cấu
+    trúc UC-029) — xem
+    `ingestion-service/app/infrastructure/file_storage.py`,
+    `get_document_file_storage()`. GIỮ NGUYÊN cùng tên bucket mặc định
+    `raw-documents` + biến môi trường `MINIO_BUCKET_RAW_DOCUMENTS` để 2
+    service trỏ đúng 1 bucket.
+
+    - Có MinIO (`MINIO_ENDPOINT`): đọc/ghi thật vào bucket `raw-documents`.
+    - Không có (dev/test): đọc/ghi ra đĩa cục bộ
+      `./data/raw-documents` (khớp `VAN_BAN_INTAKE_LOCAL_DIR` mặc định
+      bên ingestion-service để test có thể đọc lại tệp cùng thư mục khi
+      chạy chung sandbox cục bộ).
+    """
+    if os.getenv("MINIO_ENDPOINT"):
+        return MinioFileStorage(bucket=os.getenv("MINIO_BUCKET_RAW_DOCUMENTS", "raw-documents"))
+    return LocalDiskFileStorage(
+        base_dir=os.getenv("VAN_BAN_INTAKE_LOCAL_DIR", "./data/raw-documents")
+    )

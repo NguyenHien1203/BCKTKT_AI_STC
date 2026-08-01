@@ -5,7 +5,13 @@ UC-029: Phân tích dữ liệu có cấu trúc.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from app.domain.entities import ParsedRecord, ParsingJob, ParsingRowError
+from app.domain.entities import (
+    OcrExtractedTable,
+    OcrJob,
+    ParsedRecord,
+    ParsingJob,
+    ParsingRowError,
+)
 
 
 class ParsingJobRepository(ABC):
@@ -87,4 +93,56 @@ class EventPublisher(ABC):
 
     @abstractmethod
     def publish(self, event_name: str, payload: Dict[str, Any]) -> None:
+        ...
+
+
+# ---------- UC-030: Phân tích PDF/bản quét + OCR ----------
+
+
+class OcrJobRepository(ABC):
+    @abstractmethod
+    def add(self, job: OcrJob) -> OcrJob:
+        ...
+
+    @abstractmethod
+    def update(self, job: OcrJob) -> OcrJob:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, ocr_job_id: int) -> Optional[OcrJob]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        status: Optional[str] = None,
+        van_ban_intake_id: Optional[int] = None,
+    ) -> List[OcrJob]:
+        ...
+
+
+class OcrExtractedTableRepository(ABC):
+    """Lưu các bảng trích xuất được từ tài liệu (bước 3-4 — 'dữ liệu có
+    cấu trúc')."""
+
+    @abstractmethod
+    def add_many(self, tables: List[OcrExtractedTable]) -> List[OcrExtractedTable]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, ocr_job_id: int) -> List[OcrExtractedTable]:
+        ...
+
+
+class OcrEngine(ABC):
+    """Cổng bộ máy OCR (bước 2-3: chạy OCR PaddleOCR/olmOCR, trích xuất
+    văn bản + bảng). Implement thật (PaddleOCR/olmOCR) hoặc giả (NoOp cho
+    dev/test) đặt ở `infrastructure/ocr_engine.py`."""
+
+    @abstractmethod
+    def run(self, content: bytes) -> Dict[str, Any]:
+        """Trả về dict `{"engine": str, "pages_processed": int, "text": str,
+        "tables": [{"page": int, "rows": [[...]]}, ...]}`. Raise
+        `app.domain.exceptions.OcrEngineError` nếu không xử lý được."""
         ...

@@ -147,6 +147,9 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET_TABMIS_INTAKE: ${MINIO_BUCKET_TABMIS_INTAKE:-tabmis-intake}
+      # UC-024/UC-030: bucket chứa văn bản PDF/bản quét (đọc lại bởi
+      # data-quality-service khi xử lý OCR).
+      MINIO_BUCKET_RAW_DOCUMENTS: ${MINIO_BUCKET_RAW_DOCUMENTS:-raw-documents}
       MINIO_SECURE: ${MINIO_SECURE:-false}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD:-app_password}@rabbitmq:5672/%2F
     depends_on:
@@ -172,8 +175,16 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET_TABMIS_INTAKE: ${MINIO_BUCKET_TABMIS_INTAKE:-tabmis-intake}
+      # UC-030: đọc tệp PDF/bản quét (đã do ingestion-service UC-024 ghi vào
+      # MinIO khi phát sự kiện ocr.requested) — CHUNG bucket "raw-documents"
+      # với ingestion-service.
+      MINIO_BUCKET_RAW_DOCUMENTS: ${MINIO_BUCKET_RAW_DOCUMENTS:-raw-documents}
       MINIO_SECURE: ${MINIO_SECURE:-false}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD:-app_password}@rabbitmq:5672/%2F
+      # UC-030: bật bộ máy OCR THẬT PaddleOCR (trước đây mặc định là
+      # NoOpOcrEngine giả lập cho dev/test) — xem app/infrastructure/ocr_engine.py.
+      OCR_USE_REAL_ENGINE: ${OCR_USE_REAL_ENGINE:-true}
+      OCR_ENGINE: ${OCR_ENGINE:-PADDLEOCR}
     depends_on:
       postgres:
         condition: service_healthy

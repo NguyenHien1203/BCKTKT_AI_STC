@@ -5,14 +5,24 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import ParsedRecord, ParsingJob, ParsingRowError
+from app.domain.entities import (
+    OcrExtractedTable,
+    OcrJob,
+    ParsedRecord,
+    ParsingJob,
+    ParsingRowError,
+)
 from app.domain.repositories import (
+    OcrExtractedTableRepository,
+    OcrJobRepository,
     ParsedRecordRepository,
     ParsingJobRepository,
     ParsingRowErrorRepository,
     StgStructuredRowRepository,
 )
 from app.infrastructure.db.models import (
+    OcrExtractedTableModel,
+    OcrJobModel,
     ParsedStructuredRecordModel,
     ParsingJobModel,
     ParsingRowErrorModel,
@@ -202,3 +212,133 @@ class SqlAlchemyParsingRowErrorRepository(ParsingRowErrorRepository):
             )
             for m in self._db.execute(stmt).scalars().all()
         ]
+
+
+# ---------- UC-030: Phân tích PDF/bản quét + OCR ----------
+
+
+def _ocr_job_to_entity(m: OcrJobModel) -> OcrJob:
+    return OcrJob(
+        id=m.id,
+        raw_object_key=m.raw_object_key,
+        van_ban_intake_id=m.van_ban_intake_id,
+        data_source_id=m.data_source_id,
+        so_ky_hieu=m.so_ky_hieu,
+        engine_requested=m.engine_requested,
+        engine_used=m.engine_used,
+        status=m.status,
+        pages_processed=m.pages_processed,
+        extracted_text=m.extracted_text,
+        table_count=m.table_count,
+        ocr_completed_published=m.ocr_completed_published,
+        parsing_requested_published=m.parsing_requested_published,
+        log_entries=json.loads(m.log_entries_json or "[]"),
+        error_message=m.error_message,
+        received_at=m.received_at,
+        completed_at=m.completed_at,
+    )
+
+
+class SqlAlchemyOcrJobRepository(OcrJobRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, job: OcrJob) -> OcrJob:
+        model = OcrJobModel(
+            van_ban_intake_id=job.van_ban_intake_id,
+            data_source_id=job.data_source_id,
+            so_ky_hieu=job.so_ky_hieu,
+            raw_object_key=job.raw_object_key,
+            engine_requested=job.engine_requested,
+            engine_used=job.engine_used,
+            status=job.status,
+            pages_processed=job.pages_processed,
+            extracted_text=job.extracted_text,
+            table_count=job.table_count,
+            ocr_completed_published=job.ocr_completed_published,
+            parsing_requested_published=job.parsing_requested_published,
+            log_entries_json=json.dumps(job.log_entries, ensure_ascii=False),
+            error_message=job.error_message,
+            received_at=job.received_at,
+            completed_at=job.completed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        job.id = model.id
+        return job
+
+    def update(self, job: OcrJob) -> OcrJob:
+        model = self._db.get(OcrJobModel, job.id)
+        if model is None:
+            return job
+        model.engine_used = job.engine_used
+        model.status = job.status
+        model.pages_processed = job.pages_processed
+        model.extracted_text = job.extracted_text
+        model.table_count = job.table_count
+        model.ocr_completed_published = job.ocr_completed_published
+        model.parsing_requested_published = job.parsing_requested_published
+        model.log_entries_json = json.dumps(job.log_entries, ensure_ascii=False)
+        model.error_message = job.error_message
+        model.completed_at = job.completed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return job
+
+    def get_by_id(self, ocr_job_id: int) -> Optional[OcrJob]:
+        model = self._db.get(OcrJobModel, ocr_job_id)
+        return _ocr_job_to_entity(model) if model else None
+
+    def list(
+        self,
+        data_source_id: Optional[int] = None,
+        status: Optional[str] = None,
+        van_ban_intake_id: Optional[int] = None,
+    ) -> List[OcrJob]:
+        stmt = select(OcrJobModel)
+        if data_source_id is not None:
+            stmt = stmt.where(OcrJobModel.data_source_id == data_source_id)
+        if status is not None:
+            stmt = stmt.where(OcrJobModel.status == status)
+        if van_ban_intake_id is not None:
+            stmt = stmt.where(OcrJobModel.van_ban_intake_id == van_ban_intake_id)
+        stmt = stmt.order_by(OcrJobModel.id.desc())
+        return [_ocr_job_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyOcrExtractedTableRepository(OcrExtractedTableRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(self, tables: List[OcrExtractedTable]) -> List[OcrExtractedTable]:
+        for t in tables:
+            model = OcrExtractedTableModel(
+                ocr_job_id=t.ocr_job_id,
+                table_index=t.table_index,
+                page_number=t.page_number,
+                rows_json=json.dumps(t.rows, ensure_ascii=False, default=str),
+            )
+            self._db.add(model)
+        self._db.commit()
+        return tables
+
+    def list_for_job(self, ocr_job_id: int) -> List[OcrExtractedTable]:
+        stmt = (
+            select(OcrExtractedTableModel)
+            .where(OcrExtractedTableModel.ocr_job_id == ocr_job_id)
+            .order_by(OcrExtractedTableModel.table_index)
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                OcrExtractedTable(
+                    id=m.id,
+                    ocr_job_id=m.ocr_job_id,
+                    table_index=m.table_index,
+                    page_number=m.page_number,
+                    rows=json.loads(m.rows_json),
+                )
+            )
+        return result
