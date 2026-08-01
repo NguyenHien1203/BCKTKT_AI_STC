@@ -19,6 +19,7 @@ import SourceConnectionsPage from "./pages/ingestion/SourceConnectionsPage.jsx";
 import TabmisIntakePage from "./pages/ingestion/TabmisIntakePage.jsx";
 import TabmisIntakeDetailPage from "./pages/ingestion/TabmisIntakeDetailPage.jsx";
 import VanBanIntakePage from "./pages/ingestion/VanBanIntakePage.jsx";
+import ParsingJobsPage from "./pages/dataquality/ParsingJobsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -396,6 +397,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SchemaRegistryChecksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parsing-jobs"
+        element={
+          <ProtectedRoute>
+            <ParsingJobsPage />
           </ProtectedRoute>
         }
       />

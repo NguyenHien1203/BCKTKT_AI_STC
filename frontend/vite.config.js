@@ -11,6 +11,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/auth-identity/, ""),
       },
+      // UC-029 (Phân tích dữ liệu có cấu trúc) -> data-quality-service.
+      "/api/data-quality": {
+        target: "http://localhost:8003",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/data-quality/, ""),
+      },
     },
   },
 });
