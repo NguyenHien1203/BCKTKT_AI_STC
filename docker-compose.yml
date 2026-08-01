@@ -37,6 +37,12 @@ services:
     image: rabbitmq:3-management
     container_name: hy-rabbitmq
     restart: unless-stopped
+    environment:
+      # RabbitMQ chặn user "guest" mặc định kết nối từ ngoài loopback — các
+      # service khác kết nối qua tên host "rabbitmq" trong mạng Docker (không
+      # phải loopback) nên BẮT BUỘC phải đặt user/mật khẩu riêng ở đây.
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-app}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-app_password}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -142,10 +148,13 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET_TABMIS_INTAKE: ${MINIO_BUCKET_TABMIS_INTAKE:-tabmis-intake}
       MINIO_SECURE: ${MINIO_SECURE:-false}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD:-app_password}@rabbitmq:5672/%2F
     depends_on:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_started
+      rabbitmq:
         condition: service_started
     ports:
       - "8002:8000"
@@ -156,9 +165,22 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+      # UC-029: đọc dữ liệu thô (đã do ingestion-service ghi vào MinIO khi
+      # phát sự kiện parsing.requested) — dùng CHUNG 1 MinIO hạ tầng và
+      # CHUNG tên bucket mặc định "tabmis-intake" với ingestion-service.
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_TABMIS_INTAKE: ${MINIO_BUCKET_TABMIS_INTAKE:-tabmis-intake}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-app}:${RABBITMQ_PASSWORD:-app_password}@rabbitmq:5672/%2F
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     ports:
       - "8003:8000"
 

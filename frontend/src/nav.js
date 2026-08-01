@@ -71,7 +71,12 @@ export const NAV_SECTIONS = [
         icon: Ticket,
       },
       { to: "/qlvbdh-intake", label: "Tiếp nhận văn bản QLVBĐH", icon: FileUp },
-      { to: "/data-quality", label: "Chuẩn hoá dữ liệu", icon: ShieldCheck, disabled: true },
+    ],
+  },
+  {
+    label: "Chuẩn hóa và quản trị dữ liệu",
+    items: [
+      { to: "/parsing-jobs", label: "Phân tích dữ liệu có cấu trúc", icon: ShieldCheck },
     ],
   },
   {

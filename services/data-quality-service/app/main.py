@@ -1,16 +1,38 @@
 from fastapi import FastAPI
 
+from app.infrastructure.db.session import Base, engine
+from app.interfaces.api.parsing_job_router import router as parsing_job_router
+
+# Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
+# nhanh bằng SQLite; môi trường Postgres thật dùng Alembic migration).
+from app.infrastructure.db import models  # noqa: F401
+
 app = FastAPI(
     title="data-quality-service",
     description="Service phụ trách nhóm UC III. Chuẩn hóa và quản trị dữ liệu (UC-029 .. UC-046).",
     version="0.1.0",
 )
 
+app.include_router(parsing_job_router)
+
+
+def _create_sqlite_tables_if_needed() -> None:
+    # Chỉ tự tạo bảng khi dùng SQLite dev/test; Postgres production dùng Alembic.
+    if engine.url.get_backend_name() == "sqlite":
+        Base.metadata.create_all(bind=engine)
+
+
+# Tạo bảng ngay khi import app (không chỉ ở startup event) — cần thiết vì
+# TestClient(app) dùng trực tiếp (không qua context manager `with`) không
+# đảm bảo trigger lifespan/startup event ở mọi phiên bản Starlette.
+_create_sqlite_tables_if_needed()
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    _create_sqlite_tables_if_needed()
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "data-quality-service"}
-
-# TODO: khi bắt đầu UC đầu tiên của service này (xem PLAN.md),
-# thêm router theo mẫu auth-identity-service/app/interfaces/api/*
-# và include_router(...) tại đây. Xem SKILL.md mục B.
