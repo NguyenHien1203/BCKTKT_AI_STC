@@ -76,3 +76,41 @@ class OcrEngineError(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-031: Ánh xạ trường sang dạng chuẩn ----------
+
+
+class MappingJobNotFound(DomainError):
+    code = "MAPPING_JOB_NOT_FOUND"
+
+    def __init__(self, mapping_job_id: int):
+        super().__init__(f"Không tìm thấy phiên ánh xạ id={mapping_job_id}")
+        self.mapping_job_id = mapping_job_id
+
+
+class InvalidMappingJob(DomainError):
+    code = "INVALID_MAPPING_JOB"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidMappingRule(DomainError):
+    code = "INVALID_MAPPING_RULE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NoParsedRecordsToMap(DomainError):
+    """`parsing_job_id` chưa có bản ghi nào ánh xạ tên trường + ép kiểu
+    thành công (bước 4 của UC-029) để UC-031 xử lý tiếp."""
+
+    code = "NO_PARSED_RECORDS_TO_MAP"
+
+    def __init__(self, parsing_job_id: int):
+        super().__init__(
+            f"Phiên phân tích id={parsing_job_id} chưa có bản ghi hợp lệ nào để ánh xạ chuẩn hoá"
+        )
+        self.parsing_job_id = parsing_job_id

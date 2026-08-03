@@ -1,32 +1,47 @@
 """SqlAlchemy repository implementations cho data-quality-service — UC-029."""
 import json
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    MappedStandardRecord,
+    MappingJob,
+    MappingRejection,
+    MappingRule,
     OcrExtractedTable,
     OcrJob,
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    UnmappedQueueItem,
 )
 from app.domain.repositories import (
+    MappedStandardRecordRepository,
+    MappingJobRepository,
+    MappingRejectionRepository,
+    MappingRuleRepository,
     OcrExtractedTableRepository,
     OcrJobRepository,
     ParsedRecordRepository,
     ParsingJobRepository,
     ParsingRowErrorRepository,
     StgStructuredRowRepository,
+    UnmappedQueueRepository,
 )
 from app.infrastructure.db.models import (
+    MappedStandardRecordModel,
+    MappingJobModel,
+    MappingRejectionModel,
+    MappingRuleModel,
     OcrExtractedTableModel,
     OcrJobModel,
     ParsedStructuredRecordModel,
     ParsingJobModel,
     ParsingRowErrorModel,
     StgStructuredRowModel,
+    UnmappedQueueItemModel,
 )
 
 
@@ -339,6 +354,290 @@ class SqlAlchemyOcrExtractedTableRepository(OcrExtractedTableRepository):
                     table_index=m.table_index,
                     page_number=m.page_number,
                     rows=json.loads(m.rows_json),
+                )
+            )
+        return result
+
+# ---------- UC-031: Ánh xạ trường sang dạng chuẩn ----------
+
+
+def _rule_to_entity(m: MappingRuleModel) -> MappingRule:
+    return MappingRule(
+        id=m.id,
+        field_name=m.field_name,
+        version=m.version,
+        rule_type=m.rule_type,
+        dataset_id=m.dataset_id,
+        catalog_map=json.loads(m.catalog_map_json or "{}"),
+        normalize_case=m.normalize_case,
+        is_active=m.is_active,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyMappingRuleRepository(MappingRuleRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, rule: MappingRule) -> MappingRule:
+        model = MappingRuleModel(
+            dataset_id=rule.dataset_id,
+            field_name=rule.field_name,
+            version=rule.version,
+            rule_type=rule.rule_type,
+            catalog_map_json=json.dumps(rule.catalog_map, ensure_ascii=False),
+            normalize_case=rule.normalize_case,
+            is_active=rule.is_active,
+            created_at=rule.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        rule.id = model.id
+        return rule
+
+    def get_by_id(self, rule_id: int) -> Optional[MappingRule]:
+        model = self._db.get(MappingRuleModel, rule_id)
+        return _rule_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        field_name: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[MappingRule]:
+        stmt = select(MappingRuleModel)
+        if dataset_id is not None:
+            stmt = stmt.where(MappingRuleModel.dataset_id == dataset_id)
+        if field_name is not None:
+            stmt = stmt.where(MappingRuleModel.field_name == field_name)
+        if is_active is not None:
+            stmt = stmt.where(MappingRuleModel.is_active == is_active)
+        stmt = stmt.order_by(MappingRuleModel.field_name, MappingRuleModel.version.desc())
+        return [_rule_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def get_active_rules_for_dataset(self, dataset_id: int) -> Dict[str, MappingRule]:
+        stmt = (
+            select(MappingRuleModel)
+            .where(MappingRuleModel.is_active.is_(True))
+            .where(
+                (MappingRuleModel.dataset_id == dataset_id)
+                | (MappingRuleModel.dataset_id.is_(None))
+            )
+            .order_by(MappingRuleModel.version.asc())
+        )
+        rules_by_field: Dict[str, MappingRule] = {}
+        specific_fields: set = set()
+        for m in self._db.execute(stmt).scalars().all():
+            entity = _rule_to_entity(m)
+            is_specific = entity.dataset_id == dataset_id
+            existing = rules_by_field.get(entity.field_name)
+            if existing is None:
+                rules_by_field[entity.field_name] = entity
+                if is_specific:
+                    specific_fields.add(entity.field_name)
+                continue
+            already_specific = entity.field_name in specific_fields
+            if is_specific and not already_specific:
+                # Quy tắc gắn dataset cụ thể luôn được ưu tiên hơn quy tắc chung.
+                rules_by_field[entity.field_name] = entity
+                specific_fields.add(entity.field_name)
+            elif is_specific == already_specific:
+                # Cùng phạm vi (đều chung hoặc đều gắn dataset) -> lấy version lớn nhất
+                # (đã order_by version.asc() nên bản ghi sau luôn version >= bản ghi trước).
+                rules_by_field[entity.field_name] = entity
+        return rules_by_field
+
+
+def _mapping_job_to_entity(m: MappingJobModel) -> MappingJob:
+    return MappingJob(
+        id=m.id,
+        parsing_job_id=m.parsing_job_id,
+        dataset_id=m.dataset_id,
+        status=m.status,
+        records_total=m.records_total,
+        records_mapped=m.records_mapped,
+        records_rejected=m.records_rejected,
+        unmapped_values_count=m.unmapped_values_count,
+        log_entries=json.loads(m.log_entries_json or "[]"),
+        error_message=m.error_message,
+        received_at=m.received_at,
+        completed_at=m.completed_at,
+    )
+
+
+class SqlAlchemyMappingJobRepository(MappingJobRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, job: MappingJob) -> MappingJob:
+        model = MappingJobModel(
+            parsing_job_id=job.parsing_job_id,
+            dataset_id=job.dataset_id,
+            status=job.status,
+            records_total=job.records_total,
+            records_mapped=job.records_mapped,
+            records_rejected=job.records_rejected,
+            unmapped_values_count=job.unmapped_values_count,
+            log_entries_json=json.dumps(job.log_entries, ensure_ascii=False),
+            error_message=job.error_message,
+            received_at=job.received_at,
+            completed_at=job.completed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        job.id = model.id
+        return job
+
+    def update(self, job: MappingJob) -> MappingJob:
+        model = self._db.get(MappingJobModel, job.id)
+        if model is None:
+            return job
+        model.status = job.status
+        model.records_total = job.records_total
+        model.records_mapped = job.records_mapped
+        model.records_rejected = job.records_rejected
+        model.unmapped_values_count = job.unmapped_values_count
+        model.log_entries_json = json.dumps(job.log_entries, ensure_ascii=False)
+        model.error_message = job.error_message
+        model.completed_at = job.completed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return job
+
+    def get_by_id(self, mapping_job_id: int) -> Optional[MappingJob]:
+        model = self._db.get(MappingJobModel, mapping_job_id)
+        return _mapping_job_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        parsing_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[MappingJob]:
+        stmt = select(MappingJobModel)
+        if dataset_id is not None:
+            stmt = stmt.where(MappingJobModel.dataset_id == dataset_id)
+        if parsing_job_id is not None:
+            stmt = stmt.where(MappingJobModel.parsing_job_id == parsing_job_id)
+        if status is not None:
+            stmt = stmt.where(MappingJobModel.status == status)
+        stmt = stmt.order_by(MappingJobModel.id.desc())
+        return [_mapping_job_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyMappingRejectionRepository(MappingRejectionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(self, rejections: List[MappingRejection]) -> List[MappingRejection]:
+        for r in rejections:
+            self._db.add(
+                MappingRejectionModel(
+                    mapping_job_id=r.mapping_job_id,
+                    row_index=r.row_index,
+                    field_name=r.field_name,
+                    reason=r.reason,
+                    rejected_at=r.rejected_at,
+                )
+            )
+        self._db.commit()
+        return rejections
+
+    def list_for_job(self, mapping_job_id: int) -> List[MappingRejection]:
+        stmt = (
+            select(MappingRejectionModel)
+            .where(MappingRejectionModel.mapping_job_id == mapping_job_id)
+            .order_by(MappingRejectionModel.row_index)
+        )
+        return [
+            MappingRejection(
+                id=m.id,
+                mapping_job_id=m.mapping_job_id,
+                row_index=m.row_index,
+                field_name=m.field_name,
+                reason=m.reason,
+                rejected_at=m.rejected_at,
+            )
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyUnmappedQueueRepository(UnmappedQueueRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(self, items: List[UnmappedQueueItem]) -> List[UnmappedQueueItem]:
+        for it in items:
+            self._db.add(
+                UnmappedQueueItemModel(
+                    mapping_job_id=it.mapping_job_id,
+                    dataset_id=it.dataset_id,
+                    row_index=it.row_index,
+                    field_name=it.field_name,
+                    raw_value=it.raw_value,
+                    status=it.status,
+                    created_at=it.created_at,
+                )
+            )
+        self._db.commit()
+        return items
+
+    def list_for_job(self, mapping_job_id: int) -> List[UnmappedQueueItem]:
+        stmt = (
+            select(UnmappedQueueItemModel)
+            .where(UnmappedQueueItemModel.mapping_job_id == mapping_job_id)
+            .order_by(UnmappedQueueItemModel.row_index)
+        )
+        return [
+            UnmappedQueueItem(
+                id=m.id,
+                mapping_job_id=m.mapping_job_id,
+                dataset_id=m.dataset_id,
+                row_index=m.row_index,
+                field_name=m.field_name,
+                raw_value=m.raw_value,
+                status=m.status,
+                created_at=m.created_at,
+            )
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyMappedStandardRecordRepository(MappedStandardRecordRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(self, records: List[MappedStandardRecord]) -> List[MappedStandardRecord]:
+        for rec in records:
+            self._db.add(
+                MappedStandardRecordModel(
+                    mapping_job_id=rec.mapping_job_id,
+                    row_index=rec.row_index,
+                    standardized_fields_json=json.dumps(
+                        rec.standardized_fields, ensure_ascii=False, default=str
+                    ),
+                )
+            )
+        self._db.commit()
+        return records
+
+    def list_for_job(self, mapping_job_id: int) -> List[MappedStandardRecord]:
+        stmt = (
+            select(MappedStandardRecordModel)
+            .where(MappedStandardRecordModel.mapping_job_id == mapping_job_id)
+            .order_by(MappedStandardRecordModel.row_index)
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                MappedStandardRecord(
+                    id=m.id,
+                    mapping_job_id=m.mapping_job_id,
+                    row_index=m.row_index,
+                    standardized_fields=json.loads(m.standardized_fields_json),
                 )
             )
         return result

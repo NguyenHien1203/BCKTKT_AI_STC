@@ -78,6 +78,7 @@ export const NAV_SECTIONS = [
     label: "Chuẩn hóa và quản trị dữ liệu",
     items: [
       { to: "/parsing-jobs", label: "Phân tích dữ liệu có cấu trúc", icon: ShieldCheck },
+      { to: "/mapping-jobs", label: "Ánh xạ trường sang dạng chuẩn", icon: ShieldCheck },
       { to: "/ocr-jobs", label: "Phân tích PDF/bản quét + OCR", icon: FileScan },
     ],
   },

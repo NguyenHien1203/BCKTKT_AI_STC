@@ -290,3 +290,185 @@ class ParsedRecord:
     row_index: int
     mapped_fields: Dict[str, Any] = field(default_factory=dict)
     has_error: bool = False
+
+
+# ---------- UC-031: Ánh xạ trường sang dạng chuẩn ----------
+
+
+@dataclass
+class MappingRule:
+    """1 quy tắc ánh xạ trường sang dạng chuẩn (UC-031, bước 1), có phiên
+
+    bản (`version`) -- hệ thống luôn áp dụng phiên bản đang `is_active`
+    có `version` lớn nhất cho 1 `field_name` (ưu tiên quy tắc gắn với
+    `dataset_id` cụ thể, nếu không có mới dùng quy tắc chung
+    `dataset_id=None`).
+
+    - `rule_type="DIRECT"`: chuẩn hoá đơn giản (trim khoảng trắng +
+      tuỳ chọn đổi hoa/thường theo `normalize_case`), không tra cứu
+      danh mục.
+    - `rule_type="CATALOG_LOOKUP"`: tra cứu danh mục chuẩn qua
+      `catalog_map` (khoá đã chuẩn hoá trim+upper -> giá trị chuẩn);
+      giá trị nguồn không khớp khoá nào trong `catalog_map` bị coi là
+      "chưa ánh xạ" (bước 3 -- đẩy vào hàng đợi).
+    """
+
+    RULE_TYPES = ("DIRECT", "CATALOG_LOOKUP")
+    NORMALIZE_CASES = ("UPPER", "LOWER")
+
+    id: Optional[int]
+    field_name: str
+    version: int
+    rule_type: str
+    dataset_id: Optional[int] = None
+    catalog_map: Dict[str, str] = field(default_factory=dict)
+    normalize_case: Optional[str] = None
+    is_active: bool = True
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.field_name or not self.field_name.strip():
+            raise ValueError("field_name không được để trống")
+        if self.version < 1:
+            raise ValueError("version phải >= 1")
+        if self.rule_type not in self.RULE_TYPES:
+            raise ValueError(f"rule_type phải thuộc {self.RULE_TYPES}, nhận '{self.rule_type}'")
+        if self.rule_type == "CATALOG_LOOKUP" and not self.catalog_map:
+            raise ValueError("rule_type=CATALOG_LOOKUP yêu cầu catalog_map không rỗng")
+        if self.normalize_case is not None and self.normalize_case not in self.NORMALIZE_CASES:
+            raise ValueError(
+                f"normalize_case phải thuộc {self.NORMALIZE_CASES} hoặc None, "
+                f"nhận '{self.normalize_case}'"
+            )
+
+    def lookup_key(self, raw_value: str) -> str:
+        return raw_value.strip().upper()
+
+
+@dataclass
+class MappingJob:
+    """1 lượt xử lý ánh xạ trường sang dạng chuẩn (UC-031). 1 sự kiện
+
+    `mapping.requested` (phát bởi UC-029/UC-030 sau khi ánh xạ tên
+    trường + ép kiểu xong) = 1 MappingJob, đọc lại các
+    `ParsedRecord` (có `has_error=False`) của `parsing_job_id` tương ứng.
+    Cùng tinh thần vòng đời `ParsingJob`/`OcrJob`.
+    """
+
+    STATUSES = ("RECEIVED", "RUNNING", "COMPLETED", "FAILED")
+
+    id: Optional[int]
+    parsing_job_id: int
+    dataset_id: int
+    status: str = "RECEIVED"
+    records_total: int = 0
+    records_mapped: int = 0
+    records_rejected: int = 0
+    unmapped_values_count: int = 0
+    log_entries: List[Dict[str, str]] = field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str = field(default_factory=_utc_now_iso)
+    completed_at: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.parsing_job_id or self.parsing_job_id <= 0:
+            raise ValueError("Phải chỉ định parsing_job_id hợp lệ")
+        if not self.dataset_id or self.dataset_id <= 0:
+            raise ValueError("Phải chỉ định dataset_id hợp lệ")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+    def append_log(self, level: str, message: str, timestamp: Optional[str] = None) -> None:
+        self.log_entries.append(
+            {"level": level, "message": message, "timestamp": timestamp or _utc_now_iso()}
+        )
+
+    def start_running(self) -> None:
+        self.status = "RUNNING"
+
+    def complete(
+        self,
+        status: str,
+        records_total: int,
+        records_mapped: int,
+        records_rejected: int,
+        unmapped_values_count: int,
+        error_message: Optional[str] = None,
+    ) -> None:
+        if status not in ("COMPLETED", "FAILED"):
+            raise ValueError("Trạng thái kết thúc chỉ có thể là COMPLETED hoặc FAILED")
+        self.status = status
+        self.records_total = records_total
+        self.records_mapped = records_mapped
+        self.records_rejected = records_rejected
+        self.unmapped_values_count = unmapped_values_count
+        self.error_message = error_message
+        self.completed_at = _utc_now_iso()
+
+
+@dataclass
+class MappingRejection:
+    """Bước 2 'Từ chối trường bắt buộc bị NULL': 1 dòng bị từ chối vì có
+
+    trường bắt buộc (schema_fields.nullable=False) rỗng sau khi ánh xạ
+    chuẩn hoá -- ghi vào `metadata.mapping_rejections` (bảng
+    `mapping_rejections` trong schema `curated`, xem ADR ở
+    infrastructure/db/models.py).
+    """
+
+    id: Optional[int]
+    mapping_job_id: int
+    row_index: int
+    field_name: str
+    reason: str
+    rejected_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.row_index < 0:
+            raise ValueError("row_index không được âm")
+        if not self.field_name or not self.field_name.strip():
+            raise ValueError("field_name không được để trống")
+        if not self.reason or not self.reason.strip():
+            raise ValueError("reason không được để trống")
+
+
+@dataclass
+class UnmappedQueueItem:
+    """Bước 3 'Đẩy giá trị chưa ánh xạ vào hàng đợi': 1 giá trị nguồn
+
+    không tra cứu được trong danh mục chuẩn (`CATALOG_LOOKUP` không
+    khớp `catalog_map`) -- đẩy vào hàng đợi chưa ánh xạ cho Phụ trách Dữ
+    liệu xử lý tiếp (UC-032 Xử lý hàng đợi chưa ánh xạ).
+    """
+
+    STATUSES = ("PENDING", "RESOLVED")
+
+    id: Optional[int]
+    mapping_job_id: int
+    dataset_id: int
+    row_index: int
+    field_name: str
+    raw_value: str
+    status: str = "PENDING"
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.row_index < 0:
+            raise ValueError("row_index không được âm")
+        if not self.field_name or not self.field_name.strip():
+            raise ValueError("field_name không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+
+@dataclass
+class MappedStandardRecord:
+    """1 bản ghi đã ánh xạ trường sang dạng chuẩn (đầu ra UC-031), chỉ
+
+    lưu cho các dòng KHÔNG bị từ chối ở bước 2.
+    """
+
+    id: Optional[int]
+    mapping_job_id: int
+    row_index: int
+    standardized_fields: Dict[str, Any] = field(default_factory=dict)

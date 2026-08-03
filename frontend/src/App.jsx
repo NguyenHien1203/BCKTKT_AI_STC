@@ -20,6 +20,7 @@ import TabmisIntakePage from "./pages/ingestion/TabmisIntakePage.jsx";
 import TabmisIntakeDetailPage from "./pages/ingestion/TabmisIntakeDetailPage.jsx";
 import VanBanIntakePage from "./pages/ingestion/VanBanIntakePage.jsx";
 import ParsingJobsPage from "./pages/dataquality/ParsingJobsPage.jsx";
+import MappingJobsPage from "./pages/dataquality/MappingJobsPage.jsx";
 import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
@@ -412,6 +413,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ParsingJobsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mapping-jobs"
+        element={
+          <ProtectedRoute>
+            <MappingJobsPage />
           </ProtectedRoute>
         }
       />
