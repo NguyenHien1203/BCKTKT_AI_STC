@@ -565,6 +565,23 @@ class SqlAlchemyMappingRejectionRepository(MappingRejectionRepository):
         ]
 
 
+def _unmapped_item_to_entity(m: UnmappedQueueItemModel) -> UnmappedQueueItem:
+    return UnmappedQueueItem(
+        id=m.id,
+        mapping_job_id=m.mapping_job_id,
+        dataset_id=m.dataset_id,
+        row_index=m.row_index,
+        field_name=m.field_name,
+        raw_value=m.raw_value,
+        status=m.status,
+        resolution_action=m.resolution_action,
+        resolved_value=m.resolved_value,
+        resolution_reason=m.resolution_reason,
+        resolved_at=m.resolved_at,
+        created_at=m.created_at,
+    )
+
+
 class SqlAlchemyUnmappedQueueRepository(UnmappedQueueRepository):
     def __init__(self, db: Session):
         self._db = db
@@ -579,6 +596,10 @@ class SqlAlchemyUnmappedQueueRepository(UnmappedQueueRepository):
                     field_name=it.field_name,
                     raw_value=it.raw_value,
                     status=it.status,
+                    resolution_action=it.resolution_action,
+                    resolved_value=it.resolved_value,
+                    resolution_reason=it.resolution_reason,
+                    resolved_at=it.resolved_at,
                     created_at=it.created_at,
                 )
             )
@@ -591,19 +612,63 @@ class SqlAlchemyUnmappedQueueRepository(UnmappedQueueRepository):
             .where(UnmappedQueueItemModel.mapping_job_id == mapping_job_id)
             .order_by(UnmappedQueueItemModel.row_index)
         )
-        return [
-            UnmappedQueueItem(
-                id=m.id,
-                mapping_job_id=m.mapping_job_id,
-                dataset_id=m.dataset_id,
-                row_index=m.row_index,
-                field_name=m.field_name,
-                raw_value=m.raw_value,
-                status=m.status,
-                created_at=m.created_at,
-            )
-            for m in self._db.execute(stmt).scalars().all()
-        ]
+        return [_unmapped_item_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def get_by_id(self, item_id: int) -> Optional[UnmappedQueueItem]:
+        model = self._db.get(UnmappedQueueItemModel, item_id)
+        return _unmapped_item_to_entity(model) if model else None
+
+    def update(self, item: UnmappedQueueItem) -> UnmappedQueueItem:
+        model = self._db.get(UnmappedQueueItemModel, item.id)
+        if model is None:
+            return item
+        model.status = item.status
+        model.resolution_action = item.resolution_action
+        model.resolved_value = item.resolved_value
+        model.resolution_reason = item.resolution_reason
+        model.resolved_at = item.resolved_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return item
+
+    def list_queue(
+        self,
+        dataset_id: Optional[int] = None,
+        field_name: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[UnmappedQueueItem]:
+        stmt = select(UnmappedQueueItemModel)
+        if dataset_id is not None:
+            stmt = stmt.where(UnmappedQueueItemModel.dataset_id == dataset_id)
+        if field_name is not None:
+            stmt = stmt.where(UnmappedQueueItemModel.field_name == field_name)
+        if status is not None:
+            stmt = stmt.where(UnmappedQueueItemModel.status == status)
+        stmt = stmt.order_by(UnmappedQueueItemModel.id.asc())
+        return [_unmapped_item_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def find_similar_pending(
+        self,
+        dataset_id: int,
+        field_name: str,
+        raw_value: str,
+        exclude_id: Optional[int] = None,
+    ) -> List[UnmappedQueueItem]:
+        key = raw_value.strip().upper()
+        stmt = (
+            select(UnmappedQueueItemModel)
+            .where(UnmappedQueueItemModel.dataset_id == dataset_id)
+            .where(UnmappedQueueItemModel.field_name == field_name)
+            .where(UnmappedQueueItemModel.status == "PENDING")
+        )
+        if exclude_id is not None:
+            stmt = stmt.where(UnmappedQueueItemModel.id != exclude_id)
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            if m.raw_value.strip().upper() == key:
+                result.append(_unmapped_item_to_entity(m))
+        return result
 
 
 class SqlAlchemyMappedStandardRecordRepository(MappedStandardRecordRepository):

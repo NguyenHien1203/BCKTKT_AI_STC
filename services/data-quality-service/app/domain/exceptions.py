@@ -114,3 +114,24 @@ class NoParsedRecordsToMap(DomainError):
             f"Phiên phân tích id={parsing_job_id} chưa có bản ghi hợp lệ nào để ánh xạ chuẩn hoá"
         )
         self.parsing_job_id = parsing_job_id
+
+
+# ---------- UC-032: Xử lý hàng đợi chưa ánh xạ ----------
+
+
+class UnmappedQueueItemNotFound(DomainError):
+    code = "UNMAPPED_QUEUE_ITEM_NOT_FOUND"
+
+    def __init__(self, item_id: int):
+        super().__init__(f"Không tìm thấy mục hàng đợi chưa ánh xạ id={item_id}")
+        self.item_id = item_id
+
+
+class InvalidUnmappedQueueResolution(DomainError):
+    """Yêu cầu xử lý (bước 2: ánh xạ/tạo mục mới/từ chối) không hợp lệ,
+    hoặc mục hàng đợi đã được xử lý trước đó (không còn PENDING)."""
+
+    code = "INVALID_UNMAPPED_QUEUE_RESOLUTION"
+
+    def __init__(self, message: str):
+        super().__init__(message)

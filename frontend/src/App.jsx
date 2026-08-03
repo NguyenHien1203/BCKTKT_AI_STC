@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -22,6 +22,7 @@ import VanBanIntakePage from "./pages/ingestion/VanBanIntakePage.jsx";
 import ParsingJobsPage from "./pages/dataquality/ParsingJobsPage.jsx";
 import MappingJobsPage from "./pages/dataquality/MappingJobsPage.jsx";
 import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
+import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -169,6 +170,12 @@ function HomePage() {
       title: "Phân tích PDF/bản quét + OCR",
       description: "UC-030 — Nhận sự kiện ocr.requested, chạy OCR PaddleOCR/olmOCR trên PDF/bản quét, trích xuất văn bản + bảng, lưu dữ liệu có cấu trúc, kích hoạt sự kiện ocr.completed + parsing.requested.",
       icon: FileScan,
+    },
+    {
+      to: "/unmapped-queue",
+      title: "Xử lý hàng đợi chưa ánh xạ",
+      description: "UC-032 — Xem hàng đợi chưa ánh xạ (UC-031 đẩy vào), xử lý giá trị (ánh xạ/tạo mục mới/từ chối) để hệ thống lưu mapping mới, ánh xạ hàng loạt các giá trị tương tự để hệ thống áp dụng đồng loạt.",
+      icon: Inbox,
     },
   ];
 
@@ -429,6 +436,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <OcrJobsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/unmapped-queue"
+        element={
+          <ProtectedRoute>
+            <UnmappedQueuePage />
           </ProtectedRoute>
         }
       />

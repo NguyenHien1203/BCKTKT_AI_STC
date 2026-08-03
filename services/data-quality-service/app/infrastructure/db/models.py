@@ -183,6 +183,11 @@ class UnmappedQueueItemModel(Base):
     field_name = Column(String(255), nullable=False)
     raw_value = Column(Text, nullable=False)
     status = Column(String(20), nullable=False, default="PENDING", index=True)
+    # ---- UC-032 Xử lý hàng đợi chưa ánh xạ (bước 2: MAP/CREATE_NEW/REJECT) ----
+    resolution_action = Column(String(20), nullable=True)
+    resolved_value = Column(Text, nullable=True)
+    resolution_reason = Column(Text, nullable=True)
+    resolved_at = Column(String(40), nullable=True)
     created_at = Column(String(40), nullable=False)
 
 
