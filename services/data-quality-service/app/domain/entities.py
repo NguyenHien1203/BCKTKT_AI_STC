@@ -439,9 +439,21 @@ class UnmappedQueueItem:
     không tra cứu được trong danh mục chuẩn (`CATALOG_LOOKUP` không
     khớp `catalog_map`) -- đẩy vào hàng đợi chưa ánh xạ cho Phụ trách Dữ
     liệu xử lý tiếp (UC-032 Xử lý hàng đợi chưa ánh xạ).
+
+    UC-032 (actor "Phụ trách Dữ liệu"), luồng nghiệp vụ:
+    1. Xem hàng đợi chưa ánh xạ. Hệ thống hiển thị (status=PENDING).
+    2. Xử lý giá trị (`resolution_action`: `MAP` ánh xạ sang giá trị
+       chuẩn đã có/nhập mới, `CREATE_NEW` tạo mục danh mục mới,
+       `REJECT` từ chối giá trị). Hệ thống lưu mapping mới (cập nhật
+       `MappingRule.catalog_map`, xem `resolve_unmapped_queue.py`).
+    3. Ánh xạ hàng loạt các giá trị tương tự (`apply_to_similar=True`
+       khi xử lý bước 2) -- hệ thống áp dụng đồng loạt cho các mục
+       PENDING khác cùng `dataset_id`+`field_name`+`raw_value`
+       (chuẩn hoá trim+upper).
     """
 
     STATUSES = ("PENDING", "RESOLVED")
+    RESOLUTION_ACTIONS = ("MAP", "CREATE_NEW", "REJECT")
 
     id: Optional[int]
     mapping_job_id: int
@@ -450,6 +462,10 @@ class UnmappedQueueItem:
     field_name: str
     raw_value: str
     status: str = "PENDING"
+    resolution_action: Optional[str] = None
+    resolved_value: Optional[str] = None
+    resolution_reason: Optional[str] = None
+    resolved_at: Optional[str] = None
     created_at: str = field(default_factory=_utc_now_iso)
 
     def __post_init__(self) -> None:
@@ -459,6 +475,50 @@ class UnmappedQueueItem:
             raise ValueError("field_name không được để trống")
         if self.status not in self.STATUSES:
             raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if (
+            self.resolution_action is not None
+            and self.resolution_action not in self.RESOLUTION_ACTIONS
+        ):
+            raise ValueError(
+                f"resolution_action phải thuộc {self.RESOLUTION_ACTIONS} hoặc None, "
+                f"nhận '{self.resolution_action}'"
+            )
+
+    def lookup_key(self) -> str:
+        """Khoá chuẩn hoá (trim+upper) dùng để tìm các giá trị 'tương tự'
+        (bước 3: ánh xạ hàng loạt) -- cùng cách chuẩn hoá với
+        `MappingRule.lookup_key()`."""
+        return self.raw_value.strip().upper()
+
+    def resolve(
+        self,
+        action: str,
+        resolved_value: Optional[str] = None,
+        reason: Optional[str] = None,
+        resolved_at: Optional[str] = None,
+    ) -> None:
+        """Bước 2 'Xử lý giá trị': đánh dấu mục hàng đợi đã xử lý."""
+        if self.status != "PENDING":
+            raise ValueError(
+                f"Giá trị id={self.id} đã được xử lý trước đó (status={self.status})"
+            )
+        if action not in self.RESOLUTION_ACTIONS:
+            raise ValueError(
+                f"action phải thuộc {self.RESOLUTION_ACTIONS}, nhận '{action}'"
+            )
+        if action in ("MAP", "CREATE_NEW") and (
+            resolved_value is None or not str(resolved_value).strip()
+        ):
+            raise ValueError(
+                "resolved_value không được để trống khi action là MAP hoặc CREATE_NEW"
+            )
+        if action == "REJECT" and (reason is None or not reason.strip()):
+            raise ValueError("reason không được để trống khi action là REJECT")
+        self.status = "RESOLVED"
+        self.resolution_action = action
+        self.resolved_value = resolved_value
+        self.resolution_reason = reason
+        self.resolved_at = resolved_at or _utc_now_iso()
 
 
 @dataclass

@@ -223,8 +223,10 @@ class MappingRejectionRepository(ABC):
 
 
 class UnmappedQueueRepository(ABC):
-    """Bước 3 'Đẩy giá trị chưa ánh xạ vào hàng đợi' cho Phụ trách Dữ
-    liệu (UC-032 đọc tiếp)."""
+    """Bước 3 (UC-031) 'Đẩy giá trị chưa ánh xạ vào hàng đợi' cho Phụ
+    trách Dữ liệu -- UC-032 (Xử lý hàng đợi chưa ánh xạ) đọc/ghi tiếp
+    qua các phương thức `get_by_id`/`update`/`list_queue`/
+    `find_similar_pending` bên dưới."""
 
     @abstractmethod
     def add_many(self, items: List[UnmappedQueueItem]) -> List[UnmappedQueueItem]:
@@ -232,6 +234,39 @@ class UnmappedQueueRepository(ABC):
 
     @abstractmethod
     def list_for_job(self, mapping_job_id: int) -> List[UnmappedQueueItem]:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, item_id: int) -> Optional[UnmappedQueueItem]:
+        ...
+
+    @abstractmethod
+    def update(self, item: UnmappedQueueItem) -> UnmappedQueueItem:
+        ...
+
+    @abstractmethod
+    def list_queue(
+        self,
+        dataset_id: Optional[int] = None,
+        field_name: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[UnmappedQueueItem]:
+        """UC-032 bước 1 'Xem hàng đợi chưa ánh xạ' -- không giới hạn
+        theo 1 `mapping_job_id` cụ thể (Phụ trách Dữ liệu xem toàn bộ
+        hàng đợi của tập dữ liệu, mọi phiên ánh xạ)."""
+        ...
+
+    @abstractmethod
+    def find_similar_pending(
+        self,
+        dataset_id: int,
+        field_name: str,
+        raw_value: str,
+        exclude_id: Optional[int] = None,
+    ) -> List[UnmappedQueueItem]:
+        """UC-032 bước 3 'Ánh xạ hàng loạt các giá trị tương tự': các mục
+        đang PENDING cùng `dataset_id`+`field_name`+giá trị nguồn đã
+        chuẩn hoá (trim+upper) trùng khớp `raw_value`."""
         ...
 
 

@@ -320,6 +320,10 @@ class UnmappedQueueItemResponse(BaseModel):
     field_name: str
     raw_value: str
     status: str
+    resolution_action: Optional[str] = None
+    resolved_value: Optional[str] = None
+    resolution_reason: Optional[str] = None
+    resolved_at: Optional[str] = None
     created_at: str
 
     @classmethod
@@ -332,7 +336,54 @@ class UnmappedQueueItemResponse(BaseModel):
             field_name=it.field_name,
             raw_value=it.raw_value,
             status=it.status,
+            resolution_action=it.resolution_action,
+            resolved_value=it.resolved_value,
+            resolution_reason=it.resolution_reason,
+            resolved_at=it.resolved_at,
             created_at=it.created_at,
+        )
+
+
+# ---------- UC-032: Xử lý hàng đợi chưa ánh xạ ----------
+
+
+class ResolveUnmappedQueueRequest(BaseModel):
+    """Body của endpoint xử lý 1 mục hàng đợi chưa ánh xạ (bước 2 UC-032)."""
+
+    action: str = Field(description="MAP (ánh xạ) / CREATE_NEW (tạo mục mới) / REJECT (từ chối)")
+    standard_value: Optional[str] = Field(
+        default=None, description="Giá trị chuẩn -- bắt buộc khi action=MAP hoặc CREATE_NEW"
+    )
+    reason: Optional[str] = Field(
+        default=None, description="Lý do từ chối -- bắt buộc khi action=REJECT"
+    )
+    apply_to_similar: bool = Field(
+        default=False,
+        description=(
+            "Bước 3 'Ánh xạ hàng loạt các giá trị tương tự': True để áp dụng đồng loạt "
+            "kết quả xử lý này cho các mục PENDING khác cùng dataset_id/field_name/raw_value"
+        ),
+    )
+
+
+class ResolveUnmappedQueueResponse(BaseModel):
+    item: UnmappedQueueItemResponse
+    updated_rule: Optional[MappingRuleResponse] = None
+    affected_items: List[UnmappedQueueItemResponse] = Field(default_factory=list)
+    affected_count: int = 0
+
+    @classmethod
+    def from_result(cls, result) -> "ResolveUnmappedQueueResponse":
+        affected = [UnmappedQueueItemResponse.from_entity(i) for i in result.affected_items]
+        return cls(
+            item=UnmappedQueueItemResponse.from_entity(result.item),
+            updated_rule=(
+                MappingRuleResponse.from_entity(result.updated_rule)
+                if result.updated_rule is not None
+                else None
+            ),
+            affected_items=affected,
+            affected_count=len(affected),
         )
 
 

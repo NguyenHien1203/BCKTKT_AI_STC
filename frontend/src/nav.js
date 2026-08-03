@@ -6,6 +6,7 @@ import {
   Database,
   FileStack,
   History,
+  Inbox,
   LayoutDashboard,
   Layers,
   MonitorSmartphone,
@@ -80,6 +81,7 @@ export const NAV_SECTIONS = [
       { to: "/parsing-jobs", label: "Phân tích dữ liệu có cấu trúc", icon: ShieldCheck },
       { to: "/mapping-jobs", label: "Ánh xạ trường sang dạng chuẩn", icon: ShieldCheck },
       { to: "/ocr-jobs", label: "Phân tích PDF/bản quét + OCR", icon: FileScan },
+      { to: "/unmapped-queue", label: "Xử lý hàng đợi chưa ánh xạ", icon: Inbox },
     ],
   },
   {
