@@ -121,3 +121,78 @@ class OcrExtractedTableModel(Base):
     table_index = Column(Integer, nullable=False)
     page_number = Column(Integer, nullable=False)
     rows_json = Column(Text, nullable=False)
+
+
+class MappingRuleModel(Base):
+    __tablename__ = "mapping_rules"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=True, index=True)
+    field_name = Column(String(255), nullable=False, index=True)
+    version = Column(Integer, nullable=False)
+    rule_type = Column(String(20), nullable=False)
+    catalog_map_json = Column(Text, nullable=False, default="{}")
+    normalize_case = Column(String(10), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(String(40), nullable=False)
+
+
+class MappingJobModel(Base):
+    __tablename__ = "mapping_jobs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    parsing_job_id = Column(Integer, nullable=False, index=True)
+    dataset_id = Column(Integer, nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="RECEIVED", index=True)
+    records_total = Column(Integer, nullable=False, default=0)
+    records_mapped = Column(Integer, nullable=False, default=0)
+    records_rejected = Column(Integer, nullable=False, default=0)
+    unmapped_values_count = Column(Integer, nullable=False, default=0)
+    log_entries_json = Column(Text, nullable=False, default="[]")
+    error_message = Column(Text, nullable=True)
+    received_at = Column(String(40), nullable=False)
+    completed_at = Column(String(40), nullable=True)
+
+
+class MappingRejectionModel(Base):
+    __tablename__ = "mapping_rejections"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mapping_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}mapping_jobs.id"), nullable=False, index=True
+    )
+    row_index = Column(Integer, nullable=False)
+    field_name = Column(String(255), nullable=False)
+    reason = Column(Text, nullable=False)
+    rejected_at = Column(String(40), nullable=False)
+
+
+class UnmappedQueueItemModel(Base):
+    __tablename__ = "unmapped_value_queue"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mapping_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}mapping_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=False, index=True)
+    row_index = Column(Integer, nullable=False)
+    field_name = Column(String(255), nullable=False)
+    raw_value = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
+    created_at = Column(String(40), nullable=False)
+
+
+class MappedStandardRecordModel(Base):
+    __tablename__ = "mapped_standard_records"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mapping_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}mapping_jobs.id"), nullable=False, index=True
+    )
+    row_index = Column(Integer, nullable=False)
+    standardized_fields_json = Column(Text, nullable=False)

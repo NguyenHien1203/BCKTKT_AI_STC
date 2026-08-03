@@ -3,9 +3,14 @@
 Phụ trách nhóm UC **III. Chuẩn hóa và quản trị dữ liệu** (`UC-029 .. UC-046`) theo `docs/use_cases.json`.
 
 ## Trạng thái
-Khung Clean Architecture đã scaffold sẵn (domain/application/infrastructure/interfaces),
-**chưa implement UC nghiệp vụ cụ thể nào** — xem `PLAN.md` ở gốc project để biết UC nào
-cần làm tiếp theo cho service này, và `SKILL.md` mục B/A để biết cách thêm UC.
+Đã implement:
+- **UC-029** Phân tích dữ liệu có cấu trúc (`POST /parsing-jobs` nhận `parsing.requested`)
+- **UC-030** Phân tích PDF/bản quét + OCR (`POST /ocr-jobs` nhận `ocr.requested`)
+- **UC-031** Ánh xạ trường sang dạng chuẩn (`POST /mapping-jobs` nhận `mapping.requested`,
+  `POST /mapping-rules` đăng ký quy tắc ánh xạ có phiên bản)
+
+Xem `PLAN.md` ở gốc project để biết UC tiếp theo (`UC-032` trở đi) và `SKILL.md` mục B/A để
+biết cách thêm UC.
 
 Schema Postgres riêng: `curated` (xem ARCHITECTURE.md mục 2).
 
@@ -16,4 +21,23 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8003
 curl http://127.0.0.1:8003/health
+```
+
+## API chính
+
+| UC | Method + path | Mô tả |
+| --- | --- | --- |
+| UC-029 | `POST /parsing-jobs` | Nhận `parsing.requested`, phân tích CSV/EXCEL/JSON/XML theo `schema_fields`, ánh xạ tên trường + ép kiểu |
+| UC-029 | `GET /parsing-jobs`, `GET /parsing-jobs/{id}` | Xem lại phiên phân tích |
+| UC-029 | `GET /parsing-jobs/{id}/row-errors`, `/stg-rows`, `/parsed-records` | Xem chi tiết |
+| UC-030 | `POST /ocr-jobs` | Nhận `ocr.requested`, chạy OCR (PaddleOCR/olmOCR) trích văn bản + bảng |
+| UC-030 | `GET /ocr-jobs`, `GET /ocr-jobs/{id}`, `GET /ocr-jobs/{id}/tables` | Xem lại phiên OCR |
+| UC-031 | `POST /mapping-rules`, `GET /mapping-rules` | Đăng ký/xem quy tắc ánh xạ có phiên bản (`mapping_rules`) |
+| UC-031 | `POST /mapping-jobs` | Nhận `mapping.requested`, ánh xạ trường sang dạng chuẩn, từ chối trường bắt buộc bị NULL, đẩy giá trị chưa ánh xạ vào hàng đợi |
+| UC-031 | `GET /mapping-jobs`, `GET /mapping-jobs/{id}` | Xem lại phiên ánh xạ |
+| UC-031 | `GET /mapping-jobs/{id}/rejections`, `/unmapped-queue`, `/standard-records` | Xem chi tiết |
+
+## Migration
+```bash
+alembic upgrade head   # 0001 (UC-029) -> 0002 (UC-030) -> 0003 (UC-031)
 ```

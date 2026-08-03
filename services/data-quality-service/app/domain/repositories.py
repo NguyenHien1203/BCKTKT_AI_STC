@@ -6,11 +6,16 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from app.domain.entities import (
+    MappedStandardRecord,
+    MappingJob,
+    MappingRejection,
+    MappingRule,
     OcrExtractedTable,
     OcrJob,
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    UnmappedQueueItem,
 )
 
 
@@ -145,4 +150,99 @@ class OcrEngine(ABC):
         """Trả về dict `{"engine": str, "pages_processed": int, "text": str,
         "tables": [{"page": int, "rows": [[...]]}, ...]}`. Raise
         `app.domain.exceptions.OcrEngineError` nếu không xử lý được."""
+        ...
+
+# ---------- UC-031: Ánh xạ trường sang dạng chuẩn ----------
+
+
+class MappingRuleRepository(ABC):
+    """Bước 1 'Tra cứu quy tắc ánh xạ (có phiên bản)': đọc
+    `metadata.mapping_rules` (bảng `mapping_rules`, xem ADR ở
+    infrastructure/db/models.py)."""
+
+    @abstractmethod
+    def add(self, rule: MappingRule) -> MappingRule:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, rule_id: int) -> Optional[MappingRule]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        field_name: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[MappingRule]:
+        ...
+
+    @abstractmethod
+    def get_active_rules_for_dataset(self, dataset_id: int) -> Dict[str, MappingRule]:
+        """Trả về dict `field_name -> MappingRule` gồm quy tắc đang
+        `is_active` có `version` lớn nhất cho từng trường, ưu tiên quy
+        tắc gắn với `dataset_id` cụ thể; nếu trường chỉ có quy tắc
+        chung (`dataset_id=None`) thì dùng quy tắc chung đó."""
+        ...
+
+
+class MappingJobRepository(ABC):
+    @abstractmethod
+    def add(self, job: MappingJob) -> MappingJob:
+        ...
+
+    @abstractmethod
+    def update(self, job: MappingJob) -> MappingJob:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, mapping_job_id: int) -> Optional[MappingJob]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        parsing_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[MappingJob]:
+        ...
+
+
+class MappingRejectionRepository(ABC):
+    """Bước 2 'Từ chối trường bắt buộc bị NULL': ghi vào
+    `metadata.mapping_rejections` (bảng `mapping_rejections`)."""
+
+    @abstractmethod
+    def add_many(self, rejections: List[MappingRejection]) -> List[MappingRejection]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, mapping_job_id: int) -> List[MappingRejection]:
+        ...
+
+
+class UnmappedQueueRepository(ABC):
+    """Bước 3 'Đẩy giá trị chưa ánh xạ vào hàng đợi' cho Phụ trách Dữ
+    liệu (UC-032 đọc tiếp)."""
+
+    @abstractmethod
+    def add_many(self, items: List[UnmappedQueueItem]) -> List[UnmappedQueueItem]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, mapping_job_id: int) -> List[UnmappedQueueItem]:
+        ...
+
+
+class MappedStandardRecordRepository(ABC):
+    """Lưu bản ghi đã ánh xạ trường sang dạng chuẩn (đầu ra UC-031, cho
+    các dòng không bị từ chối ở bước 2)."""
+
+    @abstractmethod
+    def add_many(self, records: List[MappedStandardRecord]) -> List[MappedStandardRecord]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, mapping_job_id: int) -> List[MappedStandardRecord]:
         ...
