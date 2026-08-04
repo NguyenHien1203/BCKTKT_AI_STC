@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Landmark, Layers, MonitorSmartphone, Network, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Landmark, Layers, MonitorSmartphone, Network, Percent, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -25,6 +25,7 @@ import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
 import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
 import OrgUnitCatalogPage from "./pages/dataquality/OrgUnitCatalogPage.jsx";
 import BudgetItemCatalogPage from "./pages/dataquality/BudgetItemCatalogPage.jsx";
+import AssetGroupCatalogPage from "./pages/dataquality/AssetGroupCatalogPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -190,6 +191,12 @@ function HomePage() {
       title: "Danh mục khoản mục NSNN",
       description: "UC-034 — Cây khoản mục NSNN (Chương/Loại/Khoản/Mục/Tiểu mục), quản lý phiên bản theo năm ngân sách, đề nghị thay đổi khoản mục nhạy cảm chờ duyệt.",
       icon: Landmark,
+    },
+    {
+      to: "/asset-group-catalog",
+      title: "Quản lý danh mục nhóm tài sản",
+      description: "UC-035 — Xem danh mục nhóm tài sản (TT 45/2018 sửa TT 162/2014); thêm/sửa entry (hệ thống quản lý phiên bản); khai báo tỉ lệ khấu hao theo nhóm (hệ thống lưu).",
+      icon: Percent,
     },
   ];
 
@@ -506,6 +513,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <BudgetItemCatalogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/asset-group-catalog"
+        element={
+          <ProtectedRoute>
+            <AssetGroupCatalogPage />
           </ProtectedRoute>
         }
       />

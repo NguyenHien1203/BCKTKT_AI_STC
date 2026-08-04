@@ -239,3 +239,72 @@ class InvalidBudgetItemChangeRequest(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class AssetGroupCatalogNotFound(DomainError):
+    code = "ASSET_GROUP_CATALOG_NOT_FOUND"
+
+    def __init__(self, asset_group_id: int):
+        super().__init__(f"Không tìm thấy nhóm tài sản id={asset_group_id} trong danh mục")
+        self.asset_group_id = asset_group_id
+
+
+class AssetGroupCatalogCodeAlreadyExists(DomainError):
+    """Bước 'Thêm entry': mã nhóm tài sản đã tồn tại trong CÙNG 1 standard (TT48/TT162)."""
+
+    code = "ASSET_GROUP_CATALOG_CODE_EXISTS"
+
+    def __init__(self, group_code: str, standard: str):
+        super().__init__(
+            f"Mã nhóm tài sản '{group_code}' đã tồn tại trong danh mục '{standard}'"
+        )
+        self.group_code = group_code
+        self.standard = standard
+
+class AssetGroupCatalogAlreadyClosed(DomainError):
+    code = "ASSET_GROUP_CATALOG_ALREADY_CLOSED"
+
+    def __init__(self, asset_group_id: int):
+        super().__init__(f"Nhóm tài sản id={asset_group_id} đã đóng trước đó")
+        self.asset_group_id = asset_group_id
+
+
+class AssetDepreciationRateNotFound(DomainError):
+    code = "ASSET_DEPRECIATION_RATE_NOT_FOUND"
+
+    def __init__(self, rate_id: int):
+        super().__init__(f"Không tìm thấy khai báo tỉ lệ khấu hao id={rate_id}")
+        self.rate_id = rate_id
+
+
+# ---------- UC-035: Quản lý danh mục nhóm tài sản ----------
+
+class AssetGroupNotFound(DomainError):
+    code = "ASSET_GROUP_NOT_FOUND"
+
+    def __init__(self, group_id: int):
+        super().__init__(f"Không tìm thấy nhóm tài sản id={group_id} trong danh mục")
+        self.group_id = group_id
+
+
+class AssetGroupCodeAlreadyExists(DomainError):
+    """Bước 2 'Thêm entry': mã nhóm tài sản đã tồn tại trong danh mục."""
+
+    code = "ASSET_GROUP_CODE_EXISTS"
+
+    def __init__(self, group_code: str):
+        super().__init__(f"Mã nhóm tài sản '{group_code}' đã tồn tại trong danh mục")
+        self.group_code = group_code
+
+
+class InvalidAssetGroup(DomainError):
+    code = "INVALID_ASSET_GROUP"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidAssetDepreciationRate(DomainError):
+    code = "INVALID_ASSET_DEPRECIATION_RATE"
+
+    def __init__(self, message: str):
+        super().__init__(message)

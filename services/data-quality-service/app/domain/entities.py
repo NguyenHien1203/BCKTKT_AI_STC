@@ -734,6 +734,113 @@ class BudgetItemCatalogVersion:
 
 
 @dataclass
+class AssetGroupCatalogEntry:
+    """UC-035: 1 nhóm tài sản trong danh mục nhóm tài sản cố định theo
+
+    Thông tư 45/2018/TT-BTC (sửa đổi TT162/2014/TT-BTC) -- áp dụng làm căn
+    cứ tính hao mòn/khấu hao tài sản cố định tại cơ quan/đơn vị.
+
+    - `code`: mã nhóm tài sản, duy nhất toàn danh mục (bước 2 "kiểm tra
+      trùng mã").
+    - `regulation`: văn bản căn cứ phân loại nhóm (`TT45`/`TT162`) -- giữ
+      tên `TT48` cũ trong `docs/use_cases.json` chỉ là cách gọi tắt của
+      nghiệp vụ, thực tế văn bản hiện hành là Thông tư 45/2018/TT-BTC.
+    - `useful_life_years`: số năm sử dụng hữu ích mặc định của nhóm tài
+      sản (tham khảo, có thể bị ghi đè bởi từng lượt khai báo tỉ lệ khấu
+      hao ở `AssetDepreciationRate`).
+    - `version`: tăng thêm 1 mỗi lần sửa (bước 2 "hệ thống quản lý phiên
+      bản") -- lịch sử chi tiết lưu ở `AssetGroupCatalogVersion`.
+    - `status`: `ACTIVE` hoặc `CLOSED`.
+    """
+
+    REGULATIONS = ("TT45", "TT162")
+    STATUSES = ("ACTIVE", "CLOSED")
+
+    id: Optional[int]
+    code: str
+    name: str
+    regulation: str
+    useful_life_years: Optional[int] = None
+    status: str = "ACTIVE"
+    version: int = 1
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    note: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.code or not self.code.strip():
+            raise ValueError("code không được để trống")
+        if not self.name or not self.name.strip():
+            raise ValueError("name không được để trống")
+        if self.regulation not in self.REGULATIONS:
+            raise ValueError(
+                f"regulation phải thuộc {self.REGULATIONS}, nhận '{self.regulation}'"
+            )
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if self.useful_life_years is not None and self.useful_life_years <= 0:
+            raise ValueError("useful_life_years phải > 0")
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == "ACTIVE"
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 2 'Thêm/Sửa entry': hệ thống quản lý phiên bản -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class AssetGroupCatalogVersion:
+    """Lịch sử phiên bản (append-only) của 1 nhóm tài sản -- ghi lại mỗi
+
+    khi thêm mới (version=1) hoặc sửa thông tin (bước 2 UC-035)."""
+
+    id: Optional[int]
+    group_id: int
+    version: int
+    code: str
+    name: str
+    regulation: str
+    useful_life_years: Optional[int]
+    status: str
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
+class AssetDepreciationRate:
+    """UC-035 bước 3 'Khai báo tỉ lệ khấu hao theo nhóm': hệ thống lưu.
+
+    Mỗi lượt khai báo là 1 bản ghi append-only gắn với 1 nhóm tài sản
+    (`asset_group_id`) -- cho phép khai báo lại tỉ lệ mới theo thời gian
+    hiệu lực (`effective_from`) mà không mất lịch sử các lượt khai báo
+    trước, đúng tinh thần "hệ thống quản lý phiên bản" áp dụng chung cho
+    cả UC-033/034/035.
+    """
+
+    id: Optional[int]
+    asset_group_id: int
+    depreciation_rate_percent: float
+    useful_life_years: Optional[int] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    note: Optional[str] = None
+    declared_by: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.depreciation_rate_percent is None:
+            raise ValueError("depreciation_rate_percent không được để trống")
+        if not (0 < self.depreciation_rate_percent <= 100):
+            raise ValueError("depreciation_rate_percent phải trong khoảng (0, 100]")
+        if self.useful_life_years is not None and self.useful_life_years <= 0:
+            raise ValueError("useful_life_years phải > 0")
+
+@dataclass
 class BudgetItemChangeRequest:
     """UC-034 bước 3 'Đề nghị thay đổi khoản mục nhạy cảm': hệ thống lưu
 

@@ -6,6 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    AssetDepreciationRate,
+    AssetGroupCatalogEntry,
+    AssetGroupCatalogVersion,
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
@@ -23,6 +26,9 @@ from app.domain.entities import (
     UnmappedQueueItem,
 )
 from app.domain.repositories import (
+    AssetDepreciationRateRepository,
+    AssetGroupCatalogRepository,
+    AssetGroupCatalogVersionRepository,
     BudgetItemCatalogRepository,
     BudgetItemCatalogVersionRepository,
     BudgetItemChangeRequestRepository,
@@ -41,6 +47,9 @@ from app.domain.repositories import (
     UnmappedQueueRepository,
 )
 from app.infrastructure.db.models import (
+    AssetDepreciationRateModel,
+    AssetGroupCatalogModel,
+    AssetGroupCatalogVersionModel,
     BudgetItemCatalogModel,
     BudgetItemCatalogVersionModel,
     BudgetItemChangeRequestModel,
@@ -1100,5 +1109,187 @@ def _budget_item_change_request_to_entity(
         reviewed_by=m.reviewed_by,
         review_note=m.review_note,
         reviewed_at=m.reviewed_at,
+        created_at=m.created_at,
+    )
+
+# ---------- UC-035: Quản lý danh mục nhóm tài sản ----------
+
+
+def _asset_group_to_entity(m: AssetGroupCatalogModel) -> AssetGroupCatalogEntry:
+    return AssetGroupCatalogEntry(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        regulation=m.regulation,
+        useful_life_years=m.useful_life_years,
+        status=m.status,
+        version=m.version,
+        effective_from=m.effective_from,
+        effective_to=m.effective_to,
+        note=m.note,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyAssetGroupCatalogRepository(AssetGroupCatalogRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, group: AssetGroupCatalogEntry) -> AssetGroupCatalogEntry:
+        model = AssetGroupCatalogModel(
+            code=group.code,
+            name=group.name,
+            regulation=group.regulation,
+            useful_life_years=group.useful_life_years,
+            status=group.status,
+            version=group.version,
+            effective_from=group.effective_from,
+            effective_to=group.effective_to,
+            note=group.note,
+            created_at=group.created_at,
+            updated_at=group.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        group.id = model.id
+        return group
+
+    def update(self, group: AssetGroupCatalogEntry) -> AssetGroupCatalogEntry:
+        model = self._db.get(AssetGroupCatalogModel, group.id)
+        if model is None:
+            return group
+        model.code = group.code
+        model.name = group.name
+        model.regulation = group.regulation
+        model.useful_life_years = group.useful_life_years
+        model.status = group.status
+        model.version = group.version
+        model.effective_from = group.effective_from
+        model.effective_to = group.effective_to
+        model.note = group.note
+        model.updated_at = group.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return group
+
+    def get_by_id(self, group_id: int) -> Optional[AssetGroupCatalogEntry]:
+        model = self._db.get(AssetGroupCatalogModel, group_id)
+        return _asset_group_to_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[AssetGroupCatalogEntry]:
+        stmt = select(AssetGroupCatalogModel).where(AssetGroupCatalogModel.code == code)
+        model = self._db.execute(stmt).scalars().first()
+        return _asset_group_to_entity(model) if model else None
+
+    def list(
+        self,
+        regulation: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[AssetGroupCatalogEntry]:
+        stmt = select(AssetGroupCatalogModel)
+        if regulation is not None:
+            stmt = stmt.where(AssetGroupCatalogModel.regulation == regulation)
+        if status is not None:
+            stmt = stmt.where(AssetGroupCatalogModel.status == status)
+        stmt = stmt.order_by(AssetGroupCatalogModel.code.asc())
+        return [_asset_group_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyAssetGroupCatalogVersionRepository(AssetGroupCatalogVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: AssetGroupCatalogVersion) -> AssetGroupCatalogVersion:
+        model = AssetGroupCatalogVersionModel(
+            group_id=version.group_id,
+            version=version.version,
+            code=version.code,
+            name=version.name,
+            regulation=version.regulation,
+            useful_life_years=version.useful_life_years,
+            status=version.status,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_group(self, group_id: int) -> List[AssetGroupCatalogVersion]:
+        stmt = (
+            select(AssetGroupCatalogVersionModel)
+            .where(AssetGroupCatalogVersionModel.group_id == group_id)
+            .order_by(AssetGroupCatalogVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                AssetGroupCatalogVersion(
+                    id=m.id,
+                    group_id=m.group_id,
+                    version=m.version,
+                    code=m.code,
+                    name=m.name,
+                    regulation=m.regulation,
+                    useful_life_years=m.useful_life_years,
+                    status=m.status,
+                    change_note=m.change_note,
+                    changed_at=m.changed_at,
+                )
+            )
+        return result
+
+
+class SqlAlchemyAssetDepreciationRateRepository(AssetDepreciationRateRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, rate: AssetDepreciationRate) -> AssetDepreciationRate:
+        model = AssetDepreciationRateModel(
+            asset_group_id=rate.asset_group_id,
+            depreciation_rate_percent=rate.depreciation_rate_percent,
+            useful_life_years=rate.useful_life_years,
+            effective_from=rate.effective_from,
+            effective_to=rate.effective_to,
+            note=rate.note,
+            declared_by=rate.declared_by,
+            created_at=rate.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        rate.id = model.id
+        return rate
+
+    def get_by_id(self, rate_id: int) -> Optional[AssetDepreciationRate]:
+        model = self._db.get(AssetDepreciationRateModel, rate_id)
+        return _asset_depreciation_rate_to_entity(model) if model else None
+
+    def list_for_group(self, asset_group_id: int) -> List[AssetDepreciationRate]:
+        stmt = (
+            select(AssetDepreciationRateModel)
+            .where(AssetDepreciationRateModel.asset_group_id == asset_group_id)
+            .order_by(AssetDepreciationRateModel.created_at.desc())
+        )
+        return [
+            _asset_depreciation_rate_to_entity(m) for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+def _asset_depreciation_rate_to_entity(m: AssetDepreciationRateModel) -> AssetDepreciationRate:
+    return AssetDepreciationRate(
+        id=m.id,
+        asset_group_id=m.asset_group_id,
+        depreciation_rate_percent=m.depreciation_rate_percent,
+        useful_life_years=m.useful_life_years,
+        effective_from=m.effective_from,
+        effective_to=m.effective_to,
+        note=m.note,
+        declared_by=m.declared_by,
         created_at=m.created_at,
     )
