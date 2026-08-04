@@ -12,6 +12,8 @@ from app.domain.entities import (
     MappingRule,
     OcrExtractedTable,
     OcrJob,
+    OrgUnitCatalogEntry,
+    OrgUnitCatalogVersion,
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
@@ -24,6 +26,8 @@ from app.domain.repositories import (
     MappingRuleRepository,
     OcrExtractedTableRepository,
     OcrJobRepository,
+    OrgUnitCatalogRepository,
+    OrgUnitCatalogVersionRepository,
     ParsedRecordRepository,
     ParsingJobRepository,
     ParsingRowErrorRepository,
@@ -37,6 +41,8 @@ from app.infrastructure.db.models import (
     MappingRuleModel,
     OcrExtractedTableModel,
     OcrJobModel,
+    OrgUnitCatalogModel,
+    OrgUnitCatalogVersionModel,
     ParsedStructuredRecordModel,
     ParsingJobModel,
     ParsingRowErrorModel,
@@ -703,6 +709,155 @@ class SqlAlchemyMappedStandardRecordRepository(MappedStandardRecordRepository):
                     mapping_job_id=m.mapping_job_id,
                     row_index=m.row_index,
                     standardized_fields=json.loads(m.standardized_fields_json),
+                )
+            )
+        return result
+
+def _org_unit_to_entity(m: OrgUnitCatalogModel) -> OrgUnitCatalogEntry:
+    return OrgUnitCatalogEntry(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        unit_type=m.unit_type,
+        parent_id=m.parent_id,
+        status=m.status,
+        version=m.version,
+        effective_from=m.effective_from,
+        effective_to=m.effective_to,
+        lifecycle_action=m.lifecycle_action,
+        lifecycle_note=m.lifecycle_note,
+        split_from_id=m.split_from_id,
+        merged_from_ids=json.loads(m.merged_from_ids_json or "[]"),
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyOrgUnitCatalogRepository(OrgUnitCatalogRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, unit: OrgUnitCatalogEntry) -> OrgUnitCatalogEntry:
+        model = OrgUnitCatalogModel(
+            code=unit.code,
+            name=unit.name,
+            unit_type=unit.unit_type,
+            parent_id=unit.parent_id,
+            status=unit.status,
+            version=unit.version,
+            effective_from=unit.effective_from,
+            effective_to=unit.effective_to,
+            lifecycle_action=unit.lifecycle_action,
+            lifecycle_note=unit.lifecycle_note,
+            split_from_id=unit.split_from_id,
+            merged_from_ids_json=json.dumps(unit.merged_from_ids),
+            created_at=unit.created_at,
+            updated_at=unit.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        unit.id = model.id
+        return unit
+
+    def update(self, unit: OrgUnitCatalogEntry) -> OrgUnitCatalogEntry:
+        model = self._db.get(OrgUnitCatalogModel, unit.id)
+        if model is None:
+            return unit
+        model.code = unit.code
+        model.name = unit.name
+        model.unit_type = unit.unit_type
+        model.parent_id = unit.parent_id
+        model.status = unit.status
+        model.version = unit.version
+        model.effective_from = unit.effective_from
+        model.effective_to = unit.effective_to
+        model.lifecycle_action = unit.lifecycle_action
+        model.lifecycle_note = unit.lifecycle_note
+        model.split_from_id = unit.split_from_id
+        model.merged_from_ids_json = json.dumps(unit.merged_from_ids)
+        model.updated_at = unit.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return unit
+
+    def get_by_id(self, unit_id: int) -> Optional[OrgUnitCatalogEntry]:
+        model = self._db.get(OrgUnitCatalogModel, unit_id)
+        return _org_unit_to_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[OrgUnitCatalogEntry]:
+        stmt = select(OrgUnitCatalogModel).where(OrgUnitCatalogModel.code == code)
+        model = self._db.execute(stmt).scalars().first()
+        return _org_unit_to_entity(model) if model else None
+
+    def list(
+        self,
+        parent_id: Optional[int] = "__unset__",
+        unit_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[OrgUnitCatalogEntry]:
+        stmt = select(OrgUnitCatalogModel)
+        if parent_id != "__unset__":
+            stmt = stmt.where(OrgUnitCatalogModel.parent_id == parent_id)
+        if unit_type is not None:
+            stmt = stmt.where(OrgUnitCatalogModel.unit_type == unit_type)
+        if status is not None:
+            stmt = stmt.where(OrgUnitCatalogModel.status == status)
+        stmt = stmt.order_by(OrgUnitCatalogModel.code.asc())
+        return [_org_unit_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def list_all(self) -> List[OrgUnitCatalogEntry]:
+        stmt = select(OrgUnitCatalogModel).order_by(OrgUnitCatalogModel.code.asc())
+        return [_org_unit_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyOrgUnitCatalogVersionRepository(OrgUnitCatalogVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: OrgUnitCatalogVersion) -> OrgUnitCatalogVersion:
+        model = OrgUnitCatalogVersionModel(
+            unit_id=version.unit_id,
+            version=version.version,
+            code=version.code,
+            name=version.name,
+            unit_type=version.unit_type,
+            parent_id=version.parent_id,
+            status=version.status,
+            effective_from=version.effective_from,
+            effective_to=version.effective_to,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_unit(self, unit_id: int) -> List[OrgUnitCatalogVersion]:
+        stmt = (
+            select(OrgUnitCatalogVersionModel)
+            .where(OrgUnitCatalogVersionModel.unit_id == unit_id)
+            .order_by(OrgUnitCatalogVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                OrgUnitCatalogVersion(
+                    id=m.id,
+                    unit_id=m.unit_id,
+                    version=m.version,
+                    code=m.code,
+                    name=m.name,
+                    unit_type=m.unit_type,
+                    parent_id=m.parent_id,
+                    status=m.status,
+                    effective_from=m.effective_from,
+                    effective_to=m.effective_to,
+                    change_note=m.change_note,
+                    changed_at=m.changed_at,
                 )
             )
         return result

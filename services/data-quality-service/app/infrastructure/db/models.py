@@ -201,3 +201,48 @@ class MappedStandardRecordModel(Base):
     )
     row_index = Column(Integer, nullable=False)
     standardized_fields_json = Column(Text, nullable=False)
+
+
+class OrgUnitCatalogModel(Base):
+    """UC-033: 1 đơn vị trong danh mục đơn vị (cây phân cấp)."""
+
+    __tablename__ = "org_unit_catalog"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(64), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=False)
+    unit_type = Column(String(20), nullable=False)
+    parent_id = Column(Integer, nullable=True, index=True)
+    status = Column(String(20), nullable=False, default="ACTIVE", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    lifecycle_action = Column(String(20), nullable=True)
+    lifecycle_note = Column(Text, nullable=True)
+    split_from_id = Column(Integer, nullable=True)
+    merged_from_ids_json = Column(Text, nullable=False, default="[]")
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class OrgUnitCatalogVersionModel(Base):
+    """UC-033 bước 2-3: lịch sử phiên bản (append-only) của 1 đơn vị."""
+
+    __tablename__ = "org_unit_catalog_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    unit_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}org_unit_catalog.id"), nullable=False, index=True
+    )
+    version = Column(Integer, nullable=False)
+    code = Column(String(64), nullable=False)
+    name = Column(String(255), nullable=False)
+    unit_type = Column(String(20), nullable=False)
+    parent_id = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)

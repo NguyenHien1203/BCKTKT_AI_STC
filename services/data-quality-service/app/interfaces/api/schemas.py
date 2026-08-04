@@ -394,3 +394,169 @@ class MappedStandardRecordResponse(BaseModel):
     @classmethod
     def from_entity(cls, rec) -> "MappedStandardRecordResponse":
         return cls(row_index=rec.row_index, standardized_fields=rec.standardized_fields)
+
+# ---------- UC-033: Quản lý danh mục đơn vị ----------
+
+
+class OrgUnitCatalogResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    unit_type: str
+    parent_id: Optional[int] = None
+    status: str
+    version: int
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    lifecycle_action: Optional[str] = None
+    lifecycle_note: Optional[str] = None
+    split_from_id: Optional[int] = None
+    merged_from_ids: List[int] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, u) -> "OrgUnitCatalogResponse":
+        return cls(
+            id=u.id,
+            code=u.code,
+            name=u.name,
+            unit_type=u.unit_type,
+            parent_id=u.parent_id,
+            status=u.status,
+            version=u.version,
+            effective_from=u.effective_from,
+            effective_to=u.effective_to,
+            lifecycle_action=u.lifecycle_action,
+            lifecycle_note=u.lifecycle_note,
+            split_from_id=u.split_from_id,
+            merged_from_ids=u.merged_from_ids,
+            created_at=u.created_at,
+            updated_at=u.updated_at,
+        )
+
+
+class OrgUnitTreeNodeResponse(BaseModel):
+    unit: OrgUnitCatalogResponse
+    children: List["OrgUnitTreeNodeResponse"] = Field(default_factory=list)
+
+    @classmethod
+    def from_node(cls, node) -> "OrgUnitTreeNodeResponse":
+        return cls(
+            unit=OrgUnitCatalogResponse.from_entity(node.unit),
+            children=[cls.from_node(c) for c in node.children],
+        )
+
+
+OrgUnitTreeNodeResponse.model_rebuild()
+
+
+class OrgUnitCatalogVersionResponse(BaseModel):
+    id: int
+    unit_id: int
+    version: int
+    code: str
+    name: str
+    unit_type: str
+    parent_id: Optional[int] = None
+    status: str
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "OrgUnitCatalogVersionResponse":
+        return cls(
+            id=v.id,
+            unit_id=v.unit_id,
+            version=v.version,
+            code=v.code,
+            name=v.name,
+            unit_type=v.unit_type,
+            parent_id=v.parent_id,
+            status=v.status,
+            effective_from=v.effective_from,
+            effective_to=v.effective_to,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class OrgUnitCatalogCreate(BaseModel):
+    """Bước 2 'Thêm đơn vị mới'."""
+
+    code: str
+    name: str
+    unit_type: str = Field(description="SO / PHONG / XA")
+    parent_id: Optional[int] = None
+    effective_from: Optional[str] = None
+    note: Optional[str] = None
+
+
+class OrgUnitCatalogUpdate(BaseModel):
+    """Bước 3 'Sửa thông tin đơn vị'. Trường không truyền (None) giữ
+
+    nguyên giá trị cũ; để đổi `parent_id` về gốc (None), truyền
+    `clear_parent=true`."""
+
+    name: Optional[str] = None
+    unit_type: Optional[str] = None
+    parent_id: Optional[int] = None
+    clear_parent: bool = False
+    note: Optional[str] = None
+
+
+class CloseOrgUnitRequest(BaseModel):
+    effective_to: str
+    note: Optional[str] = None
+
+
+class SplitOrgUnitChildInput(BaseModel):
+    code: str
+    name: str
+    unit_type: Optional[str] = None
+
+
+class SplitOrgUnitRequest(BaseModel):
+    effective_from: str
+    new_units: List[SplitOrgUnitChildInput]
+    note: Optional[str] = None
+
+
+class SplitOrgUnitResponse(BaseModel):
+    source: OrgUnitCatalogResponse
+    created_units: List[OrgUnitCatalogResponse]
+
+    @classmethod
+    def from_result(cls, result) -> "SplitOrgUnitResponse":
+        return cls(
+            source=OrgUnitCatalogResponse.from_entity(result.source),
+            created_units=[OrgUnitCatalogResponse.from_entity(u) for u in result.created_units],
+        )
+
+
+class MergeOrgUnitTargetInput(BaseModel):
+    code: str
+    name: str
+    unit_type: Optional[str] = None
+    parent_id: Optional[int] = None
+
+
+class MergeOrgUnitRequest(BaseModel):
+    source_unit_ids: List[int]
+    target: MergeOrgUnitTargetInput
+    effective_from: str
+    note: Optional[str] = None
+
+
+class MergeOrgUnitResponse(BaseModel):
+    source_units: List[OrgUnitCatalogResponse]
+    merged_unit: OrgUnitCatalogResponse
+
+    @classmethod
+    def from_result(cls, result) -> "MergeOrgUnitResponse":
+        return cls(
+            source_units=[OrgUnitCatalogResponse.from_entity(u) for u in result.source_units],
+            merged_unit=OrgUnitCatalogResponse.from_entity(result.merged_unit),
+        )

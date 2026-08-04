@@ -135,3 +135,50 @@ class InvalidUnmappedQueueResolution(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+# ---------- UC-033: Quản lý danh mục đơn vị ----------
+
+
+class OrgUnitCatalogNotFound(DomainError):
+    code = "ORG_UNIT_CATALOG_NOT_FOUND"
+
+    def __init__(self, unit_id: int):
+        super().__init__(f"Không tìm thấy đơn vị id={unit_id} trong danh mục")
+        self.unit_id = unit_id
+
+
+class OrgUnitCatalogCodeAlreadyExists(DomainError):
+    """Bước 2 'Hệ thống kiểm tra trùng mã': mã đơn vị đã tồn tại."""
+
+    code = "ORG_UNIT_CATALOG_CODE_EXISTS"
+
+    def __init__(self, unit_code: str):
+        super().__init__(f"Mã đơn vị '{unit_code}' đã tồn tại trong danh mục")
+        self.unit_code = unit_code
+
+
+class InvalidOrgUnitCatalog(DomainError):
+    code = "INVALID_ORG_UNIT_CATALOG"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class OrgUnitCatalogAlreadyClosed(DomainError):
+    code = "ORG_UNIT_CATALOG_ALREADY_CLOSED"
+
+    def __init__(self, unit_id: int):
+        super().__init__(f"Đơn vị id={unit_id} đã đóng trước đó")
+        self.unit_id = unit_id
+
+
+class InvalidOrgUnitCatalogLifecycle(DomainError):
+    """Yêu cầu đóng/tách/sáp nhập không hợp lệ (vd thiếu đơn vị nguồn,
+
+    tự tham chiếu chính nó làm cha, effective_from không hợp lệ...).
+    """
+
+    code = "INVALID_ORG_UNIT_CATALOG_LIFECYCLE"
+
+    def __init__(self, message: str):
+        super().__init__(message)

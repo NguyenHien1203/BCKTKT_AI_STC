@@ -12,6 +12,8 @@ from app.domain.entities import (
     MappingRule,
     OcrExtractedTable,
     OcrJob,
+    OrgUnitCatalogEntry,
+    OrgUnitCatalogVersion,
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
@@ -280,4 +282,58 @@ class MappedStandardRecordRepository(ABC):
 
     @abstractmethod
     def list_for_job(self, mapping_job_id: int) -> List[MappedStandardRecord]:
+        ...
+
+# ---------- UC-033: Quản lý danh mục đơn vị ----------
+
+
+class OrgUnitCatalogRepository(ABC):
+    @abstractmethod
+    def add(self, unit: OrgUnitCatalogEntry) -> OrgUnitCatalogEntry:
+        ...
+
+    @abstractmethod
+    def update(self, unit: OrgUnitCatalogEntry) -> OrgUnitCatalogEntry:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, unit_id: int) -> Optional[OrgUnitCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[OrgUnitCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        parent_id: Optional[int] = "__unset__",
+        unit_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[OrgUnitCatalogEntry]:
+        """`parent_id="__unset__"` (giá trị mặc định) nghĩa là KHÔNG lọc
+
+        theo `parent_id`; truyền `None` tường minh để chỉ lấy các đơn vị
+        gốc của cây (không có cha)."""
+        ...
+
+    @abstractmethod
+    def list_all(self) -> List[OrgUnitCatalogEntry]:
+        """Bước 1 'Xem danh mục đơn vị (cây phân cấp)': lấy toàn bộ để
+
+        dựng cây ở tầng application."""
+        ...
+
+
+class OrgUnitCatalogVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước
+
+    2-3 UC-033)."""
+
+    @abstractmethod
+    def add(self, version: OrgUnitCatalogVersion) -> OrgUnitCatalogVersion:
+        ...
+
+    @abstractmethod
+    def list_for_unit(self, unit_id: int) -> List[OrgUnitCatalogVersion]:
         ...

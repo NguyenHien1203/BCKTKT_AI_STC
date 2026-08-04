@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Layers, MonitorSmartphone, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Layers, MonitorSmartphone, Network, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -23,6 +23,7 @@ import ParsingJobsPage from "./pages/dataquality/ParsingJobsPage.jsx";
 import MappingJobsPage from "./pages/dataquality/MappingJobsPage.jsx";
 import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
 import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
+import OrgUnitCatalogPage from "./pages/dataquality/OrgUnitCatalogPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -176,6 +177,12 @@ function HomePage() {
       title: "Xử lý hàng đợi chưa ánh xạ",
       description: "UC-032 — Xem hàng đợi chưa ánh xạ (UC-031 đẩy vào), xử lý giá trị (ánh xạ/tạo mục mới/từ chối) để hệ thống lưu mapping mới, ánh xạ hàng loạt các giá trị tương tự để hệ thống áp dụng đồng loạt.",
       icon: Inbox,
+    },
+    {
+      to: "/org-unit-catalog",
+      title: "Quản lý danh mục đơn vị",
+      description: "UC-033 — Xem danh mục đơn vị (cây phân cấp); thêm đơn vị mới (kiểm tra trùng mã, lưu phiên bản); sửa thông tin đơn vị; đóng/tách/sáp nhập đơn vị (lifecycle, lưu effective_from/effective_to).",
+      icon: Network,
     },
   ];
 
@@ -444,6 +451,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <UnmappedQueuePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/org-unit-catalog"
+        element={
+          <ProtectedRoute>
+            <OrgUnitCatalogPage />
           </ProtectedRoute>
         }
       />

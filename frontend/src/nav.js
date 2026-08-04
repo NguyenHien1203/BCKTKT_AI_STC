@@ -82,6 +82,7 @@ export const NAV_SECTIONS = [
       { to: "/mapping-jobs", label: "Ánh xạ trường sang dạng chuẩn", icon: ShieldCheck },
       { to: "/ocr-jobs", label: "Phân tích PDF/bản quét + OCR", icon: FileScan },
       { to: "/unmapped-queue", label: "Xử lý hàng đợi chưa ánh xạ", icon: Inbox },
+      { to: "/org-unit-catalog", label: "Quản lý danh mục đơn vị", icon: Network },
     ],
   },
   {
