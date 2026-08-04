@@ -393,3 +393,81 @@ class AssetDepreciationRateModel(Base):
     note = Column(Text, nullable=True)
     declared_by = Column(String(255), nullable=True)
     created_at = Column(String(40), nullable=False)
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+class CatalogEntryModel(Base):
+    """UC-036: 1 mục trong 1 trong 3 danh mục dùng chung (mặt hàng /
+
+    loại văn bản / nguồn vốn), phân biệt bởi `catalog_type`."""
+
+    __tablename__ = "catalog_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "code", "catalog_type", name="uq_catalog_entries_code_catalog_type"
+        ),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    catalog_type = Column(String(30), nullable=False, index=True)
+    code = Column(String(64), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    unit = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    is_sensitive = Column(Boolean, nullable=False, default=False)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class CatalogEntryVersionModel(Base):
+    """UC-036 bước 2: lịch sử phiên bản (append-only) của 1 mục danh mục."""
+
+    __tablename__ = "catalog_entry_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    entry_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}catalog_entries.id"), nullable=False, index=True
+    )
+    catalog_type = Column(String(30), nullable=False)
+    version = Column(Integer, nullable=False)
+    code = Column(String(64), nullable=False)
+    name = Column(String(255), nullable=False)
+    unit = Column(String(50), nullable=True)
+    status = Column(String(20), nullable=False)
+    is_sensitive = Column(Boolean, nullable=False, default=False)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)
+
+
+class CatalogChangeRequestModel(Base):
+    """UC-036 bước 3: đề nghị thay đổi danh mục nhạy cảm -- hàng đợi chờ
+
+    duyệt (xem UC-037)."""
+
+    __tablename__ = "catalog_change_requests"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    entry_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}catalog_entries.id"), nullable=False, index=True
+    )
+    catalog_type = Column(String(30), nullable=False, index=True)
+    requested_by = Column(String(255), nullable=False)
+    reason = Column(Text, nullable=False)
+    proposed_name = Column(String(255), nullable=True)
+    proposed_unit = Column(String(50), nullable=True)
+    proposed_description = Column(Text, nullable=True)
+    proposed_status = Column(String(20), nullable=True)
+    proposed_is_sensitive = Column(Boolean, nullable=True)
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
+    reviewed_by = Column(String(255), nullable=True)
+    review_note = Column(Text, nullable=True)
+    reviewed_at = Column(String(40), nullable=True)
+    created_at = Column(String(40), nullable=False)

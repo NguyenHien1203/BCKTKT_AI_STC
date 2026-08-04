@@ -1,5 +1,35 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Landmark, Layers, MonitorSmartphone, Network, Percent, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  ClipboardCheck,
+  Database,
+  FileScan,
+  FileStack,
+  FileText,
+  FileUp,
+  History,
+  Inbox,
+  KeyRound,
+  Landmark,
+  Layers,
+  MonitorSmartphone,
+  Network,
+  Package,
+  Percent,
+  BookCopy,
+  Plug,
+  PlugZap,
+  RefreshCw,
+  ScanSearch,
+  Settings,
+  ShieldAlert,
+  Ticket,
+  UploadCloud,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -26,6 +56,7 @@ import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
 import OrgUnitCatalogPage from "./pages/dataquality/OrgUnitCatalogPage.jsx";
 import BudgetItemCatalogPage from "./pages/dataquality/BudgetItemCatalogPage.jsx";
 import AssetGroupCatalogPage from "./pages/dataquality/AssetGroupCatalogPage.jsx";
+import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -45,7 +76,8 @@ function HomePage() {
     {
       to: "/org-units",
       title: "Cơ cấu tổ chức",
-      description: "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
+      description:
+        "UC-01 — Quản lý danh mục đơn vị (Sở / Phòng / Xã) dạng cây.",
       icon: Building2,
     },
     {
@@ -57,146 +89,177 @@ function HomePage() {
     {
       to: "/permissions",
       title: "Quyền người dùng",
-      description: "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
+      description:
+        "UC-04 — Xem/cấu hình permission_context: vai trò, miền dữ liệu, mức nhạy cảm.",
       icon: KeyRound,
     },
     {
       to: "/roles",
       title: "Vai trò người dùng",
-      description: "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
+      description:
+        "UC-05 — Quản lý danh mục vai trò và bộ quyền gán cho từng vai trò.",
       icon: UserCog,
     },
     {
       to: "/system-config",
       title: "Cấu hình hệ thống chung",
-      description: "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
+      description:
+        "UC-06 — Thời gian chờ, dung lượng tải lên tối đa, ngôn ngữ mặc định.",
       icon: Settings,
     },
     {
       to: "/audit-logs",
       title: "Nhật ký truy cập và thao tác",
-      description: "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
+      description:
+        "UC-09 — Xem/lọc nhật ký theo tài khoản, thời gian; xuất báo cáo ATTT định kỳ (PDF).",
       icon: FileText,
     },
     {
       to: "/ai-audit-logs",
       title: "Quản trị AI Audit Log",
-      description: "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
+      description:
+        "UC-10 — Xem AI query theo thời gian/trace_id/user_id; xuất báo cáo AI Audit định kỳ (PDF).",
       icon: ScanSearch,
     },
     {
       to: "/guide-documents",
       title: "Tài liệu hướng dẫn sử dụng",
-      description: "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
+      description:
+        "UC-11 — Thêm/sửa/xoá tài liệu hướng dẫn (lưu MinIO, quản lý phiên bản, xoá mềm).",
       icon: FileStack,
     },
     {
       to: "/sessions",
       title: "Quản lý phiên đăng nhập",
-      description: "UC-14 — Xem và thu hồi từng phiên đăng nhập đang hoạt động trong hệ thống.",
+      description:
+        "UC-14 — Xem và thu hồi từng phiên đăng nhập đang hoạt động trong hệ thống.",
       icon: MonitorSmartphone,
     },
     {
       to: "/data-sources",
       title: "Nguồn dữ liệu",
-      description: "UC-015 — Đăng ký, xem, sửa và vô hiệu hoá nguồn dữ liệu (TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).",
+      description:
+        "UC-015 — Đăng ký, xem, sửa và vô hiệu hoá nguồn dữ liệu (TABMIS, QLVBĐH, MISA, QL Giá, PMSTT).",
       icon: Database,
     },
     {
       to: "/connectors",
       title: "Thư viện bộ kết nối",
-      description: "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
+      description:
+        "UC-016 — Xem danh sách, đăng ký (plugin) và cập nhật phiên bản bộ kết nối (tệp/REST API/JDBC/SOAP).",
       icon: Plug,
     },
     {
       to: "/source-connections",
       title: "Cấu hình kết nối nguồn",
-      description: "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
+      description:
+        "UC-017 — Cấu hình connection (API/DB/File), kiểm thử kết nối, quản lý certificate/API key và cảnh báo hết hạn.",
       icon: PlugZap,
     },
     {
       to: "/datasets",
       title: "Định nghĩa tập dữ liệu của nguồn",
-      description: "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
+      description:
+        "UC-018 — Định nghĩa lược đồ, khoá chính + phân mảnh, trường bắt buộc (NOT NULL), đăng ký Schema Registry.",
       icon: Layers,
     },
     {
       to: "/scheduled-tasks",
       title: "Cấu hình tác vụ điều phối",
-      description: "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
+      description:
+        "UC-019 — Lịch cron, chế độ đồng bộ đầy đủ/tăng dần, chính sách thử lại; bật/tắt tác vụ.",
       icon: CalendarClock,
     },
     {
       to: "/ingestion-runs",
       title: "Lịch đầy đủ dữ liệu + Lịch sử chạy",
-      description: "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
+      description:
+        "UC-020 — Xem lịch sử phiên ingest, heatmap kỳ thiếu dữ liệu, chi tiết log + tổng kiểm soát.",
       icon: History,
     },
     {
       to: "/incremental-sync",
       title: "Đồng bộ tăng dần từ API/DB",
-      description: "UC-025 — Đọc điểm kiểm tra từ ingestion.runs, lấy dữ liệu mới/thay đổi (MISA/QL Giá/PMSTT), lưu MinIO + đẩy sự kiện parsing.requested.",
+      description:
+        "UC-025 — Đọc điểm kiểm tra từ ingestion.runs, lấy dữ liệu mới/thay đổi (MISA/QL Giá/PMSTT), lưu MinIO + đẩy sự kiện parsing.requested.",
       icon: RefreshCw,
     },
     {
       to: "/schema-registry-checks",
       title: "Kiểm tra Schema Registry",
-      description: "UC-026 — Trước khi phân tích, so sánh lược đồ nguồn với lược đồ đã đăng ký (UC-018); dừng xử lý + cảnh báo nếu phá vỡ tương thích, chuyển tiếp + ghi nhận nếu chỉ bổ sung.",
+      description:
+        "UC-026 — Trước khi phân tích, so sánh lược đồ nguồn với lược đồ đã đăng ký (UC-018); dừng xử lý + cảnh báo nếu phá vỡ tương thích, chuyển tiếp + ghi nhận nếu chỉ bổ sung.",
       icon: ShieldAlert,
     },
     {
       to: "/tabmis-intake",
       title: "Tiếp nhận file thủ công TABMIS",
-      description: "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
+      description:
+        "UC-022 — Tải biểu mẫu Excel chuẩn, tải tệp lên: lưu raw vào MinIO, validate template + tổng kiểm soát, tạo phiên tiếp nhận + ghi ingestion.runs.",
       icon: UploadCloud,
     },
     {
       to: "/intake-reconciliation",
       title: "Đối soát phiên intake",
-      description: "UC-027 — Chọn phiên tiếp nhận cần đối soát, xem tổng kiểm soát, đánh dấu phát hiện thiếu/sai, đóng phiên đối soát đạt yêu cầu để hệ thống cập nhật trạng thái.",
+      description:
+        "UC-027 — Chọn phiên tiếp nhận cần đối soát, xem tổng kiểm soát, đánh dấu phát hiện thiếu/sai, đóng phiên đối soát đạt yêu cầu để hệ thống cập nhật trạng thái.",
       icon: ClipboardCheck,
     },
     {
       to: "/reconciliation-tickets",
       title: "Xử lý ticket đối soát với chủ quản nguồn",
-      description: "UC-028 — Mở ticket xử lý với chủ quản nguồn của phiên đối soát (lưu + thông báo), cập nhật tiến độ xử lý (lưu lịch sử), đóng ticket khi resolved (cập nhật trạng thái + ghi nhật ký).",
+      description:
+        "UC-028 — Mở ticket xử lý với chủ quản nguồn của phiên đối soát (lưu + thông báo), cập nhật tiến độ xử lý (lưu lịch sử), đóng ticket khi resolved (cập nhật trạng thái + ghi nhật ký).",
       icon: Ticket,
     },
     {
       to: "/qlvbdh-intake",
       title: "Tiếp nhận văn bản QLVBĐH",
-      description: "UC-024 — Nhập siêu dữ liệu + đính kèm PDF/bản quét: lưu staging.stg_van_ban + MinIO (raw-documents), khử trùng lặp theo số ký hiệu, kích hoạt sự kiện ocr.requested.",
+      description:
+        "UC-024 — Nhập siêu dữ liệu + đính kèm PDF/bản quét: lưu staging.stg_van_ban + MinIO (raw-documents), khử trùng lặp theo số ký hiệu, kích hoạt sự kiện ocr.requested.",
       icon: FileUp,
     },
     {
       to: "/ocr-jobs",
       title: "Phân tích PDF/bản quét + OCR",
-      description: "UC-030 — Nhận sự kiện ocr.requested, chạy OCR PaddleOCR/olmOCR trên PDF/bản quét, trích xuất văn bản + bảng, lưu dữ liệu có cấu trúc, kích hoạt sự kiện ocr.completed + parsing.requested.",
+      description:
+        "UC-030 — Nhận sự kiện ocr.requested, chạy OCR PaddleOCR/olmOCR trên PDF/bản quét, trích xuất văn bản + bảng, lưu dữ liệu có cấu trúc, kích hoạt sự kiện ocr.completed + parsing.requested.",
       icon: FileScan,
     },
     {
       to: "/unmapped-queue",
       title: "Xử lý hàng đợi chưa ánh xạ",
-      description: "UC-032 — Xem hàng đợi chưa ánh xạ (UC-031 đẩy vào), xử lý giá trị (ánh xạ/tạo mục mới/từ chối) để hệ thống lưu mapping mới, ánh xạ hàng loạt các giá trị tương tự để hệ thống áp dụng đồng loạt.",
+      description:
+        "UC-032 — Xem hàng đợi chưa ánh xạ (UC-031 đẩy vào), xử lý giá trị (ánh xạ/tạo mục mới/từ chối) để hệ thống lưu mapping mới, ánh xạ hàng loạt các giá trị tương tự để hệ thống áp dụng đồng loạt.",
       icon: Inbox,
     },
     {
       to: "/org-unit-catalog",
       title: "Quản lý danh mục đơn vị",
-      description: "UC-033 — Xem danh mục đơn vị (cây phân cấp); thêm đơn vị mới (kiểm tra trùng mã, lưu phiên bản); sửa thông tin đơn vị; đóng/tách/sáp nhập đơn vị (lifecycle, lưu effective_from/effective_to).",
+      description:
+        "UC-033 — Xem danh mục đơn vị (cây phân cấp); thêm đơn vị mới (kiểm tra trùng mã, lưu phiên bản); sửa thông tin đơn vị; đóng/tách/sáp nhập đơn vị (lifecycle, lưu effective_from/effective_to).",
       icon: Network,
     },
     {
       to: "/budget-item-catalog",
       title: "Danh mục khoản mục NSNN",
-      description: "UC-034 — Cây khoản mục NSNN (Chương/Loại/Khoản/Mục/Tiểu mục), quản lý phiên bản theo năm ngân sách, đề nghị thay đổi khoản mục nhạy cảm chờ duyệt.",
+      description:
+        "UC-034 — Cây khoản mục NSNN (Chương/Loại/Khoản/Mục/Tiểu mục), quản lý phiên bản theo năm ngân sách, đề nghị thay đổi khoản mục nhạy cảm chờ duyệt.",
       icon: Landmark,
     },
     {
       to: "/asset-group-catalog",
       title: "Quản lý danh mục nhóm tài sản",
-      description: "UC-035 — Xem danh mục nhóm tài sản (TT 45/2018 sửa TT 162/2014); thêm/sửa entry (hệ thống quản lý phiên bản); khai báo tỉ lệ khấu hao theo nhóm (hệ thống lưu).",
+      description:
+        "UC-035 — Xem danh mục nhóm tài sản (TT 45/2018 sửa TT 162/2014); thêm/sửa entry (hệ thống quản lý phiên bản); khai báo tỉ lệ khấu hao theo nhóm (hệ thống lưu).",
       icon: Percent,
+    },
+    {
+      to: "/catalog-entries",
+      title: "Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn",
+      description:
+        "UC-036 — Quản lý các danh mục dùng chung gồm mặt hàng, loại văn bản và nguồn vốn. Hỗ trợ xem danh sách, thêm, sửa, quản lý phiên bản và gửi yêu cầu thay đổi đối với các danh mục nhạy cảm để chờ phê duyệt.",
+      icon: BookCopy,
     },
   ];
 
@@ -237,7 +300,9 @@ function HomePage() {
                 <Icon size={20} />
               </div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>{m.title}</div>
-              <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
+              <div
+                style={{ fontSize: 13, color: "var(--color-text-secondary)" }}
+              >
                 {m.description}
               </div>
               <div
@@ -521,6 +586,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AssetGroupCatalogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/catalog-entries"
+        element={
+          <ProtectedRoute>
+            <CatalogEntriesPage />
           </ProtectedRoute>
         }
       />

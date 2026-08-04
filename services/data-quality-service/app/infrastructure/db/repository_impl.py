@@ -12,6 +12,9 @@ from app.domain.entities import (
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
+    CatalogChangeRequest,
+    CatalogEntry,
+    CatalogEntryVersion,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -32,6 +35,9 @@ from app.domain.repositories import (
     BudgetItemCatalogRepository,
     BudgetItemCatalogVersionRepository,
     BudgetItemChangeRequestRepository,
+    CatalogChangeRequestRepository,
+    CatalogEntryRepository,
+    CatalogEntryVersionRepository,
     MappedStandardRecordRepository,
     MappingJobRepository,
     MappingRejectionRepository,
@@ -53,6 +59,9 @@ from app.infrastructure.db.models import (
     BudgetItemCatalogModel,
     BudgetItemCatalogVersionModel,
     BudgetItemChangeRequestModel,
+    CatalogChangeRequestModel,
+    CatalogEntryModel,
+    CatalogEntryVersionModel,
     MappedStandardRecordModel,
     MappingJobModel,
     MappingRejectionModel,
@@ -1293,3 +1302,227 @@ def _asset_depreciation_rate_to_entity(m: AssetDepreciationRateModel) -> AssetDe
         declared_by=m.declared_by,
         created_at=m.created_at,
     )
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+def _catalog_entry_to_entity(m: CatalogEntryModel) -> CatalogEntry:
+    return CatalogEntry(
+        id=m.id,
+        catalog_type=m.catalog_type,
+        code=m.code,
+        name=m.name,
+        unit=m.unit,
+        description=m.description,
+        status=m.status,
+        version=m.version,
+        is_sensitive=m.is_sensitive,
+        effective_from=m.effective_from,
+        effective_to=m.effective_to,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyCatalogEntryRepository(CatalogEntryRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, entry: CatalogEntry) -> CatalogEntry:
+        model = CatalogEntryModel(
+            catalog_type=entry.catalog_type,
+            code=entry.code,
+            name=entry.name,
+            unit=entry.unit,
+            description=entry.description,
+            status=entry.status,
+            version=entry.version,
+            is_sensitive=entry.is_sensitive,
+            effective_from=entry.effective_from,
+            effective_to=entry.effective_to,
+            created_at=entry.created_at,
+            updated_at=entry.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        entry.id = model.id
+        return entry
+
+    def update(self, entry: CatalogEntry) -> CatalogEntry:
+        model = self._db.get(CatalogEntryModel, entry.id)
+        if model is None:
+            return entry
+        model.catalog_type = entry.catalog_type
+        model.code = entry.code
+        model.name = entry.name
+        model.unit = entry.unit
+        model.description = entry.description
+        model.status = entry.status
+        model.version = entry.version
+        model.is_sensitive = entry.is_sensitive
+        model.effective_from = entry.effective_from
+        model.effective_to = entry.effective_to
+        model.updated_at = entry.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return entry
+
+    def get_by_id(self, entry_id: int) -> Optional[CatalogEntry]:
+        model = self._db.get(CatalogEntryModel, entry_id)
+        return _catalog_entry_to_entity(model) if model else None
+
+    def get_by_code(self, code: str, catalog_type: str) -> Optional[CatalogEntry]:
+        stmt = select(CatalogEntryModel).where(
+            CatalogEntryModel.code == code,
+            CatalogEntryModel.catalog_type == catalog_type,
+        )
+        model = self._db.execute(stmt).scalars().first()
+        return _catalog_entry_to_entity(model) if model else None
+
+    def list(
+        self,
+        catalog_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[CatalogEntry]:
+        stmt = select(CatalogEntryModel)
+        if catalog_type is not None:
+            stmt = stmt.where(CatalogEntryModel.catalog_type == catalog_type)
+        if status is not None:
+            stmt = stmt.where(CatalogEntryModel.status == status)
+        stmt = stmt.order_by(CatalogEntryModel.code.asc())
+        return [_catalog_entry_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyCatalogEntryVersionRepository(CatalogEntryVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: CatalogEntryVersion) -> CatalogEntryVersion:
+        model = CatalogEntryVersionModel(
+            entry_id=version.entry_id,
+            catalog_type=version.catalog_type,
+            version=version.version,
+            code=version.code,
+            name=version.name,
+            unit=version.unit,
+            status=version.status,
+            is_sensitive=version.is_sensitive,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_entry(self, entry_id: int) -> List[CatalogEntryVersion]:
+        stmt = (
+            select(CatalogEntryVersionModel)
+            .where(CatalogEntryVersionModel.entry_id == entry_id)
+            .order_by(CatalogEntryVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                CatalogEntryVersion(
+                    id=m.id,
+                    entry_id=m.entry_id,
+                    catalog_type=m.catalog_type,
+                    version=m.version,
+                    code=m.code,
+                    name=m.name,
+                    unit=m.unit,
+                    status=m.status,
+                    is_sensitive=m.is_sensitive,
+                    change_note=m.change_note,
+                    changed_at=m.changed_at,
+                )
+            )
+        return result
+
+
+def _catalog_change_request_to_entity(m: CatalogChangeRequestModel) -> CatalogChangeRequest:
+    return CatalogChangeRequest(
+        id=m.id,
+        entry_id=m.entry_id,
+        catalog_type=m.catalog_type,
+        requested_by=m.requested_by,
+        reason=m.reason,
+        proposed_name=m.proposed_name,
+        proposed_unit=m.proposed_unit,
+        proposed_description=m.proposed_description,
+        proposed_status=m.proposed_status,
+        proposed_is_sensitive=m.proposed_is_sensitive,
+        status=m.status,
+        reviewed_by=m.reviewed_by,
+        review_note=m.review_note,
+        reviewed_at=m.reviewed_at,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyCatalogChangeRequestRepository(CatalogChangeRequestRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, request: CatalogChangeRequest) -> CatalogChangeRequest:
+        model = CatalogChangeRequestModel(
+            entry_id=request.entry_id,
+            catalog_type=request.catalog_type,
+            requested_by=request.requested_by,
+            reason=request.reason,
+            proposed_name=request.proposed_name,
+            proposed_unit=request.proposed_unit,
+            proposed_description=request.proposed_description,
+            proposed_status=request.proposed_status,
+            proposed_is_sensitive=request.proposed_is_sensitive,
+            status=request.status,
+            reviewed_by=request.reviewed_by,
+            review_note=request.review_note,
+            reviewed_at=request.reviewed_at,
+            created_at=request.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        request.id = model.id
+        return request
+
+    def update(self, request: CatalogChangeRequest) -> CatalogChangeRequest:
+        model = self._db.get(CatalogChangeRequestModel, request.id)
+        if model is None:
+            return request
+        model.status = request.status
+        model.reviewed_by = request.reviewed_by
+        model.review_note = request.review_note
+        model.reviewed_at = request.reviewed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return request
+
+    def get_by_id(self, request_id: int) -> Optional[CatalogChangeRequest]:
+        model = self._db.get(CatalogChangeRequestModel, request_id)
+        return _catalog_change_request_to_entity(model) if model else None
+
+    def list(
+        self,
+        entry_id: Optional[int] = None,
+        catalog_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[CatalogChangeRequest]:
+        stmt = select(CatalogChangeRequestModel)
+        if entry_id is not None:
+            stmt = stmt.where(CatalogChangeRequestModel.entry_id == entry_id)
+        if catalog_type is not None:
+            stmt = stmt.where(CatalogChangeRequestModel.catalog_type == catalog_type)
+        if status is not None:
+            stmt = stmt.where(CatalogChangeRequestModel.status == status)
+        stmt = stmt.order_by(CatalogChangeRequestModel.created_at.desc())
+        return [
+            _catalog_change_request_to_entity(m)
+            for m in self._db.execute(stmt).scalars().all()
+        ]

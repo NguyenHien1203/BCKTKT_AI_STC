@@ -838,3 +838,151 @@ class AssetDepreciationRateDeclare(BaseModel):
     effective_to: Optional[str] = None
     note: Optional[str] = None
     declared_by: Optional[str] = None
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+class CatalogEntryResponse(BaseModel):
+    id: int
+    catalog_type: str
+    code: str
+    name: str
+    unit: Optional[str] = None
+    description: Optional[str] = None
+    status: str
+    version: int
+    is_sensitive: bool
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, e) -> "CatalogEntryResponse":
+        return cls(
+            id=e.id,
+            catalog_type=e.catalog_type,
+            code=e.code,
+            name=e.name,
+            unit=e.unit,
+            description=e.description,
+            status=e.status,
+            version=e.version,
+            is_sensitive=e.is_sensitive,
+            effective_from=e.effective_from,
+            effective_to=e.effective_to,
+            created_at=e.created_at,
+            updated_at=e.updated_at,
+        )
+
+
+class CatalogEntryVersionResponse(BaseModel):
+    id: int
+    entry_id: int
+    catalog_type: str
+    version: int
+    code: str
+    name: str
+    unit: Optional[str] = None
+    status: str
+    is_sensitive: bool
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "CatalogEntryVersionResponse":
+        return cls(
+            id=v.id,
+            entry_id=v.entry_id,
+            catalog_type=v.catalog_type,
+            version=v.version,
+            code=v.code,
+            name=v.name,
+            unit=v.unit,
+            status=v.status,
+            is_sensitive=v.is_sensitive,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class CatalogEntryCreate(BaseModel):
+    """Bước 2 'Thêm entry'."""
+
+    catalog_type: str = Field(description="ITEM / DOCUMENT_TYPE / FUNDING_SOURCE")
+    code: str
+    name: str
+    unit: Optional[str] = None
+    description: Optional[str] = None
+    is_sensitive: bool = False
+    effective_from: Optional[str] = None
+    note: Optional[str] = None
+
+
+class CatalogEntryUpdate(BaseModel):
+    """Bước 2 'Sửa entry' -- KHÔNG áp dụng cho mục nhạy cảm (dùng bước 3
+
+    'Đề nghị thay đổi' thay thế)."""
+
+    name: Optional[str] = None
+    unit: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    note: Optional[str] = None
+
+
+class CatalogChangeRequestResponse(BaseModel):
+    id: int
+    entry_id: int
+    catalog_type: str
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_unit: Optional[str] = None
+    proposed_description: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+    status: str
+    reviewed_by: Optional[str] = None
+    review_note: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, r) -> "CatalogChangeRequestResponse":
+        return cls(
+            id=r.id,
+            entry_id=r.entry_id,
+            catalog_type=r.catalog_type,
+            requested_by=r.requested_by,
+            reason=r.reason,
+            proposed_name=r.proposed_name,
+            proposed_unit=r.proposed_unit,
+            proposed_description=r.proposed_description,
+            proposed_status=r.proposed_status,
+            proposed_is_sensitive=r.proposed_is_sensitive,
+            status=r.status,
+            reviewed_by=r.reviewed_by,
+            review_note=r.review_note,
+            reviewed_at=r.reviewed_at,
+            created_at=r.created_at,
+        )
+
+
+class CatalogChangeRequestCreate(BaseModel):
+    """Bước 3 'Đề nghị thay đổi danh mục nhạy cảm'."""
+
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_unit: Optional[str] = None
+    proposed_description: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+
+
+class CatalogChangeReviewRequest(BaseModel):
+    """Duyệt / từ chối 1 yêu cầu thay đổi (bước 3, dùng bởi UC-037)."""
+
+    reviewed_by: str
+    review_note: Optional[str] = None
