@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Layers, MonitorSmartphone, Network, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, ClipboardCheck, Database, FileScan, FileStack, FileText, FileUp, History, Inbox, KeyRound, Landmark, Layers, MonitorSmartphone, Network, Plug, PlugZap, RefreshCw, ScanSearch, Settings, ShieldAlert, Ticket, UploadCloud, UserCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -24,6 +24,7 @@ import MappingJobsPage from "./pages/dataquality/MappingJobsPage.jsx";
 import OcrJobsPage from "./pages/dataquality/OcrJobsPage.jsx";
 import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
 import OrgUnitCatalogPage from "./pages/dataquality/OrgUnitCatalogPage.jsx";
+import BudgetItemCatalogPage from "./pages/dataquality/BudgetItemCatalogPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -183,6 +184,12 @@ function HomePage() {
       title: "Quản lý danh mục đơn vị",
       description: "UC-033 — Xem danh mục đơn vị (cây phân cấp); thêm đơn vị mới (kiểm tra trùng mã, lưu phiên bản); sửa thông tin đơn vị; đóng/tách/sáp nhập đơn vị (lifecycle, lưu effective_from/effective_to).",
       icon: Network,
+    },
+    {
+      to: "/budget-item-catalog",
+      title: "Danh mục khoản mục NSNN",
+      description: "UC-034 — Cây khoản mục NSNN (Chương/Loại/Khoản/Mục/Tiểu mục), quản lý phiên bản theo năm ngân sách, đề nghị thay đổi khoản mục nhạy cảm chờ duyệt.",
+      icon: Landmark,
     },
   ];
 
@@ -491,6 +498,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ReconciliationTicketPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/budget-item-catalog"
+        element={
+          <ProtectedRoute>
+            <BudgetItemCatalogPage />
           </ProtectedRoute>
         }
       />

@@ -651,3 +651,146 @@ class OrgUnitCatalogVersion:
     effective_to: Optional[str]
     change_note: Optional[str] = None
     changed_at: str = field(default_factory=_utc_now_iso)
+
+@dataclass
+class BudgetItemCatalogEntry:
+    """UC-034: 1 khoản mục trong danh mục khoản mục NSNN (cây phân cấp
+
+    Chương / Loại / Khoản / Mục / Tiểu mục -- Mục lục Ngân sách Nhà nước).
+
+    - `code`: mã khoản mục, duy nhất trong CÙNG 1 `budget_year` (bước 1-2:
+      mỗi năm ngân sách quản lý phiên bản danh mục riêng -- 1 mã có thể
+      lặp lại ở các năm ngân sách khác nhau nếu danh mục năm sau kế thừa).
+    - `level`: cấp trong cây phân cấp (`CHUONG`/`LOAI`/`KHOAN`/`MUC`/
+      `TIEU_MUC`), theo đúng thứ tự cha-con trong `LEVELS`.
+    - `budget_year`: năm ngân sách áp dụng (bước "hệ thống quản lý phiên
+      bản theo năm ngân sách").
+    - `version`: tăng thêm 1 mỗi lần sửa (trong cùng `budget_year`) --
+      lịch sử chi tiết lưu ở `BudgetItemCatalogVersion`.
+    - `is_sensitive`: khoản mục nhạy cảm -- sửa trực tiếp bị chặn, phải đi
+      qua luồng "Đề nghị thay đổi" (`BudgetItemChangeRequest`) và được
+      duyệt mới áp dụng (bước 3 UC-034).
+    - `status`: `ACTIVE` hoặc `CLOSED`.
+    """
+
+    LEVELS = ("CHUONG", "LOAI", "KHOAN", "MUC", "TIEU_MUC")
+    STATUSES = ("ACTIVE", "CLOSED")
+
+    id: Optional[int]
+    code: str
+    name: str
+    level: str
+    budget_year: int
+    parent_id: Optional[int] = None
+    status: str = "ACTIVE"
+    version: int = 1
+    is_sensitive: bool = False
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.code or not self.code.strip():
+            raise ValueError("code không được để trống")
+        if not self.name or not self.name.strip():
+            raise ValueError("name không được để trống")
+        if self.level not in self.LEVELS:
+            raise ValueError(f"level phải thuộc {self.LEVELS}, nhận '{self.level}'")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if not self.budget_year or self.budget_year < 2000:
+            raise ValueError("budget_year không hợp lệ")
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == "ACTIVE"
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 2 'Thêm/Sửa entry': hệ thống quản lý phiên bản -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class BudgetItemCatalogVersion:
+    """Lịch sử phiên bản (append-only) của 1 khoản mục NSNN -- ghi lại
+
+    mỗi khi thêm mới (version=1) hoặc sửa thông tin (bước 2 UC-034, kể cả
+    khi thay đổi được áp dụng do 1 yêu cầu duyệt của bước 3)."""
+
+    id: Optional[int]
+    item_id: int
+    budget_year: int
+    version: int
+    code: str
+    name: str
+    level: str
+    parent_id: Optional[int]
+    status: str
+    is_sensitive: bool
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
+class BudgetItemChangeRequest:
+    """UC-034 bước 3 'Đề nghị thay đổi khoản mục nhạy cảm': hệ thống lưu
+
+    yêu cầu chờ duyệt thay vì áp dụng ngay -- chỉ dùng cho khoản mục có
+    `is_sensitive=True`. Người có thẩm quyền duyệt (`approve()`) mới áp
+    dụng thay đổi vào `BudgetItemCatalogEntry`; hoặc từ chối (`reject()`).
+    """
+
+    STATUSES = ("PENDING", "APPROVED", "REJECTED")
+
+    id: Optional[int]
+    item_id: int
+    budget_year: int
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+    status: str = "PENDING"
+    reviewed_by: Optional[str] = None
+    review_note: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.requested_by or not self.requested_by.strip():
+            raise ValueError("requested_by không được để trống")
+        if not self.reason or not self.reason.strip():
+            raise ValueError("reason (lý do đề nghị thay đổi) không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if (
+            self.proposed_name is None
+            and self.proposed_status is None
+            and self.proposed_is_sensitive is None
+        ):
+            raise ValueError(
+                "phải đề nghị thay đổi ít nhất 1 trong các trường: "
+                "proposed_name/proposed_status/proposed_is_sensitive"
+            )
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == "PENDING"
+
+    def approve(self, reviewed_by: str, review_note: Optional[str] = None) -> None:
+        if self.status != "PENDING":
+            raise ValueError(f"Yêu cầu id={self.id} đã được xử lý trước đó ({self.status})")
+        self.status = "APPROVED"
+        self.reviewed_by = reviewed_by
+        self.review_note = review_note
+        self.reviewed_at = _utc_now_iso()
+
+    def reject(self, reviewed_by: str, review_note: Optional[str] = None) -> None:
+        if self.status != "PENDING":
+            raise ValueError(f"Yêu cầu id={self.id} đã được xử lý trước đó ({self.status})")
+        self.status = "REJECTED"
+        self.reviewed_by = reviewed_by
+        self.review_note = review_note
+        self.reviewed_at = _utc_now_iso()
