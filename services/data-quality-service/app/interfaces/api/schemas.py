@@ -986,3 +986,83 @@ class CatalogChangeReviewRequest(BaseModel):
 
     reviewed_by: str
     review_note: Optional[str] = None
+
+# ---------- UC-037: Phê duyệt thay đổi danh mục nhạy cảm ----------
+
+
+class CatalogChangeDiffFieldResponse(BaseModel):
+    """Bước 2 'Hệ thống hiển thị diff' -- 1 trường được đề nghị thay đổi."""
+
+    field: str
+    field_label: str
+    old_value: Any = None
+    new_value: Any = None
+    changed: bool
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "CatalogChangeDiffFieldResponse":
+        return cls(**d)
+
+
+class CatalogChangeDiffResponse(BaseModel):
+    """Bước 2 'Hệ thống hiển thị diff' cho 1 yêu cầu thay đổi cụ thể."""
+
+    request: CatalogChangeRequestResponse
+    entry: CatalogEntryResponse
+    changes: List[CatalogChangeDiffFieldResponse]
+
+
+class CatalogChangeApprovalDecision(BaseModel):
+    """Bước 3+4+5 'Phê duyệt / từ chối -- ghi lý do phê duyệt' -- khác
+
+    `CatalogChangeReviewRequest` (UC-036) ở chỗ `reason` BẮT BUỘC (UC-037
+    bước 5 yêu cầu phải ghi lý do trước khi lưu vào nhật ký)."""
+
+    decided_by: str = Field(description="Người phê duyệt (Lãnh đạo Phòng nghiệp vụ)")
+    reason: str = Field(min_length=1, description="Lý do phê duyệt/từ chối -- bắt buộc")
+
+
+class CatalogChangeAuditLogResponse(BaseModel):
+    """Bước 5 'Hệ thống lưu vào nhật ký' -- 1 bản ghi nhật ký phê duyệt."""
+
+    id: int
+    request_id: int
+    entry_id: int
+    catalog_type: str
+    action: str
+    decided_by: str
+    decision_reason: str
+    diff_snapshot: Optional[str] = None
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, log) -> "CatalogChangeAuditLogResponse":
+        return cls(
+            id=log.id,
+            request_id=log.request_id,
+            entry_id=log.entry_id,
+            catalog_type=log.catalog_type,
+            action=log.action,
+            decided_by=log.decided_by,
+            decision_reason=log.decision_reason,
+            diff_snapshot=log.diff_snapshot,
+            created_at=log.created_at,
+        )
+
+
+class CatalogChangeApprovalResultResponse(BaseModel):
+    """Kết quả bước 3+4 'Phê duyệt' -- mục danh mục sau khi áp dụng +
+
+    bản ghi nhật ký vừa ghi (bước 5)."""
+
+    entry: CatalogEntryResponse
+    audit_log: CatalogChangeAuditLogResponse
+
+
+class CatalogChangeRejectionResultResponse(BaseModel):
+    """Kết quả bước 3 'Từ chối' -- yêu cầu sau khi từ chối + bản ghi
+
+    nhật ký vừa ghi (bước 5)."""
+
+    request: CatalogChangeRequestResponse
+    audit_log: CatalogChangeAuditLogResponse

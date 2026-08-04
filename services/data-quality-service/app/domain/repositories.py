@@ -12,6 +12,7 @@ from app.domain.entities import (
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
+    CatalogChangeAuditLog,
     CatalogChangeRequest,
     CatalogEntry,
     CatalogEntryVersion,
@@ -553,4 +554,24 @@ class CatalogChangeRequestRepository(ABC):
         catalog_type: Optional[str] = None,
         status: Optional[str] = None,
     ) -> List[CatalogChangeRequest]:
+        ...
+
+
+class CatalogChangeAuditLogRepository(ABC):
+    """UC-037 bước 4 'Ghi lý do phê duyệt -- Hệ thống lưu vào nhật ký':
+
+    nhật ký append-only các quyết định phê duyệt/từ chối."""
+
+    @abstractmethod
+    def add(self, log: CatalogChangeAuditLog) -> CatalogChangeAuditLog:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        request_id: Optional[int] = None,
+        entry_id: Optional[int] = None,
+        catalog_type: Optional[str] = None,
+        action: Optional[str] = None,
+    ) -> List[CatalogChangeAuditLog]:
         ...

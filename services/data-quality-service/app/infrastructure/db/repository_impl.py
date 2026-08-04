@@ -12,6 +12,7 @@ from app.domain.entities import (
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
+    CatalogChangeAuditLog,
     CatalogChangeRequest,
     CatalogEntry,
     CatalogEntryVersion,
@@ -35,6 +36,7 @@ from app.domain.repositories import (
     BudgetItemCatalogRepository,
     BudgetItemCatalogVersionRepository,
     BudgetItemChangeRequestRepository,
+    CatalogChangeAuditLogRepository,
     CatalogChangeRequestRepository,
     CatalogEntryRepository,
     CatalogEntryVersionRepository,
@@ -59,6 +61,7 @@ from app.infrastructure.db.models import (
     BudgetItemCatalogModel,
     BudgetItemCatalogVersionModel,
     BudgetItemChangeRequestModel,
+    CatalogChangeAuditLogModel,
     CatalogChangeRequestModel,
     CatalogEntryModel,
     CatalogEntryVersionModel,
@@ -1525,4 +1528,62 @@ class SqlAlchemyCatalogChangeRequestRepository(CatalogChangeRequestRepository):
         return [
             _catalog_change_request_to_entity(m)
             for m in self._db.execute(stmt).scalars().all()
+        ]
+
+def _catalog_change_audit_log_to_entity(m: CatalogChangeAuditLogModel) -> CatalogChangeAuditLog:
+    return CatalogChangeAuditLog(
+        id=m.id,
+        request_id=m.request_id,
+        entry_id=m.entry_id,
+        catalog_type=m.catalog_type,
+        action=m.action,
+        decided_by=m.decided_by,
+        decision_reason=m.decision_reason,
+        diff_snapshot=m.diff_snapshot,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyCatalogChangeAuditLogRepository(CatalogChangeAuditLogRepository):
+    """UC-037 bước 4: nhật ký append-only (chỉ `add`/`list`, không `update`/`delete`)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, log: CatalogChangeAuditLog) -> CatalogChangeAuditLog:
+        model = CatalogChangeAuditLogModel(
+            request_id=log.request_id,
+            entry_id=log.entry_id,
+            catalog_type=log.catalog_type,
+            action=log.action,
+            decided_by=log.decided_by,
+            decision_reason=log.decision_reason,
+            diff_snapshot=log.diff_snapshot,
+            created_at=log.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        log.id = model.id
+        return log
+
+    def list(
+        self,
+        request_id: Optional[int] = None,
+        entry_id: Optional[int] = None,
+        catalog_type: Optional[str] = None,
+        action: Optional[str] = None,
+    ) -> List[CatalogChangeAuditLog]:
+        stmt = select(CatalogChangeAuditLogModel)
+        if request_id is not None:
+            stmt = stmt.where(CatalogChangeAuditLogModel.request_id == request_id)
+        if entry_id is not None:
+            stmt = stmt.where(CatalogChangeAuditLogModel.entry_id == entry_id)
+        if catalog_type is not None:
+            stmt = stmt.where(CatalogChangeAuditLogModel.catalog_type == catalog_type)
+        if action is not None:
+            stmt = stmt.where(CatalogChangeAuditLogModel.action == action)
+        stmt = stmt.order_by(CatalogChangeAuditLogModel.created_at.desc())
+        return [
+            _catalog_change_audit_log_to_entity(m) for m in self._db.execute(stmt).scalars().all()
         ]
