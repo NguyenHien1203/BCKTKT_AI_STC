@@ -532,3 +532,122 @@ class MappedStandardRecord:
     mapping_job_id: int
     row_index: int
     standardized_fields: Dict[str, Any] = field(default_factory=dict)
+
+
+# ---------- UC-033: Quản lý danh mục đơn vị ----------
+#
+# Actor: "Quản trị Danh mục". Luồng nghiệp vụ (docs/use_cases.json id=33):
+# 1. Xem danh mục đơn vị (cây phân cấp). Hệ thống hiển thị.
+# 2. Thêm đơn vị mới. Hệ thống kiểm tra trùng mã + lưu phiên bản.
+# 3. Sửa thông tin đơn vị. Hệ thống lưu (tăng version + ghi lịch sử).
+# 4. Đóng / Tách / Sáp nhập đơn vị (lifecycle). Hệ thống lưu
+#    effective_from/to.
+#
+# Đây là danh mục NGHIỆP VỤ (đơn vị hành chính/tài chính dùng để gắn cho
+# dữ liệu ngân sách/tài sản/văn bản đã chuẩn hoá — vd UC-034..036,
+# UC-042..046), khác với "cơ cấu tổ chức" nội bộ hệ thống ở UC-001
+# (`auth-identity-service`, dùng cho RBAC/gán người dùng — xem
+# `frontend/src/pages/OrgUnitsPage.jsx`). Vì cùng nhóm nghiệp vụ "CHUẨN
+# HÓA VÀ QUẢN TRỊ DỮ LIỆU" với UC-029..032, đặt trong `data-quality-service`
+# (schema `curated`), không dùng lại bảng `org_units` của
+# `auth-identity-service`.
+
+
+@dataclass
+class OrgUnitCatalogEntry:
+    """1 đơn vị trong danh mục đơn vị (cây phân cấp Sở/Phòng/Xã...).
+
+    - `code`: mã đơn vị, duy nhất toàn danh mục (bước 2: kiểm tra trùng mã).
+    - `parent_id`: đơn vị cha, `None` nếu là gốc của cây.
+    - `version`: tăng thêm 1 mỗi lần sửa thông tin (bước 3 "lưu phiên
+      bản") -- lịch sử chi tiết từng phiên bản lưu ở `OrgUnitCatalogVersion`.
+    - `status`: `ACTIVE` hoặc `CLOSED` (bước 4: đóng/tách/sáp nhập).
+    - `effective_from`/`effective_to`: hiệu lực của đơn vị -- bước 4 lưu
+      lại mốc này khi đóng/tách/sáp nhập.
+    - `lifecycle_action`: hành động lifecycle gần nhất đã áp dụng
+      (`CLOSE`/`SPLIT`/`MERGE`), `None` nếu chưa từng.
+    - `split_from_id`: đơn vị nguồn nếu đơn vị này được sinh ra từ 1 lượt
+      TÁCH.
+    - `merged_from_ids`: danh sách id các đơn vị nguồn nếu đơn vị này
+      được sinh ra từ 1 lượt SÁP NHẬP.
+    """
+
+    UNIT_TYPES = ("SO", "PHONG", "XA")
+    STATUSES = ("ACTIVE", "CLOSED")
+    LIFECYCLE_ACTIONS = ("CLOSE", "SPLIT", "MERGE")
+
+    id: Optional[int]
+    code: str
+    name: str
+    unit_type: str
+    parent_id: Optional[int] = None
+    status: str = "ACTIVE"
+    version: int = 1
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    lifecycle_action: Optional[str] = None
+    lifecycle_note: Optional[str] = None
+    split_from_id: Optional[int] = None
+    merged_from_ids: List[int] = field(default_factory=list)
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.code or not self.code.strip():
+            raise ValueError("code không được để trống")
+        if not self.name or not self.name.strip():
+            raise ValueError("name không được để trống")
+        if self.unit_type not in self.UNIT_TYPES:
+            raise ValueError(
+                f"unit_type phải thuộc {self.UNIT_TYPES}, nhận '{self.unit_type}'"
+            )
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if (
+            self.lifecycle_action is not None
+            and self.lifecycle_action not in self.LIFECYCLE_ACTIONS
+        ):
+            raise ValueError(
+                f"lifecycle_action phải thuộc {self.LIFECYCLE_ACTIONS} hoặc None, "
+                f"nhận '{self.lifecycle_action}'"
+            )
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == "ACTIVE"
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 3 'Sửa thông tin đơn vị': hệ thống lưu -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+    def close(self, effective_to: str, note: Optional[str] = None) -> None:
+        """Bước 4 'Đóng đơn vị': hệ thống lưu effective_to."""
+        if self.status == "CLOSED":
+            raise ValueError(f"Đơn vị id={self.id} đã đóng trước đó")
+        self.status = "CLOSED"
+        self.effective_to = effective_to
+        self.lifecycle_action = "CLOSE"
+        self.lifecycle_note = note
+        self.updated_at = _utc_now_iso()
+
+
+@dataclass
+class OrgUnitCatalogVersion:
+    """Lịch sử phiên bản (append-only) của 1 đơn vị -- ghi lại mỗi khi
+
+    tạo mới (version=1) hoặc sửa thông tin (bước 2-3 UC-033).
+    """
+
+    id: Optional[int]
+    unit_id: int
+    version: int
+    code: str
+    name: str
+    unit_type: str
+    parent_id: Optional[int]
+    status: str
+    effective_from: Optional[str]
+    effective_to: Optional[str]
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
