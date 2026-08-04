@@ -12,6 +12,9 @@ from app.domain.entities import (
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
+    CatalogChangeRequest,
+    CatalogEntry,
+    CatalogEntryVersion,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -478,4 +481,76 @@ class AssetDepreciationRateRepository(ABC):
 
     @abstractmethod
     def list_for_group(self, asset_group_id: int) -> List[AssetDepreciationRate]:
+        ...
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+class CatalogEntryRepository(ABC):
+    @abstractmethod
+    def add(self, entry: CatalogEntry) -> CatalogEntry:
+        ...
+
+    @abstractmethod
+    def update(self, entry: CatalogEntry) -> CatalogEntry:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, entry_id: int) -> Optional[CatalogEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str, catalog_type: str) -> Optional[CatalogEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        catalog_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[CatalogEntry]:
+        """Bước 1 'Xem từng danh mục (mặt hàng / loại văn bản / nguồn
+
+        vốn)' -- lọc theo `catalog_type` để xem riêng từng danh mục."""
+        ...
+
+
+class CatalogEntryVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước 2
+
+    UC-036)."""
+
+    @abstractmethod
+    def add(self, version: CatalogEntryVersion) -> CatalogEntryVersion:
+        ...
+
+    @abstractmethod
+    def list_for_entry(self, entry_id: int) -> List[CatalogEntryVersion]:
+        ...
+
+
+class CatalogChangeRequestRepository(ABC):
+    """Bước 3 'Đề nghị thay đổi danh mục nhạy cảm': hàng đợi yêu cầu chờ
+
+    duyệt."""
+
+    @abstractmethod
+    def add(self, request: CatalogChangeRequest) -> CatalogChangeRequest:
+        ...
+
+    @abstractmethod
+    def update(self, request: CatalogChangeRequest) -> CatalogChangeRequest:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, request_id: int) -> Optional[CatalogChangeRequest]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        entry_id: Optional[int] = None,
+        catalog_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[CatalogChangeRequest]:
         ...

@@ -308,3 +308,64 @@ class InvalidAssetDepreciationRate(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+class CatalogEntryNotFound(DomainError):
+    code = "CATALOG_ENTRY_NOT_FOUND"
+
+    def __init__(self, entry_id: int):
+        super().__init__(f"Không tìm thấy mục danh mục id={entry_id}")
+        self.entry_id = entry_id
+
+
+class CatalogEntryCodeAlreadyExists(DomainError):
+    """Bước 2 'Thêm entry': mã mục đã tồn tại trong CÙNG 1 catalog_type."""
+
+    code = "CATALOG_ENTRY_CODE_EXISTS"
+
+    def __init__(self, entry_code: str, catalog_type: str):
+        super().__init__(
+            f"Mã '{entry_code}' đã tồn tại trong danh mục '{catalog_type}'"
+        )
+        self.entry_code = entry_code
+        self.catalog_type = catalog_type
+
+
+class InvalidCatalogEntry(DomainError):
+    code = "INVALID_CATALOG_ENTRY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class CatalogEntrySensitiveRequiresApproval(DomainError):
+    """Bước 3 'Đề nghị thay đổi danh mục nhạy cảm': mục nhạy cảm không
+
+    được sửa trực tiếp, phải gửi đề nghị chờ duyệt."""
+
+    code = "CATALOG_ENTRY_SENSITIVE_REQUIRES_APPROVAL"
+
+    def __init__(self, entry_id: int):
+        super().__init__(
+            f"Mục id={entry_id} là mục nhạy cảm -- không thể sửa trực tiếp, "
+            "vui lòng gửi đề nghị thay đổi để chờ duyệt"
+        )
+        self.entry_id = entry_id
+
+
+class CatalogChangeRequestNotFound(DomainError):
+    code = "CATALOG_CHANGE_REQUEST_NOT_FOUND"
+
+    def __init__(self, request_id: int):
+        super().__init__(f"Không tìm thấy yêu cầu thay đổi id={request_id}")
+        self.request_id = request_id
+
+
+class InvalidCatalogChangeRequest(DomainError):
+    code = "INVALID_CATALOG_CHANGE_REQUEST"
+
+    def __init__(self, message: str):
+        super().__init__(message)

@@ -901,3 +901,157 @@ class BudgetItemChangeRequest:
         self.reviewed_by = reviewed_by
         self.review_note = review_note
         self.reviewed_at = _utc_now_iso()
+
+
+# ---------- UC-036: Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn ----------
+
+
+@dataclass
+class CatalogEntry:
+    """UC-036: 1 mục trong 1 trong 3 danh mục dùng chung (mặt hàng /
+
+    loại văn bản / nguồn vốn) -- mỗi danh mục quản lý độc lập qua
+    `catalog_type`, nhưng dùng chung 1 hạ tầng (bảng/entity) vì cấu trúc
+    dữ liệu và luồng nghiệp vụ giống nhau (khác UC-034 có cây phân cấp
+    theo năm ngân sách, UC-035 có thêm khai báo tỉ lệ khấu hao).
+
+    - `catalog_type`: `ITEM` (mặt hàng) / `DOCUMENT_TYPE` (loại văn bản) /
+      `FUNDING_SOURCE` (nguồn vốn).
+    - `code`: mã mục, duy nhất trong CÙNG `catalog_type` (bước 2 "kiểm
+      tra trùng mã") -- 1 mã có thể lặp lại ở danh mục khác.
+    - `unit`: đơn vị tính (chỉ có ý nghĩa với `ITEM`, để trống với 2 loại
+      danh mục còn lại).
+    - `is_sensitive`: mục nhạy cảm -- sửa trực tiếp bị chặn, phải đi qua
+      luồng "Đề nghị thay đổi danh mục nhạy cảm" (`CatalogChangeRequest`)
+      và được duyệt mới áp dụng (bước 3 UC-036).
+    - `version`: tăng thêm 1 mỗi lần sửa -- lịch sử chi tiết lưu ở
+      `CatalogEntryVersion`.
+    - `status`: `ACTIVE` hoặc `CLOSED`.
+    """
+
+    CATALOG_TYPES = ("ITEM", "DOCUMENT_TYPE", "FUNDING_SOURCE")
+    STATUSES = ("ACTIVE", "CLOSED")
+
+    id: Optional[int]
+    catalog_type: str
+    code: str
+    name: str
+    unit: Optional[str] = None
+    description: Optional[str] = None
+    status: str = "ACTIVE"
+    version: int = 1
+    is_sensitive: bool = False
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.catalog_type not in self.CATALOG_TYPES:
+            raise ValueError(
+                f"catalog_type phải thuộc {self.CATALOG_TYPES}, nhận '{self.catalog_type}'"
+            )
+        if not self.code or not self.code.strip():
+            raise ValueError("code không được để trống")
+        if not self.name or not self.name.strip():
+            raise ValueError("name không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == "ACTIVE"
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 2 'Thêm/Sửa entry': hệ thống quản lý phiên bản -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class CatalogEntryVersion:
+    """Lịch sử phiên bản (append-only) của 1 mục danh mục -- ghi lại mỗi
+
+    khi thêm mới (version=1) hoặc sửa thông tin (bước 2 UC-036, kể cả khi
+    thay đổi được áp dụng do 1 yêu cầu duyệt của bước 3)."""
+
+    id: Optional[int]
+    entry_id: int
+    catalog_type: str
+    version: int
+    code: str
+    name: str
+    unit: Optional[str]
+    status: str
+    is_sensitive: bool
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
+class CatalogChangeRequest:
+    """UC-036 bước 3 'Đề nghị thay đổi danh mục nhạy cảm': hệ thống lưu
+
+    yêu cầu chờ duyệt thay vì áp dụng ngay -- chỉ dùng cho mục có
+    `is_sensitive=True` (ở bất kỳ danh mục nào trong 3 danh mục mặt
+    hàng/loại văn bản/nguồn vốn). Người có thẩm quyền duyệt (`approve()`,
+    thường là Lãnh đạo Phòng nghiệp vụ -- xem UC-037) mới áp dụng thay đổi
+    vào `CatalogEntry`; hoặc từ chối (`reject()`).
+    """
+
+    STATUSES = ("PENDING", "APPROVED", "REJECTED")
+
+    id: Optional[int]
+    entry_id: int
+    catalog_type: str
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_unit: Optional[str] = None
+    proposed_description: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+    status: str = "PENDING"
+    reviewed_by: Optional[str] = None
+    review_note: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.requested_by or not self.requested_by.strip():
+            raise ValueError("requested_by không được để trống")
+        if not self.reason or not self.reason.strip():
+            raise ValueError("reason (lý do đề nghị thay đổi) không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if (
+            self.proposed_name is None
+            and self.proposed_unit is None
+            and self.proposed_description is None
+            and self.proposed_status is None
+            and self.proposed_is_sensitive is None
+        ):
+            raise ValueError(
+                "phải đề nghị thay đổi ít nhất 1 trong các trường: proposed_name/"
+                "proposed_unit/proposed_description/proposed_status/proposed_is_sensitive"
+            )
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == "PENDING"
+
+    def approve(self, reviewed_by: str, review_note: Optional[str] = None) -> None:
+        if self.status != "PENDING":
+            raise ValueError(f"Yêu cầu id={self.id} đã được xử lý trước đó ({self.status})")
+        self.status = "APPROVED"
+        self.reviewed_by = reviewed_by
+        self.review_note = review_note
+        self.reviewed_at = _utc_now_iso()
+
+    def reject(self, reviewed_by: str, review_note: Optional[str] = None) -> None:
+        if self.status != "PENDING":
+            raise ValueError(f"Yêu cầu id={self.id} đã được xử lý trước đó ({self.status})")
+        self.status = "REJECTED"
+        self.reviewed_by = reviewed_by
+        self.review_note = review_note
+        self.reviewed_at = _utc_now_iso()
