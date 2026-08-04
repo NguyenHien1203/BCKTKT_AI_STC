@@ -369,3 +369,13 @@ class InvalidCatalogChangeRequest(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class InvalidCatalogChangeApproval(DomainError):
+    """UC-037: dữ liệu quyết định phê duyệt/từ chối không hợp lệ (thiếu lý do,
+
+    action không hợp lệ...)."""
+
+    code = "INVALID_CATALOG_CHANGE_APPROVAL"
+
+    def __init__(self, message: str):
+        super().__init__(message)

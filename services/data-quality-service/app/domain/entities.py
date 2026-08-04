@@ -1055,3 +1055,41 @@ class CatalogChangeRequest:
         self.reviewed_by = reviewed_by
         self.review_note = review_note
         self.reviewed_at = _utc_now_iso()
+
+# ---------- UC-037: Phê duyệt thay đổi danh mục nhạy cảm ----------
+
+
+@dataclass
+class CatalogChangeAuditLog:
+    """UC-037 bước 4 'Ghi lý do phê duyệt -- Hệ thống lưu vào nhật ký':
+
+    1 bản ghi nhật ký append-only (không sửa/xoá) cho MỖI quyết định
+    phê duyệt/từ chối 1 `CatalogChangeRequest` (UC-036 bước 3) do
+    "Lãnh đạo Phòng nghiệp vụ Sở Tài chính" thực hiện (UC-037). Lưu lại
+    `diff_snapshot` (chụp lại phần "Hệ thống hiển thị diff" tại đúng
+    thời điểm quyết định, dạng JSON text) để tra cứu lại sau này kể cả
+    khi mục danh mục đã bị sửa tiếp sau đó.
+    """
+
+    ACTIONS = ("APPROVED", "REJECTED")
+
+    id: Optional[int]
+    request_id: int
+    entry_id: int
+    catalog_type: str
+    action: str
+    decided_by: str
+    decision_reason: str
+    diff_snapshot: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.action not in self.ACTIONS:
+            raise ValueError(f"action phải thuộc {self.ACTIONS}, nhận '{self.action}'")
+        if not self.decided_by or not self.decided_by.strip():
+            raise ValueError("decided_by (người phê duyệt) không được để trống")
+        if not self.decision_reason or not self.decision_reason.strip():
+            raise ValueError(
+                "decision_reason (lý do phê duyệt) không được để trống -- UC-037 bước 4 "
+                "bắt buộc ghi lý do trước khi lưu vào nhật ký"
+            )

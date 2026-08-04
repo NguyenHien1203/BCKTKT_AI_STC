@@ -471,3 +471,28 @@ class CatalogChangeRequestModel(Base):
     review_note = Column(Text, nullable=True)
     reviewed_at = Column(String(40), nullable=True)
     created_at = Column(String(40), nullable=False)
+
+# ---------- UC-037: Phê duyệt thay đổi danh mục nhạy cảm ----------
+
+
+class CatalogChangeAuditLogModel(Base):
+    """UC-037 bước 4: nhật ký append-only các quyết định phê
+
+    duyệt/từ chối yêu cầu thay đổi danh mục nhạy cảm (UC-036 bước 3)."""
+
+    __tablename__ = "catalog_change_audit_logs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    request_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}catalog_change_requests.id"), nullable=False, index=True
+    )
+    entry_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}catalog_entries.id"), nullable=False, index=True
+    )
+    catalog_type = Column(String(30), nullable=False, index=True)
+    action = Column(String(20), nullable=False, index=True)
+    decided_by = Column(String(255), nullable=False)
+    decision_reason = Column(Text, nullable=False)
+    diff_snapshot = Column(Text, nullable=True)
+    created_at = Column(String(40), nullable=False)

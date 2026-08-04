@@ -56,6 +56,7 @@ import UnmappedQueuePage from "./pages/dataquality/UnmappedQueuePage.jsx";
 import OrgUnitCatalogPage from "./pages/dataquality/OrgUnitCatalogPage.jsx";
 import BudgetItemCatalogPage from "./pages/dataquality/BudgetItemCatalogPage.jsx";
 import AssetGroupCatalogPage from "./pages/dataquality/AssetGroupCatalogPage.jsx";
+import CatalogChangeApprovalsPage from "./pages/dataquality/CatalogChangeApprovalsPage.jsx";
 import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
@@ -260,6 +261,13 @@ function HomePage() {
       description:
         "UC-036 — Quản lý các danh mục dùng chung gồm mặt hàng, loại văn bản và nguồn vốn. Hỗ trợ xem danh sách, thêm, sửa, quản lý phiên bản và gửi yêu cầu thay đổi đối với các danh mục nhạy cảm để chờ phê duyệt.",
       icon: BookCopy,
+    },
+    {
+      to: "/catalog-change-approvals",
+      title: "Phê duyệt thay đổi danh mục nhạy cảm",
+      description:
+        "UC-037 — Xem các yêu cầu chờ duyệt, hệ thống hiển thị diff, phê duyệt/từ chối (áp dụng thay đổi vào danh mục + ghi lý do phê duyệt vào nhật ký).",
+      icon: ClipboardCheck,
     },
   ];
 
@@ -594,6 +602,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CatalogEntriesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/catalog-change-approvals"
+        element={
+          <ProtectedRoute>
+            <CatalogChangeApprovalsPage />
           </ProtectedRoute>
         }
       />

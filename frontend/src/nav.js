@@ -89,6 +89,7 @@ export const NAV_SECTIONS = [
       { to: "/budget-item-catalog", label: "Danh mục khoản mục NSNN", icon: Landmark },
       { to: "/asset-group-catalog", label: "Quản lý danh mục nhóm tài sản", icon: Percent },
       { to: "/catalog-entries", label: "Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn", icon: BookCopy },
+      { to: "/catalog-change-approvals", label: "Phê duyệt thay đổi danh mục nhạy cảm", icon: ClipboardCheck },
 
     ],
   },
