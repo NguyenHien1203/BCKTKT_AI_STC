@@ -182,3 +182,60 @@ class InvalidOrgUnitCatalogLifecycle(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class BudgetItemNotFound(DomainError):
+    code = "BUDGET_ITEM_NOT_FOUND"
+
+    def __init__(self, item_id: int):
+        super().__init__(f"Không tìm thấy khoản mục NSNN id={item_id} trong danh mục")
+        self.item_id = item_id
+
+
+class BudgetItemCodeAlreadyExists(DomainError):
+    """Bước 2 'Thêm entry': mã khoản mục đã tồn tại trong CÙNG năm ngân sách."""
+
+    code = "BUDGET_ITEM_CODE_EXISTS"
+
+    def __init__(self, item_code: str, budget_year: int):
+        super().__init__(
+            f"Mã khoản mục '{item_code}' đã tồn tại trong danh mục năm ngân sách {budget_year}"
+        )
+        self.item_code = item_code
+        self.budget_year = budget_year
+
+
+class InvalidBudgetItem(DomainError):
+    code = "INVALID_BUDGET_ITEM"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class BudgetItemSensitiveRequiresApproval(DomainError):
+    """Bước 3 'Đề nghị thay đổi khoản mục nhạy cảm': khoản mục nhạy cảm
+
+    không được sửa trực tiếp, phải gửi đề nghị chờ duyệt."""
+
+    code = "BUDGET_ITEM_SENSITIVE_REQUIRES_APPROVAL"
+
+    def __init__(self, item_id: int):
+        super().__init__(
+            f"Khoản mục id={item_id} là khoản mục nhạy cảm -- không thể sửa trực tiếp, "
+            "vui lòng gửi đề nghị thay đổi để chờ duyệt"
+        )
+        self.item_id = item_id
+
+
+class BudgetItemChangeRequestNotFound(DomainError):
+    code = "BUDGET_ITEM_CHANGE_REQUEST_NOT_FOUND"
+
+    def __init__(self, request_id: int):
+        super().__init__(f"Không tìm thấy yêu cầu thay đổi id={request_id}")
+        self.request_id = request_id
+
+
+class InvalidBudgetItemChangeRequest(DomainError):
+    code = "INVALID_BUDGET_ITEM_CHANGE_REQUEST"
+
+    def __init__(self, message: str):
+        super().__init__(message)

@@ -6,6 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    BudgetItemCatalogEntry,
+    BudgetItemCatalogVersion,
+    BudgetItemChangeRequest,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -20,6 +23,9 @@ from app.domain.entities import (
     UnmappedQueueItem,
 )
 from app.domain.repositories import (
+    BudgetItemCatalogRepository,
+    BudgetItemCatalogVersionRepository,
+    BudgetItemChangeRequestRepository,
     MappedStandardRecordRepository,
     MappingJobRepository,
     MappingRejectionRepository,
@@ -35,6 +41,9 @@ from app.domain.repositories import (
     UnmappedQueueRepository,
 )
 from app.infrastructure.db.models import (
+    BudgetItemCatalogModel,
+    BudgetItemCatalogVersionModel,
+    BudgetItemChangeRequestModel,
     MappedStandardRecordModel,
     MappingJobModel,
     MappingRejectionModel,
@@ -861,3 +870,235 @@ class SqlAlchemyOrgUnitCatalogVersionRepository(OrgUnitCatalogVersionRepository)
                 )
             )
         return result
+
+def _budget_item_to_entity(m: BudgetItemCatalogModel) -> BudgetItemCatalogEntry:
+    return BudgetItemCatalogEntry(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        level=m.level,
+        budget_year=m.budget_year,
+        parent_id=m.parent_id,
+        status=m.status,
+        version=m.version,
+        is_sensitive=m.is_sensitive,
+        effective_from=m.effective_from,
+        effective_to=m.effective_to,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyBudgetItemCatalogRepository(BudgetItemCatalogRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, item: BudgetItemCatalogEntry) -> BudgetItemCatalogEntry:
+        model = BudgetItemCatalogModel(
+            code=item.code,
+            name=item.name,
+            level=item.level,
+            budget_year=item.budget_year,
+            parent_id=item.parent_id,
+            status=item.status,
+            version=item.version,
+            is_sensitive=item.is_sensitive,
+            effective_from=item.effective_from,
+            effective_to=item.effective_to,
+            created_at=item.created_at,
+            updated_at=item.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        item.id = model.id
+        return item
+
+    def update(self, item: BudgetItemCatalogEntry) -> BudgetItemCatalogEntry:
+        model = self._db.get(BudgetItemCatalogModel, item.id)
+        if model is None:
+            return item
+        model.code = item.code
+        model.name = item.name
+        model.level = item.level
+        model.budget_year = item.budget_year
+        model.parent_id = item.parent_id
+        model.status = item.status
+        model.version = item.version
+        model.is_sensitive = item.is_sensitive
+        model.effective_from = item.effective_from
+        model.effective_to = item.effective_to
+        model.updated_at = item.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return item
+
+    def get_by_id(self, item_id: int) -> Optional[BudgetItemCatalogEntry]:
+        model = self._db.get(BudgetItemCatalogModel, item_id)
+        return _budget_item_to_entity(model) if model else None
+
+    def get_by_code(self, code: str, budget_year: int) -> Optional[BudgetItemCatalogEntry]:
+        stmt = select(BudgetItemCatalogModel).where(
+            BudgetItemCatalogModel.code == code,
+            BudgetItemCatalogModel.budget_year == budget_year,
+        )
+        model = self._db.execute(stmt).scalars().first()
+        return _budget_item_to_entity(model) if model else None
+
+    def list(
+        self,
+        budget_year: Optional[int] = None,
+        parent_id: Optional[int] = "__unset__",
+        level: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[BudgetItemCatalogEntry]:
+        stmt = select(BudgetItemCatalogModel)
+        if budget_year is not None:
+            stmt = stmt.where(BudgetItemCatalogModel.budget_year == budget_year)
+        if parent_id != "__unset__":
+            stmt = stmt.where(BudgetItemCatalogModel.parent_id == parent_id)
+        if level is not None:
+            stmt = stmt.where(BudgetItemCatalogModel.level == level)
+        if status is not None:
+            stmt = stmt.where(BudgetItemCatalogModel.status == status)
+        stmt = stmt.order_by(BudgetItemCatalogModel.code.asc())
+        return [_budget_item_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def list_by_year(self, budget_year: int) -> List[BudgetItemCatalogEntry]:
+        stmt = (
+            select(BudgetItemCatalogModel)
+            .where(BudgetItemCatalogModel.budget_year == budget_year)
+            .order_by(BudgetItemCatalogModel.code.asc())
+        )
+        return [_budget_item_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyBudgetItemCatalogVersionRepository(BudgetItemCatalogVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: BudgetItemCatalogVersion) -> BudgetItemCatalogVersion:
+        model = BudgetItemCatalogVersionModel(
+            item_id=version.item_id,
+            budget_year=version.budget_year,
+            version=version.version,
+            code=version.code,
+            name=version.name,
+            level=version.level,
+            parent_id=version.parent_id,
+            status=version.status,
+            is_sensitive=version.is_sensitive,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_item(self, item_id: int) -> List[BudgetItemCatalogVersion]:
+        stmt = (
+            select(BudgetItemCatalogVersionModel)
+            .where(BudgetItemCatalogVersionModel.item_id == item_id)
+            .order_by(BudgetItemCatalogVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                BudgetItemCatalogVersion(
+                    id=m.id,
+                    item_id=m.item_id,
+                    budget_year=m.budget_year,
+                    version=m.version,
+                    code=m.code,
+                    name=m.name,
+                    level=m.level,
+                    parent_id=m.parent_id,
+                    status=m.status,
+                    is_sensitive=m.is_sensitive,
+                    change_note=m.change_note,
+                    changed_at=m.changed_at,
+                )
+            )
+        return result
+
+
+class SqlAlchemyBudgetItemChangeRequestRepository(BudgetItemChangeRequestRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, request: BudgetItemChangeRequest) -> BudgetItemChangeRequest:
+        model = BudgetItemChangeRequestModel(
+            item_id=request.item_id,
+            budget_year=request.budget_year,
+            requested_by=request.requested_by,
+            reason=request.reason,
+            proposed_name=request.proposed_name,
+            proposed_status=request.proposed_status,
+            proposed_is_sensitive=request.proposed_is_sensitive,
+            status=request.status,
+            reviewed_by=request.reviewed_by,
+            review_note=request.review_note,
+            reviewed_at=request.reviewed_at,
+            created_at=request.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        request.id = model.id
+        return request
+
+    def update(self, request: BudgetItemChangeRequest) -> BudgetItemChangeRequest:
+        model = self._db.get(BudgetItemChangeRequestModel, request.id)
+        if model is None:
+            return request
+        model.status = request.status
+        model.reviewed_by = request.reviewed_by
+        model.review_note = request.review_note
+        model.reviewed_at = request.reviewed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return request
+
+    def get_by_id(self, request_id: int) -> Optional[BudgetItemChangeRequest]:
+        model = self._db.get(BudgetItemChangeRequestModel, request_id)
+        return _budget_item_change_request_to_entity(model) if model else None
+
+    def list(
+        self,
+        item_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[BudgetItemChangeRequest]:
+        stmt = select(BudgetItemChangeRequestModel)
+        if item_id is not None:
+            stmt = stmt.where(BudgetItemChangeRequestModel.item_id == item_id)
+        if status is not None:
+            stmt = stmt.where(BudgetItemChangeRequestModel.status == status)
+        stmt = stmt.order_by(BudgetItemChangeRequestModel.created_at.desc())
+        return [
+            _budget_item_change_request_to_entity(m)
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+def _budget_item_change_request_to_entity(
+    m: BudgetItemChangeRequestModel,
+) -> BudgetItemChangeRequest:
+    return BudgetItemChangeRequest(
+        id=m.id,
+        item_id=m.item_id,
+        budget_year=m.budget_year,
+        requested_by=m.requested_by,
+        reason=m.reason,
+        proposed_name=m.proposed_name,
+        proposed_status=m.proposed_status,
+        proposed_is_sensitive=m.proposed_is_sensitive,
+        status=m.status,
+        reviewed_by=m.reviewed_by,
+        review_note=m.review_note,
+        reviewed_at=m.reviewed_at,
+        created_at=m.created_at,
+    )

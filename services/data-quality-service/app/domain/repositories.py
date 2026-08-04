@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from app.domain.entities import (
+    BudgetItemCatalogEntry,
+    BudgetItemCatalogVersion,
+    BudgetItemChangeRequest,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -336,4 +339,82 @@ class OrgUnitCatalogVersionRepository(ABC):
 
     @abstractmethod
     def list_for_unit(self, unit_id: int) -> List[OrgUnitCatalogVersion]:
+        ...
+
+class BudgetItemCatalogRepository(ABC):
+    @abstractmethod
+    def add(self, item: BudgetItemCatalogEntry) -> BudgetItemCatalogEntry:
+        ...
+
+    @abstractmethod
+    def update(self, item: BudgetItemCatalogEntry) -> BudgetItemCatalogEntry:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, item_id: int) -> Optional[BudgetItemCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str, budget_year: int) -> Optional[BudgetItemCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        budget_year: Optional[int] = None,
+        parent_id: Optional[int] = "__unset__",
+        level: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[BudgetItemCatalogEntry]:
+        """`parent_id="__unset__"` (mặc định) nghĩa là KHÔNG lọc theo
+
+        `parent_id`; truyền `None` tường minh để chỉ lấy khoản mục gốc
+        (Chương -- không có cha) của cây."""
+        ...
+
+    @abstractmethod
+    def list_by_year(self, budget_year: int) -> List[BudgetItemCatalogEntry]:
+        """Bước 1 'Xem cây khoản mục NSNN': lấy toàn bộ khoản mục của 1
+
+        năm ngân sách để dựng cây ở tầng application."""
+        ...
+
+
+class BudgetItemCatalogVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước 2
+
+    UC-034)."""
+
+    @abstractmethod
+    def add(self, version: BudgetItemCatalogVersion) -> BudgetItemCatalogVersion:
+        ...
+
+    @abstractmethod
+    def list_for_item(self, item_id: int) -> List[BudgetItemCatalogVersion]:
+        ...
+
+
+class BudgetItemChangeRequestRepository(ABC):
+    """Bước 3 'Đề nghị thay đổi khoản mục nhạy cảm': hàng đợi yêu cầu
+
+    chờ duyệt."""
+
+    @abstractmethod
+    def add(self, request: BudgetItemChangeRequest) -> BudgetItemChangeRequest:
+        ...
+
+    @abstractmethod
+    def update(self, request: BudgetItemChangeRequest) -> BudgetItemChangeRequest:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, request_id: int) -> Optional[BudgetItemChangeRequest]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        item_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[BudgetItemChangeRequest]:
         ...

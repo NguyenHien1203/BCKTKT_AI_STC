@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
+from app.interfaces.api.budget_item_catalog_router import router as budget_item_catalog_router
 from app.interfaces.api.mapping_job_router import router as mapping_job_router
 from app.interfaces.api.mapping_rule_router import router as mapping_rule_router
 from app.interfaces.api.ocr_job_router import router as ocr_job_router
@@ -15,7 +16,7 @@ from app.infrastructure.db import models  # noqa: F401
 app = FastAPI(
     title="data-quality-service",
     description="Service phụ trách nhóm UC III. Chuẩn hóa và quản trị dữ liệu (UC-029 .. UC-046).",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 app.include_router(parsing_job_router)
@@ -24,6 +25,7 @@ app.include_router(mapping_rule_router)
 app.include_router(mapping_job_router)
 app.include_router(unmapped_queue_router)
 app.include_router(org_unit_catalog_router)
+app.include_router(budget_item_catalog_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

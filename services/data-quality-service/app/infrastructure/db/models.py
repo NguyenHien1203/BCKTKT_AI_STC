@@ -1,7 +1,7 @@
 """SQLAlchemy models cho data-quality-service — UC-029."""
 import os
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, UniqueConstraint
 
 from app.infrastructure.db.session import Base
 
@@ -246,3 +246,76 @@ class OrgUnitCatalogVersionModel(Base):
     effective_to = Column(String(40), nullable=True)
     change_note = Column(Text, nullable=True)
     changed_at = Column(String(40), nullable=False)
+
+
+class BudgetItemCatalogModel(Base):
+    """UC-034: 1 khoản mục trong danh mục khoản mục NSNN (cây
+
+    Chương/Loại/Khoản/Mục/Tiểu mục), theo năm ngân sách."""
+
+    __tablename__ = "budget_item_catalog"
+    __table_args__ = (
+        UniqueConstraint("code", "budget_year", name="uq_budget_item_catalog_code_year"),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(64), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    level = Column(String(20), nullable=False)
+    budget_year = Column(Integer, nullable=False, index=True)
+    parent_id = Column(Integer, nullable=True, index=True)
+    status = Column(String(20), nullable=False, default="ACTIVE", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    is_sensitive = Column(Boolean, nullable=False, default=False)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class BudgetItemCatalogVersionModel(Base):
+    """UC-034 bước 2: lịch sử phiên bản (append-only) của 1 khoản mục NSNN."""
+
+    __tablename__ = "budget_item_catalog_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}budget_item_catalog.id"), nullable=False, index=True
+    )
+    budget_year = Column(Integer, nullable=False)
+    version = Column(Integer, nullable=False)
+    code = Column(String(64), nullable=False)
+    name = Column(String(255), nullable=False)
+    level = Column(String(20), nullable=False)
+    parent_id = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False)
+    is_sensitive = Column(Boolean, nullable=False, default=False)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)
+
+
+class BudgetItemChangeRequestModel(Base):
+    """UC-034 bước 3: đề nghị thay đổi khoản mục nhạy cảm -- hàng đợi
+
+    chờ duyệt."""
+
+    __tablename__ = "budget_item_change_requests"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}budget_item_catalog.id"), nullable=False, index=True
+    )
+    budget_year = Column(Integer, nullable=False)
+    requested_by = Column(String(255), nullable=False)
+    reason = Column(Text, nullable=False)
+    proposed_name = Column(String(255), nullable=True)
+    proposed_status = Column(String(20), nullable=True)
+    proposed_is_sensitive = Column(Boolean, nullable=True)
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
+    reviewed_by = Column(String(255), nullable=True)
+    review_note = Column(Text, nullable=True)
+    reviewed_at = Column(String(40), nullable=True)
+    created_at = Column(String(40), nullable=False)

@@ -560,3 +560,157 @@ class MergeOrgUnitResponse(BaseModel):
             source_units=[OrgUnitCatalogResponse.from_entity(u) for u in result.source_units],
             merged_unit=OrgUnitCatalogResponse.from_entity(result.merged_unit),
         )
+
+class BudgetItemCatalogResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    level: str
+    budget_year: int
+    parent_id: Optional[int] = None
+    status: str
+    version: int
+    is_sensitive: bool
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, i) -> "BudgetItemCatalogResponse":
+        return cls(
+            id=i.id,
+            code=i.code,
+            name=i.name,
+            level=i.level,
+            budget_year=i.budget_year,
+            parent_id=i.parent_id,
+            status=i.status,
+            version=i.version,
+            is_sensitive=i.is_sensitive,
+            effective_from=i.effective_from,
+            effective_to=i.effective_to,
+            created_at=i.created_at,
+            updated_at=i.updated_at,
+        )
+
+
+class BudgetItemTreeNodeResponse(BaseModel):
+    item: BudgetItemCatalogResponse
+    children: List["BudgetItemTreeNodeResponse"] = Field(default_factory=list)
+
+    @classmethod
+    def from_node(cls, node) -> "BudgetItemTreeNodeResponse":
+        return cls(
+            item=BudgetItemCatalogResponse.from_entity(node.item),
+            children=[cls.from_node(c) for c in node.children],
+        )
+
+
+BudgetItemTreeNodeResponse.model_rebuild()
+
+
+class BudgetItemCatalogVersionResponse(BaseModel):
+    id: int
+    item_id: int
+    budget_year: int
+    version: int
+    code: str
+    name: str
+    level: str
+    parent_id: Optional[int] = None
+    status: str
+    is_sensitive: bool
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "BudgetItemCatalogVersionResponse":
+        return cls(
+            id=v.id,
+            item_id=v.item_id,
+            budget_year=v.budget_year,
+            version=v.version,
+            code=v.code,
+            name=v.name,
+            level=v.level,
+            parent_id=v.parent_id,
+            status=v.status,
+            is_sensitive=v.is_sensitive,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class BudgetItemCatalogCreate(BaseModel):
+    """Bước 2 'Thêm entry'."""
+
+    code: str
+    name: str
+    level: str = Field(description="CHUONG / LOAI / KHOAN / MUC / TIEU_MUC")
+    budget_year: int
+    parent_id: Optional[int] = None
+    is_sensitive: bool = False
+    effective_from: Optional[str] = None
+    note: Optional[str] = None
+
+
+class BudgetItemCatalogUpdate(BaseModel):
+    """Bước 2 'Sửa entry' -- KHÔNG áp dụng cho khoản mục nhạy cảm (dùng
+
+    bước 3 'Đề nghị thay đổi' thay thế)."""
+
+    name: Optional[str] = None
+    status: Optional[str] = None
+    note: Optional[str] = None
+
+
+class BudgetItemChangeRequestResponse(BaseModel):
+    id: int
+    item_id: int
+    budget_year: int
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+    status: str
+    reviewed_by: Optional[str] = None
+    review_note: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, r) -> "BudgetItemChangeRequestResponse":
+        return cls(
+            id=r.id,
+            item_id=r.item_id,
+            budget_year=r.budget_year,
+            requested_by=r.requested_by,
+            reason=r.reason,
+            proposed_name=r.proposed_name,
+            proposed_status=r.proposed_status,
+            proposed_is_sensitive=r.proposed_is_sensitive,
+            status=r.status,
+            reviewed_by=r.reviewed_by,
+            review_note=r.review_note,
+            reviewed_at=r.reviewed_at,
+            created_at=r.created_at,
+        )
+
+
+class BudgetItemChangeRequestCreate(BaseModel):
+    """Bước 3 'Đề nghị thay đổi khoản mục nhạy cảm'."""
+
+    requested_by: str
+    reason: str
+    proposed_name: Optional[str] = None
+    proposed_status: Optional[str] = None
+    proposed_is_sensitive: Optional[bool] = None
+
+
+class BudgetItemChangeReviewRequest(BaseModel):
+    """Duyệt / từ chối 1 yêu cầu thay đổi (bước 3)."""
+
+    reviewed_by: str
+    review_note: Optional[str] = None
