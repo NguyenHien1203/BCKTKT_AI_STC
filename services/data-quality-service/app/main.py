@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.infrastructure.db.session import Base, engine
+from app.interfaces.api.asset_group_catalog_router import router as asset_group_catalog_router
 from app.interfaces.api.budget_item_catalog_router import router as budget_item_catalog_router
 from app.interfaces.api.mapping_job_router import router as mapping_job_router
 from app.interfaces.api.mapping_rule_router import router as mapping_rule_router
@@ -26,6 +27,7 @@ app.include_router(mapping_job_router)
 app.include_router(unmapped_queue_router)
 app.include_router(org_unit_catalog_router)
 app.include_router(budget_item_catalog_router)
+app.include_router(asset_group_catalog_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

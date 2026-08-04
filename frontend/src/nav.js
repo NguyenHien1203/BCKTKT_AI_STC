@@ -30,6 +30,7 @@ import {
   KeyRound,
   UserCog,
   Landmark,
+  Percent,
 } from "lucide-react";
 
 // Mỗi mục tương ứng 1 UC/nhóm UC đã có giao diện. Khi thêm UC mới có màn hình,
@@ -85,6 +86,7 @@ export const NAV_SECTIONS = [
       { to: "/unmapped-queue", label: "Xử lý hàng đợi chưa ánh xạ", icon: Inbox },
       { to: "/org-unit-catalog", label: "Quản lý danh mục đơn vị", icon: Network },
       { to: "/budget-item-catalog", label: "Danh mục khoản mục NSNN", icon: Landmark },
+      { to: "/asset-group-catalog", label: "Quản lý danh mục nhóm tài sản", icon: Percent },
     ],
   },
   {

@@ -714,3 +714,127 @@ class BudgetItemChangeReviewRequest(BaseModel):
 
     reviewed_by: str
     review_note: Optional[str] = None
+
+# ---------- UC-035: Quản lý danh mục nhóm tài sản ----------
+
+
+class AssetGroupCatalogResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    regulation: str
+    useful_life_years: Optional[int] = None
+    status: str
+    version: int
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    note: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, g) -> "AssetGroupCatalogResponse":
+        return cls(
+            id=g.id,
+            code=g.code,
+            name=g.name,
+            regulation=g.regulation,
+            useful_life_years=g.useful_life_years,
+            status=g.status,
+            version=g.version,
+            effective_from=g.effective_from,
+            effective_to=g.effective_to,
+            note=g.note,
+            created_at=g.created_at,
+            updated_at=g.updated_at,
+        )
+
+
+class AssetGroupCatalogVersionResponse(BaseModel):
+    id: int
+    group_id: int
+    version: int
+    code: str
+    name: str
+    regulation: str
+    useful_life_years: Optional[int] = None
+    status: str
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "AssetGroupCatalogVersionResponse":
+        return cls(
+            id=v.id,
+            group_id=v.group_id,
+            version=v.version,
+            code=v.code,
+            name=v.name,
+            regulation=v.regulation,
+            useful_life_years=v.useful_life_years,
+            status=v.status,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class AssetGroupCatalogCreate(BaseModel):
+    """Bước 2 'Thêm entry'."""
+
+    code: str
+    name: str
+    regulation: str = Field(description="TT45 (Thông tư 45/2018/TT-BTC) hoặc TT162")
+    useful_life_years: Optional[int] = None
+    effective_from: Optional[str] = None
+    note: Optional[str] = None
+
+
+class AssetGroupCatalogUpdate(BaseModel):
+    """Bước 2 'Sửa entry' -- hệ thống quản lý phiên bản."""
+
+    name: Optional[str] = None
+    regulation: Optional[str] = None
+    useful_life_years: Optional[int] = None
+    clear_useful_life_years: bool = Field(
+        default=False,
+        description="True để xoá useful_life_years hiện có (thay vì giữ nguyên)",
+    )
+    status: Optional[str] = None
+    note: Optional[str] = None
+
+
+class AssetDepreciationRateResponse(BaseModel):
+    id: int
+    asset_group_id: int
+    depreciation_rate_percent: float
+    useful_life_years: Optional[int] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    note: Optional[str] = None
+    declared_by: Optional[str] = None
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, r) -> "AssetDepreciationRateResponse":
+        return cls(
+            id=r.id,
+            asset_group_id=r.asset_group_id,
+            depreciation_rate_percent=r.depreciation_rate_percent,
+            useful_life_years=r.useful_life_years,
+            effective_from=r.effective_from,
+            effective_to=r.effective_to,
+            note=r.note,
+            declared_by=r.declared_by,
+            created_at=r.created_at,
+        )
+
+
+class AssetDepreciationRateDeclare(BaseModel):
+    """Bước 3 'Khai báo tỉ lệ khấu hao theo nhóm' -- hệ thống lưu."""
+
+    depreciation_rate_percent: float = Field(gt=0, le=100)
+    useful_life_years: Optional[int] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    note: Optional[str] = None
+    declared_by: Optional[str] = None

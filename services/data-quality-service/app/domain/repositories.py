@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from app.domain.entities import (
+    AssetDepreciationRate,
+    AssetGroupCatalogEntry,
+    AssetGroupCatalogVersion,
     BudgetItemCatalogEntry,
     BudgetItemCatalogVersion,
     BudgetItemChangeRequest,
@@ -417,4 +420,62 @@ class BudgetItemChangeRequestRepository(ABC):
         item_id: Optional[int] = None,
         status: Optional[str] = None,
     ) -> List[BudgetItemChangeRequest]:
+        ...
+
+# ---------- UC-035: Quản lý danh mục nhóm tài sản ----------
+
+
+class AssetGroupCatalogRepository(ABC):
+    @abstractmethod
+    def add(self, group: AssetGroupCatalogEntry) -> AssetGroupCatalogEntry:
+        ...
+
+    @abstractmethod
+    def update(self, group: AssetGroupCatalogEntry) -> AssetGroupCatalogEntry:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, group_id: int) -> Optional[AssetGroupCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[AssetGroupCatalogEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        regulation: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[AssetGroupCatalogEntry]:
+        ...
+
+
+class AssetGroupCatalogVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước 2
+
+    UC-035)."""
+
+    @abstractmethod
+    def add(self, version: AssetGroupCatalogVersion) -> AssetGroupCatalogVersion:
+        ...
+
+    @abstractmethod
+    def list_for_group(self, group_id: int) -> List[AssetGroupCatalogVersion]:
+        ...
+
+
+class AssetDepreciationRateRepository(ABC):
+    """Bước 3 'Khai báo tỉ lệ khấu hao theo nhóm': hệ thống lưu (append-only)."""
+
+    @abstractmethod
+    def add(self, rate: AssetDepreciationRate) -> AssetDepreciationRate:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, rate_id: int) -> Optional[AssetDepreciationRate]:
+        ...
+
+    @abstractmethod
+    def list_for_group(self, asset_group_id: int) -> List[AssetDepreciationRate]:
         ...

@@ -1,7 +1,16 @@
 """SQLAlchemy models cho data-quality-service — UC-029."""
 import os
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 
 from app.infrastructure.db.session import Base
 
@@ -318,4 +327,69 @@ class BudgetItemChangeRequestModel(Base):
     reviewed_by = Column(String(255), nullable=True)
     review_note = Column(Text, nullable=True)
     reviewed_at = Column(String(40), nullable=True)
+    created_at = Column(String(40), nullable=False)
+
+class AssetGroupCatalogModel(Base):
+    """UC-035: 1 nhóm tài sản trong danh mục nhóm tài sản cố định (TT45,
+
+    sửa đổi TT162 -- gọi tắt TT48/TT162 theo docs/use_cases.json)."""
+
+    __tablename__ = "asset_group_catalog"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_asset_group_catalog_code"),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(64), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    regulation = Column(String(20), nullable=False, index=True)
+    useful_life_years = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class AssetGroupCatalogVersionModel(Base):
+    """UC-035 bước 2: lịch sử phiên bản (append-only) của 1 nhóm tài sản."""
+
+    __tablename__ = "asset_group_catalog_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    group_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}asset_group_catalog.id"), nullable=False, index=True
+    )
+    version = Column(Integer, nullable=False)
+    code = Column(String(64), nullable=False)
+    name = Column(String(255), nullable=False)
+    regulation = Column(String(20), nullable=False)
+    useful_life_years = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)
+
+
+class AssetDepreciationRateModel(Base):
+    """UC-035 bước 3: khai báo tỉ lệ khấu hao theo nhóm tài sản
+
+    (append-only -- mỗi lượt khai báo là 1 bản ghi)."""
+
+    __tablename__ = "asset_depreciation_rates"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    asset_group_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}asset_group_catalog.id"), nullable=False, index=True
+    )
+    depreciation_rate_percent = Column(Float, nullable=False)
+    useful_life_years = Column(Integer, nullable=True)
+    effective_from = Column(String(40), nullable=True)
+    effective_to = Column(String(40), nullable=True)
+    note = Column(Text, nullable=True)
+    declared_by = Column(String(255), nullable=True)
     created_at = Column(String(40), nullable=False)
