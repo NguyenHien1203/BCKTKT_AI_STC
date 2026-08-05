@@ -421,3 +421,35 @@ class InvalidQualityScoreConfig(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+class QualityCheckJobNotFound(DomainError):
+    code = "QUALITY_CHECK_JOB_NOT_FOUND"
+
+    def __init__(self, quality_check_job_id: int):
+        super().__init__(f"Không tìm thấy phiên kiểm tra chất lượng id={quality_check_job_id}")
+        self.quality_check_job_id = quality_check_job_id
+
+
+class InvalidQualityCheckJob(DomainError):
+    code = "INVALID_QUALITY_CHECK_JOB"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NoStandardRecordsToCheck(DomainError):
+    """`mapping_job_id` chưa có `MappedStandardRecord` nào (đầu ra UC-031)
+
+    để UC-039 chạy kiểm tra chất lượng."""
+
+    code = "NO_STANDARD_RECORDS_TO_CHECK"
+
+    def __init__(self, mapping_job_id: int):
+        super().__init__(
+            f"Phiên ánh xạ id={mapping_job_id} chưa có bản ghi chuẩn hoá nào để kiểm tra chất lượng"
+        )
+        self.mapping_job_id = mapping_job_id

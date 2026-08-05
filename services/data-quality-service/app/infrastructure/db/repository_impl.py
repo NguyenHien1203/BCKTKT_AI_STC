@@ -27,6 +27,10 @@ from app.domain.entities import (
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    QualityCheckJob,
+    QualityCheckRuleResult,
+    QualityExceptionQueueItem,
+    QualityPublishedRecord,
     QualityRule,
     QualityRuleVersion,
     QualityScoreConfig,
@@ -55,6 +59,10 @@ from app.domain.repositories import (
     ParsedRecordRepository,
     ParsingJobRepository,
     ParsingRowErrorRepository,
+    QualityCheckJobRepository,
+    QualityCheckRuleResultRepository,
+    QualityExceptionQueueRepository,
+    QualityPublishedRecordRepository,
     QualityRuleRepository,
     QualityRuleVersionRepository,
     QualityScoreConfigRepository,
@@ -84,6 +92,10 @@ from app.infrastructure.db.models import (
     ParsedStructuredRecordModel,
     ParsingJobModel,
     ParsingRowErrorModel,
+    QualityCheckJobModel,
+    QualityCheckRuleResultModel,
+    QualityExceptionQueueItemModel,
+    QualityPublishedRecordModel,
     QualityRuleModel,
     QualityRuleVersionModel,
     QualityScoreConfigModel,
@@ -1680,6 +1692,13 @@ class SqlAlchemyQualityRuleRepository(QualityRuleRepository):
         stmt = stmt.order_by(QualityRuleModel.id.asc())
         return [_quality_rule_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
 
+    def list_general(self, is_active: Optional[bool] = None) -> List[QualityRule]:
+        stmt = select(QualityRuleModel).where(QualityRuleModel.dataset_id.is_(None))
+        if is_active is not None:
+            stmt = stmt.where(QualityRuleModel.is_active == is_active)
+        stmt = stmt.order_by(QualityRuleModel.id.asc())
+        return [_quality_rule_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
 
 class SqlAlchemyQualityRuleVersionRepository(QualityRuleVersionRepository):
     def __init__(self, db: Session):
@@ -1830,3 +1849,251 @@ class SqlAlchemyQualityScoreConfigVersionRepository(QualityScoreConfigVersionRep
             )
             for m in self._db.execute(stmt).scalars().all()
         ]
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+def _quality_check_job_to_entity(m: QualityCheckJobModel) -> QualityCheckJob:
+    return QualityCheckJob(
+        id=m.id,
+        mapping_job_id=m.mapping_job_id,
+        dataset_id=m.dataset_id,
+        status=m.status,
+        pass_threshold=m.pass_threshold,
+        records_checked=m.records_checked,
+        overall_score=m.overall_score,
+        rule_type_scores=json.loads(m.rule_type_scores_json or "{}"),
+        published_count=m.published_count,
+        exception_count=m.exception_count,
+        publish_event_published=m.publish_event_published,
+        exception_event_published=m.exception_event_published,
+        log_entries=json.loads(m.log_entries_json or "[]"),
+        error_message=m.error_message,
+        received_at=m.received_at,
+        completed_at=m.completed_at,
+    )
+
+
+class SqlAlchemyQualityCheckJobRepository(QualityCheckJobRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, job: QualityCheckJob) -> QualityCheckJob:
+        model = QualityCheckJobModel(
+            mapping_job_id=job.mapping_job_id,
+            dataset_id=job.dataset_id,
+            status=job.status,
+            pass_threshold=job.pass_threshold,
+            records_checked=job.records_checked,
+            overall_score=job.overall_score,
+            rule_type_scores_json=json.dumps(job.rule_type_scores),
+            published_count=job.published_count,
+            exception_count=job.exception_count,
+            publish_event_published=job.publish_event_published,
+            exception_event_published=job.exception_event_published,
+            log_entries_json=json.dumps(job.log_entries),
+            error_message=job.error_message,
+            received_at=job.received_at,
+            completed_at=job.completed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        job.id = model.id
+        return job
+
+    def update(self, job: QualityCheckJob) -> QualityCheckJob:
+        model = self._db.get(QualityCheckJobModel, job.id)
+        if model is None:
+            return job
+        model.dataset_id = job.dataset_id
+        model.status = job.status
+        model.pass_threshold = job.pass_threshold
+        model.records_checked = job.records_checked
+        model.overall_score = job.overall_score
+        model.rule_type_scores_json = json.dumps(job.rule_type_scores)
+        model.published_count = job.published_count
+        model.exception_count = job.exception_count
+        model.publish_event_published = job.publish_event_published
+        model.exception_event_published = job.exception_event_published
+        model.log_entries_json = json.dumps(job.log_entries)
+        model.error_message = job.error_message
+        model.completed_at = job.completed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return job
+
+    def get_by_id(self, quality_check_job_id: int) -> Optional[QualityCheckJob]:
+        model = self._db.get(QualityCheckJobModel, quality_check_job_id)
+        return _quality_check_job_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        mapping_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[QualityCheckJob]:
+        stmt = select(QualityCheckJobModel)
+        if dataset_id is not None:
+            stmt = stmt.where(QualityCheckJobModel.dataset_id == dataset_id)
+        if mapping_job_id is not None:
+            stmt = stmt.where(QualityCheckJobModel.mapping_job_id == mapping_job_id)
+        if status is not None:
+            stmt = stmt.where(QualityCheckJobModel.status == status)
+        stmt = stmt.order_by(QualityCheckJobModel.id.desc())
+        return [
+            _quality_check_job_to_entity(m) for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyQualityCheckRuleResultRepository(QualityCheckRuleResultRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(
+        self, results: List[QualityCheckRuleResult]
+    ) -> List[QualityCheckRuleResult]:
+        models = [
+            QualityCheckRuleResultModel(
+                quality_check_job_id=r.quality_check_job_id,
+                rule_id=r.rule_id,
+                rule_type=r.rule_type,
+                field_names_json=json.dumps(r.field_names),
+                total_checked=r.total_checked,
+                failed_count=r.failed_count,
+                pass_rate=r.pass_rate,
+            )
+            for r in results
+        ]
+        self._db.add_all(models)
+        self._db.commit()
+        for r, model in zip(results, models):
+            self._db.refresh(model)
+            r.id = model.id
+        return results
+
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityCheckRuleResult]:
+        stmt = (
+            select(QualityCheckRuleResultModel)
+            .where(QualityCheckRuleResultModel.quality_check_job_id == quality_check_job_id)
+            .order_by(QualityCheckRuleResultModel.id.asc())
+        )
+        return [
+            QualityCheckRuleResult(
+                id=m.id,
+                quality_check_job_id=m.quality_check_job_id,
+                rule_id=m.rule_id,
+                rule_type=m.rule_type,
+                field_names=json.loads(m.field_names_json or "[]"),
+                total_checked=m.total_checked,
+                failed_count=m.failed_count,
+                pass_rate=m.pass_rate,
+            )
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyQualityPublishedRecordRepository(QualityPublishedRecordRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(
+        self, records: List[QualityPublishedRecord]
+    ) -> List[QualityPublishedRecord]:
+        models = [
+            QualityPublishedRecordModel(
+                quality_check_job_id=r.quality_check_job_id,
+                dataset_id=r.dataset_id,
+                row_index=r.row_index,
+                standardized_fields_json=json.dumps(r.standardized_fields),
+            )
+            for r in records
+        ]
+        self._db.add_all(models)
+        self._db.commit()
+        for r, model in zip(records, models):
+            self._db.refresh(model)
+            r.id = model.id
+        return records
+
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityPublishedRecord]:
+        stmt = (
+            select(QualityPublishedRecordModel)
+            .where(QualityPublishedRecordModel.quality_check_job_id == quality_check_job_id)
+            .order_by(QualityPublishedRecordModel.row_index.asc())
+        )
+        return [
+            QualityPublishedRecord(
+                id=m.id,
+                quality_check_job_id=m.quality_check_job_id,
+                dataset_id=m.dataset_id,
+                row_index=m.row_index,
+                standardized_fields=json.loads(m.standardized_fields_json or "{}"),
+            )
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyQualityExceptionQueueRepository(QualityExceptionQueueRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add_many(
+        self, items: List[QualityExceptionQueueItem]
+    ) -> List[QualityExceptionQueueItem]:
+        models = [
+            QualityExceptionQueueItemModel(
+                quality_check_job_id=i.quality_check_job_id,
+                dataset_id=i.dataset_id,
+                row_index=i.row_index,
+                standardized_fields_json=json.dumps(i.standardized_fields),
+                failed_rules_json=json.dumps(i.failed_rules),
+                status=i.status,
+                created_at=i.created_at,
+            )
+            for i in items
+        ]
+        self._db.add_all(models)
+        self._db.commit()
+        for i, model in zip(items, models):
+            self._db.refresh(model)
+            i.id = model.id
+        return items
+
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityExceptionQueueItem]:
+        stmt = (
+            select(QualityExceptionQueueItemModel)
+            .where(
+                QualityExceptionQueueItemModel.quality_check_job_id == quality_check_job_id
+            )
+            .order_by(QualityExceptionQueueItemModel.row_index.asc())
+        )
+        return [self._to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def list_queue(
+        self,
+        dataset_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[QualityExceptionQueueItem]:
+        stmt = select(QualityExceptionQueueItemModel)
+        if dataset_id is not None:
+            stmt = stmt.where(QualityExceptionQueueItemModel.dataset_id == dataset_id)
+        if status is not None:
+            stmt = stmt.where(QualityExceptionQueueItemModel.status == status)
+        stmt = stmt.order_by(QualityExceptionQueueItemModel.id.asc())
+        return [self._to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    @staticmethod
+    def _to_entity(m: QualityExceptionQueueItemModel) -> QualityExceptionQueueItem:
+        return QualityExceptionQueueItem(
+            id=m.id,
+            quality_check_job_id=m.quality_check_job_id,
+            dataset_id=m.dataset_id,
+            row_index=m.row_index,
+            standardized_fields=json.loads(m.standardized_fields_json or "{}"),
+            failed_rules=json.loads(m.failed_rules_json or "[]"),
+            status=m.status,
+            created_at=m.created_at,
+        )

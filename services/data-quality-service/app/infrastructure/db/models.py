@@ -577,3 +577,85 @@ class QualityScoreConfigVersionModel(Base):
     rule_type_weights_json = Column(Text, nullable=False, default="{}")
     change_note = Column(Text, nullable=True)
     changed_at = Column(String(40), nullable=False)
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+class QualityCheckJobModel(Base):
+    """UC-039: 1 lượt chạy kiểm tra chất lượng dữ liệu."""
+
+    __tablename__ = "quality_check_jobs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mapping_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}mapping_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=True, index=True)
+    status = Column(String(20), nullable=False, default="RECEIVED", index=True)
+    pass_threshold = Column(Float, nullable=False, default=0.0)
+    records_checked = Column(Integer, nullable=False, default=0)
+    overall_score = Column(Float, nullable=False, default=0.0)
+    rule_type_scores_json = Column(Text, nullable=False, default="{}")
+    published_count = Column(Integer, nullable=False, default=0)
+    exception_count = Column(Integer, nullable=False, default=0)
+    publish_event_published = Column(Boolean, nullable=False, default=False)
+    exception_event_published = Column(Boolean, nullable=False, default=False)
+    log_entries_json = Column(Text, nullable=False, default="[]")
+    error_message = Column(Text, nullable=True)
+    received_at = Column(String(40), nullable=False)
+    completed_at = Column(String(40), nullable=True)
+
+
+class QualityCheckRuleResultModel(Base):
+    """UC-039 bước 2 'Chạy quy tắc': kết quả từng quy tắc áp dụng lên 1 lô."""
+
+    __tablename__ = "quality_check_rule_results"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    quality_check_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}quality_check_jobs.id"), nullable=False, index=True
+    )
+    rule_id = Column(Integer, nullable=True)
+    rule_type = Column(String(20), nullable=False)
+    field_names_json = Column(Text, nullable=False, default="[]")
+    total_checked = Column(Integer, nullable=False, default=0)
+    failed_count = Column(Integer, nullable=False, default=0)
+    pass_rate = Column(Float, nullable=False, default=100.0)
+
+
+class QualityPublishedRecordModel(Base):
+    """UC-039 bước 3a 'Đạt ngưỡng -> công bố': bản ghi đẩy vào kho chuẩn hoá."""
+
+    __tablename__ = "quality_published_records"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    quality_check_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}quality_check_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=True, index=True)
+    row_index = Column(Integer, nullable=False)
+    standardized_fields_json = Column(Text, nullable=False)
+
+
+class QualityExceptionQueueItemModel(Base):
+    """UC-039 bước 3b 'Dưới ngưỡng -> hàng đợi ngoại lệ' cho Phụ trách
+
+    Dữ liệu (UC-040 đọc/ghi tiếp)."""
+
+    __tablename__ = "quality_exception_queue"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    quality_check_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}quality_check_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=True, index=True)
+    row_index = Column(Integer, nullable=False)
+    standardized_fields_json = Column(Text, nullable=False)
+    failed_rules_json = Column(Text, nullable=False, default="[]")
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
+    created_at = Column(String(40), nullable=False)

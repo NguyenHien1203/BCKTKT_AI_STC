@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   Bell,
   Building2,
   CalendarClock,
@@ -92,6 +93,7 @@ export const NAV_SECTIONS = [
       { to: "/catalog-entries", label: "Quản lý danh mục mặt hàng, loại văn bản, nguồn vốn", icon: BookCopy },
       { to: "/catalog-change-approvals", label: "Phê duyệt thay đổi danh mục nhạy cảm", icon: ClipboardCheck },
       { to: "/quality-rules", label: "Quản lý quy tắc kiểm tra chất lượng", icon: Gauge },
+      { to: "/quality-checks", label: "Chạy kiểm tra chất lượng dữ liệu", icon: BadgeCheck },
 
     ],
   },

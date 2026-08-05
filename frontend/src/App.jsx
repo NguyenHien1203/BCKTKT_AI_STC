@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import {
   ArrowRight,
+  BadgeCheck,
   Building2,
   CalendarClock,
   ClipboardCheck,
@@ -60,6 +61,7 @@ import AssetGroupCatalogPage from "./pages/dataquality/AssetGroupCatalogPage.jsx
 import CatalogChangeApprovalsPage from "./pages/dataquality/CatalogChangeApprovalsPage.jsx";
 import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
 import QualityRulesPage from "./pages/dataquality/QualityRulesPage.jsx";
+import QualityChecksPage from "./pages/dataquality/QualityChecksPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -277,6 +279,13 @@ function HomePage() {
       description:
         "UC-038 — Xem danh sách quy tắc chất lượng (đầy đủ/hợp lệ/duy nhất/nhất quán); thêm/sửa quy tắc (hệ thống lưu vào metadata.quality_rules + version); cấu hình ngưỡng + trọng số cho điểm (hệ thống lưu).",
       icon: Gauge,
+    },
+    {
+      to: "/quality-checks",
+      title: "Chạy kiểm tra chất lượng dữ liệu",
+      description:
+        "UC-039 — Nhận sự kiện mapping.completed: tra cứu quy tắc chất lượng + chạy từng quy tắc để tính điểm; đạt ngưỡng thì công bố vào kho chuẩn hoá, dưới ngưỡng thì đẩy vào hàng đợi ngoại lệ cho Phụ trách Dữ liệu.",
+      icon: BadgeCheck,
     },
   ];
 
@@ -627,6 +636,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <QualityRulesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quality-checks"
+        element={
+          <ProtectedRoute>
+            <QualityChecksPage />
           </ProtectedRoute>
         }
       />
