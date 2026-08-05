@@ -496,3 +496,84 @@ class CatalogChangeAuditLogModel(Base):
     decision_reason = Column(Text, nullable=False)
     diff_snapshot = Column(Text, nullable=True)
     created_at = Column(String(40), nullable=False)
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+class QualityRuleModel(Base):
+    """UC-038: 1 quy tắc kiểm tra chất lượng dữ liệu (`metadata.quality_rules`)."""
+
+    __tablename__ = "quality_rules"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=True, index=True)
+    field_names_json = Column(Text, nullable=False, default="[]")
+    rule_type = Column(String(20), nullable=False, index=True)
+    params_json = Column(Text, nullable=False, default="{}")
+    weight = Column(Float, nullable=False, default=1.0)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class QualityRuleVersionModel(Base):
+    """UC-038 bước 2: lịch sử phiên bản (append-only) của 1 quy tắc chất lượng."""
+
+    __tablename__ = "quality_rule_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    rule_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}quality_rules.id"), nullable=False, index=True
+    )
+    version = Column(Integer, nullable=False)
+    dataset_id = Column(Integer, nullable=True)
+    field_names_json = Column(Text, nullable=False, default="[]")
+    rule_type = Column(String(20), nullable=False)
+    params_json = Column(Text, nullable=False, default="{}")
+    weight = Column(Float, nullable=False, default=1.0)
+    is_active = Column(Boolean, nullable=False, default=True)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)
+
+
+class QualityScoreConfigModel(Base):
+    """UC-038 bước 3: cấu hình ngưỡng + trọng số cho điểm chất lượng theo tập dữ liệu."""
+
+    __tablename__ = "quality_score_configs"
+    __table_args__ = (
+        UniqueConstraint("dataset_id", name="uq_quality_score_configs_dataset_id"),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=True, unique=True, index=True)
+    pass_threshold = Column(Float, nullable=False)
+    rule_type_weights_json = Column(Text, nullable=False, default="{}")
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class QualityScoreConfigVersionModel(Base):
+    """UC-038 bước 3: lịch sử phiên bản (append-only) của 1 cấu hình điểm chất lượng."""
+
+    __tablename__ = "quality_score_config_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    config_id = Column(
+        Integer,
+        ForeignKey(f"{_fk_prefix}quality_score_configs.id"),
+        nullable=False,
+        index=True,
+    )
+    version = Column(Integer, nullable=False)
+    dataset_id = Column(Integer, nullable=True)
+    pass_threshold = Column(Float, nullable=False)
+    rule_type_weights_json = Column(Text, nullable=False, default="{}")
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)

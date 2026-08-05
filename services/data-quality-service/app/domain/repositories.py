@@ -27,6 +27,10 @@ from app.domain.entities import (
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    QualityRule,
+    QualityRuleVersion,
+    QualityScoreConfig,
+    QualityScoreConfigVersion,
     UnmappedQueueItem,
 )
 
@@ -574,4 +578,84 @@ class CatalogChangeAuditLogRepository(ABC):
         catalog_type: Optional[str] = None,
         action: Optional[str] = None,
     ) -> List[CatalogChangeAuditLog]:
+        ...
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+class QualityRuleRepository(ABC):
+    @abstractmethod
+    def add(self, rule: QualityRule) -> QualityRule:
+        ...
+
+    @abstractmethod
+    def update(self, rule: QualityRule) -> QualityRule:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, rule_id: int) -> Optional[QualityRule]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        rule_type: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[QualityRule]:
+        """Bước 1 'Xem danh sách quy tắc chất lượng (đầy đủ / hợp lệ /
+
+        duy nhất / nhất quán)' -- lọc theo `rule_type` để xem riêng 1
+        nhóm quy tắc, theo `dataset_id` để xem quy tắc riêng của 1 tập
+        dữ liệu (bỏ trống `dataset_id` để xem cả quy tắc chung)."""
+        ...
+
+
+class QualityRuleVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước
+
+    2 UC-038)."""
+
+    @abstractmethod
+    def add(self, version: QualityRuleVersion) -> QualityRuleVersion:
+        ...
+
+    @abstractmethod
+    def list_for_rule(self, rule_id: int) -> List[QualityRuleVersion]:
+        ...
+
+
+class QualityScoreConfigRepository(ABC):
+    @abstractmethod
+    def add(self, config: QualityScoreConfig) -> QualityScoreConfig:
+        ...
+
+    @abstractmethod
+    def update(self, config: QualityScoreConfig) -> QualityScoreConfig:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, config_id: int) -> Optional[QualityScoreConfig]:
+        ...
+
+    @abstractmethod
+    def get_by_dataset(self, dataset_id: Optional[int]) -> Optional[QualityScoreConfig]:
+        ...
+
+    @abstractmethod
+    def list(self) -> List[QualityScoreConfig]:
+        ...
+
+
+class QualityScoreConfigVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only) của cấu hình điểm chất lượng
+
+    (bước 3 UC-038)."""
+
+    @abstractmethod
+    def add(self, version: QualityScoreConfigVersion) -> QualityScoreConfigVersion:
+        ...
+
+    @abstractmethod
+    def list_for_config(self, config_id: int) -> List[QualityScoreConfigVersion]:
         ...

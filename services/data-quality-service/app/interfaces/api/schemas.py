@@ -1066,3 +1066,147 @@ class CatalogChangeRejectionResultResponse(BaseModel):
 
     request: CatalogChangeRequestResponse
     audit_log: CatalogChangeAuditLogResponse
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+class QualityRuleResponse(BaseModel):
+    id: int
+    dataset_id: Optional[int] = None
+    field_names: List[str]
+    rule_type: str
+    params: Dict[str, Any] = Field(default_factory=dict)
+    weight: float
+    description: Optional[str] = None
+    is_active: bool
+    version: int
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, r) -> "QualityRuleResponse":
+        return cls(
+            id=r.id,
+            dataset_id=r.dataset_id,
+            field_names=r.field_names,
+            rule_type=r.rule_type,
+            params=r.params,
+            weight=r.weight,
+            description=r.description,
+            is_active=r.is_active,
+            version=r.version,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+        )
+
+
+class QualityRuleVersionResponse(BaseModel):
+    id: int
+    rule_id: int
+    version: int
+    dataset_id: Optional[int] = None
+    field_names: List[str]
+    rule_type: str
+    params: Dict[str, Any] = Field(default_factory=dict)
+    weight: float
+    is_active: bool
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "QualityRuleVersionResponse":
+        return cls(
+            id=v.id,
+            rule_id=v.rule_id,
+            version=v.version,
+            dataset_id=v.dataset_id,
+            field_names=v.field_names,
+            rule_type=v.rule_type,
+            params=v.params,
+            weight=v.weight,
+            is_active=v.is_active,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class QualityRuleCreate(BaseModel):
+    """Bước 2 'Thêm quy tắc'."""
+
+    field_names: List[str] = Field(min_length=1)
+    rule_type: str = Field(description="COMPLETENESS / VALIDITY / UNIQUENESS / CONSISTENCY")
+    dataset_id: Optional[int] = None
+    params: Dict[str, Any] = Field(default_factory=dict)
+    weight: float = 1.0
+    description: Optional[str] = None
+    is_active: bool = True
+    note: Optional[str] = None
+
+
+class QualityRuleUpdate(BaseModel):
+    """Bước 2 'Sửa quy tắc'."""
+
+    field_names: Optional[List[str]] = None
+    params: Optional[Dict[str, Any]] = None
+    weight: Optional[float] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+    note: Optional[str] = None
+
+
+class QualityScoreConfigResponse(BaseModel):
+    id: int
+    dataset_id: Optional[int] = None
+    pass_threshold: float
+    rule_type_weights: Dict[str, float] = Field(default_factory=dict)
+    version: int
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, c) -> "QualityScoreConfigResponse":
+        return cls(
+            id=c.id,
+            dataset_id=c.dataset_id,
+            pass_threshold=c.pass_threshold,
+            rule_type_weights=c.rule_type_weights,
+            version=c.version,
+            created_at=c.created_at,
+            updated_at=c.updated_at,
+        )
+
+
+class QualityScoreConfigVersionResponse(BaseModel):
+    id: int
+    config_id: int
+    version: int
+    dataset_id: Optional[int] = None
+    pass_threshold: float
+    rule_type_weights: Dict[str, float] = Field(default_factory=dict)
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "QualityScoreConfigVersionResponse":
+        return cls(
+            id=v.id,
+            config_id=v.config_id,
+            version=v.version,
+            dataset_id=v.dataset_id,
+            pass_threshold=v.pass_threshold,
+            rule_type_weights=v.rule_type_weights,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class QualityScoreConfigSave(BaseModel):
+    """Bước 3 'Cấu hình ngưỡng + trọng số cho điểm' -- hệ thống lưu.
+
+    Tạo mới nếu `dataset_id` chưa có cấu hình, ngược lại cập nhật
+    (tăng version)."""
+
+    dataset_id: Optional[int] = None
+    pass_threshold: float = Field(ge=0, le=100)
+    rule_type_weights: Dict[str, float] = Field(default_factory=dict)
+    note: Optional[str] = None

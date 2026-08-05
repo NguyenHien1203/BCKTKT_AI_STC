@@ -27,6 +27,10 @@ from app.domain.entities import (
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    QualityRule,
+    QualityRuleVersion,
+    QualityScoreConfig,
+    QualityScoreConfigVersion,
     UnmappedQueueItem,
 )
 from app.domain.repositories import (
@@ -51,6 +55,10 @@ from app.domain.repositories import (
     ParsedRecordRepository,
     ParsingJobRepository,
     ParsingRowErrorRepository,
+    QualityRuleRepository,
+    QualityRuleVersionRepository,
+    QualityScoreConfigRepository,
+    QualityScoreConfigVersionRepository,
     StgStructuredRowRepository,
     UnmappedQueueRepository,
 )
@@ -76,6 +84,10 @@ from app.infrastructure.db.models import (
     ParsedStructuredRecordModel,
     ParsingJobModel,
     ParsingRowErrorModel,
+    QualityRuleModel,
+    QualityRuleVersionModel,
+    QualityScoreConfigModel,
+    QualityScoreConfigVersionModel,
     StgStructuredRowModel,
     UnmappedQueueItemModel,
 )
@@ -1586,4 +1598,235 @@ class SqlAlchemyCatalogChangeAuditLogRepository(CatalogChangeAuditLogRepository)
         stmt = stmt.order_by(CatalogChangeAuditLogModel.created_at.desc())
         return [
             _catalog_change_audit_log_to_entity(m) for m in self._db.execute(stmt).scalars().all()
+        ]
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+def _quality_rule_to_entity(m: QualityRuleModel) -> QualityRule:
+    return QualityRule(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        field_names=json.loads(m.field_names_json or "[]"),
+        rule_type=m.rule_type,
+        params=json.loads(m.params_json or "{}"),
+        weight=m.weight,
+        description=m.description,
+        is_active=m.is_active,
+        version=m.version,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyQualityRuleRepository(QualityRuleRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, rule: QualityRule) -> QualityRule:
+        model = QualityRuleModel(
+            dataset_id=rule.dataset_id,
+            field_names_json=json.dumps(rule.field_names),
+            rule_type=rule.rule_type,
+            params_json=json.dumps(rule.params),
+            weight=rule.weight,
+            description=rule.description,
+            is_active=rule.is_active,
+            version=rule.version,
+            created_at=rule.created_at,
+            updated_at=rule.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        rule.id = model.id
+        return rule
+
+    def update(self, rule: QualityRule) -> QualityRule:
+        model = self._db.get(QualityRuleModel, rule.id)
+        if model is None:
+            return rule
+        model.dataset_id = rule.dataset_id
+        model.field_names_json = json.dumps(rule.field_names)
+        model.rule_type = rule.rule_type
+        model.params_json = json.dumps(rule.params)
+        model.weight = rule.weight
+        model.description = rule.description
+        model.is_active = rule.is_active
+        model.version = rule.version
+        model.updated_at = rule.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return rule
+
+    def get_by_id(self, rule_id: int) -> Optional[QualityRule]:
+        model = self._db.get(QualityRuleModel, rule_id)
+        return _quality_rule_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        rule_type: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[QualityRule]:
+        stmt = select(QualityRuleModel)
+        if dataset_id is not None:
+            stmt = stmt.where(QualityRuleModel.dataset_id == dataset_id)
+        if rule_type is not None:
+            stmt = stmt.where(QualityRuleModel.rule_type == rule_type)
+        if is_active is not None:
+            stmt = stmt.where(QualityRuleModel.is_active == is_active)
+        stmt = stmt.order_by(QualityRuleModel.id.asc())
+        return [_quality_rule_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyQualityRuleVersionRepository(QualityRuleVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: QualityRuleVersion) -> QualityRuleVersion:
+        model = QualityRuleVersionModel(
+            rule_id=version.rule_id,
+            version=version.version,
+            dataset_id=version.dataset_id,
+            field_names_json=json.dumps(version.field_names),
+            rule_type=version.rule_type,
+            params_json=json.dumps(version.params),
+            weight=version.weight,
+            is_active=version.is_active,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_rule(self, rule_id: int) -> List[QualityRuleVersion]:
+        stmt = (
+            select(QualityRuleVersionModel)
+            .where(QualityRuleVersionModel.rule_id == rule_id)
+            .order_by(QualityRuleVersionModel.version.asc())
+        )
+        return [
+            QualityRuleVersion(
+                id=m.id,
+                rule_id=m.rule_id,
+                version=m.version,
+                dataset_id=m.dataset_id,
+                field_names=json.loads(m.field_names_json or "[]"),
+                rule_type=m.rule_type,
+                params=json.loads(m.params_json or "{}"),
+                weight=m.weight,
+                is_active=m.is_active,
+                change_note=m.change_note,
+                changed_at=m.changed_at,
+            )
+            for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+def _quality_score_config_to_entity(m: QualityScoreConfigModel) -> QualityScoreConfig:
+    return QualityScoreConfig(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        pass_threshold=m.pass_threshold,
+        rule_type_weights=json.loads(m.rule_type_weights_json or "{}"),
+        version=m.version,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyQualityScoreConfigRepository(QualityScoreConfigRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, config: QualityScoreConfig) -> QualityScoreConfig:
+        model = QualityScoreConfigModel(
+            dataset_id=config.dataset_id,
+            pass_threshold=config.pass_threshold,
+            rule_type_weights_json=json.dumps(config.rule_type_weights),
+            version=config.version,
+            created_at=config.created_at,
+            updated_at=config.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        config.id = model.id
+        return config
+
+    def update(self, config: QualityScoreConfig) -> QualityScoreConfig:
+        model = self._db.get(QualityScoreConfigModel, config.id)
+        if model is None:
+            return config
+        model.dataset_id = config.dataset_id
+        model.pass_threshold = config.pass_threshold
+        model.rule_type_weights_json = json.dumps(config.rule_type_weights)
+        model.version = config.version
+        model.updated_at = config.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return config
+
+    def get_by_id(self, config_id: int) -> Optional[QualityScoreConfig]:
+        model = self._db.get(QualityScoreConfigModel, config_id)
+        return _quality_score_config_to_entity(model) if model else None
+
+    def get_by_dataset(self, dataset_id: Optional[int]) -> Optional[QualityScoreConfig]:
+        stmt = select(QualityScoreConfigModel).where(
+            QualityScoreConfigModel.dataset_id == dataset_id
+        )
+        model = self._db.execute(stmt).scalars().first()
+        return _quality_score_config_to_entity(model) if model else None
+
+    def list(self) -> List[QualityScoreConfig]:
+        stmt = select(QualityScoreConfigModel).order_by(QualityScoreConfigModel.id.asc())
+        return [
+            _quality_score_config_to_entity(m) for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+class SqlAlchemyQualityScoreConfigVersionRepository(QualityScoreConfigVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: QualityScoreConfigVersion) -> QualityScoreConfigVersion:
+        model = QualityScoreConfigVersionModel(
+            config_id=version.config_id,
+            version=version.version,
+            dataset_id=version.dataset_id,
+            pass_threshold=version.pass_threshold,
+            rule_type_weights_json=json.dumps(version.rule_type_weights),
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_config(self, config_id: int) -> List[QualityScoreConfigVersion]:
+        stmt = (
+            select(QualityScoreConfigVersionModel)
+            .where(QualityScoreConfigVersionModel.config_id == config_id)
+            .order_by(QualityScoreConfigVersionModel.version.asc())
+        )
+        return [
+            QualityScoreConfigVersion(
+                id=m.id,
+                config_id=m.config_id,
+                version=m.version,
+                dataset_id=m.dataset_id,
+                pass_threshold=m.pass_threshold,
+                rule_type_weights=json.loads(m.rule_type_weights_json or "{}"),
+                change_note=m.change_note,
+                changed_at=m.changed_at,
+            )
+            for m in self._db.execute(stmt).scalars().all()
         ]

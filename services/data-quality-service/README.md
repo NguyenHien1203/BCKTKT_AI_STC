@@ -44,5 +44,9 @@ curl http://127.0.0.1:8003/health
 
 ## Migration
 ```bash
-alembic upgrade head   # 0001 (UC-029) -> 0002 (UC-030) -> 0003 (UC-031) -> 0004 (UC-032)
+alembic upgrade head   # 0001 (UC-029) -> ... -> 0009 (UC-037) -> 0010 (UC-038)
 ```
+
+Xem `PLAN.md` ở gốc project để biết chi tiết đầy đủ các UC đã làm (UC-033 .. UC-038),
+bao gồm UC-038 "Quản lý quy tắc kiểm tra chất lượng" (`GET/POST /quality-rules`,
+`PUT /quality-rules/{id}`, `PUT /quality-rules/score-configs`).
