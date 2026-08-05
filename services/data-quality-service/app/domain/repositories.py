@@ -27,6 +27,10 @@ from app.domain.entities import (
     ParsedRecord,
     ParsingJob,
     ParsingRowError,
+    QualityCheckJob,
+    QualityCheckRuleResult,
+    QualityExceptionQueueItem,
+    QualityPublishedRecord,
     QualityRule,
     QualityRuleVersion,
     QualityScoreConfig,
@@ -610,6 +614,15 @@ class QualityRuleRepository(ABC):
         dữ liệu (bỏ trống `dataset_id` để xem cả quy tắc chung)."""
         ...
 
+    @abstractmethod
+    def list_general(self, is_active: Optional[bool] = None) -> List[QualityRule]:
+        """UC-039 bước 1 'Tra cứu quy tắc chất lượng': CHỈ quy tắc CHUNG
+
+        (`dataset_id IS NULL`) -- khác `list(dataset_id=None, ...)` ở
+        trên, vốn coi `dataset_id=None` là "không lọc" (trả về TẤT CẢ)
+        để phục vụ UC-038 bước 1 xem danh sách."""
+        ...
+
 
 class QualityRuleVersionRepository(ABC):
     """Lịch sử phiên bản (append-only), ghi mỗi khi thêm mới/sửa (bước
@@ -658,4 +671,86 @@ class QualityScoreConfigVersionRepository(ABC):
 
     @abstractmethod
     def list_for_config(self, config_id: int) -> List[QualityScoreConfigVersion]:
+        ...
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+class QualityCheckJobRepository(ABC):
+    @abstractmethod
+    def add(self, job: QualityCheckJob) -> QualityCheckJob:
+        ...
+
+    @abstractmethod
+    def update(self, job: QualityCheckJob) -> QualityCheckJob:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, quality_check_job_id: int) -> Optional[QualityCheckJob]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        mapping_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[QualityCheckJob]:
+        ...
+
+
+class QualityCheckRuleResultRepository(ABC):
+    """Bước 2 'Chạy quy tắc': kết quả từng quy tắc, phục vụ audit."""
+
+    @abstractmethod
+    def add_many(
+        self, results: List[QualityCheckRuleResult]
+    ) -> List[QualityCheckRuleResult]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityCheckRuleResult]:
+        ...
+
+
+class QualityPublishedRecordRepository(ABC):
+    """Bước 3a 'Đạt ngưỡng -> công bố': bản ghi đẩy vào kho chuẩn hoá."""
+
+    @abstractmethod
+    def add_many(
+        self, records: List[QualityPublishedRecord]
+    ) -> List[QualityPublishedRecord]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityPublishedRecord]:
+        ...
+
+
+class QualityExceptionQueueRepository(ABC):
+    """Bước 3b 'Dưới ngưỡng -> hàng đợi ngoại lệ' cho Phụ trách Dữ liệu
+
+    (UC-040 Xử lý ngoại lệ chất lượng đọc/ghi tiếp)."""
+
+    @abstractmethod
+    def add_many(
+        self, items: List[QualityExceptionQueueItem]
+    ) -> List[QualityExceptionQueueItem]:
+        ...
+
+    @abstractmethod
+    def list_for_job(self, quality_check_job_id: int) -> List[QualityExceptionQueueItem]:
+        ...
+
+    @abstractmethod
+    def list_queue(
+        self,
+        dataset_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[QualityExceptionQueueItem]:
+        """UC-040 bước 1 'Xem hàng đợi ngoại lệ' -- không giới hạn theo
+
+        1 `quality_check_job_id` cụ thể (Phụ trách Dữ liệu xem toàn bộ
+        hàng đợi ngoại lệ của tập dữ liệu, mọi lượt kiểm tra)."""
         ...

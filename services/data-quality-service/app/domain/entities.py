@@ -1264,3 +1264,174 @@ class QualityScoreConfigVersion:
     rule_type_weights: Dict[str, float] = field(default_factory=dict)
     change_note: Optional[str] = None
     changed_at: str = field(default_factory=_utc_now_iso)
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+@dataclass
+class QualityCheckJob:
+    """UC-039: 1 lượt chạy kiểm tra chất lượng dữ liệu (docs/use_cases.json id=39).
+
+    Actor: "Hệ thống tự động (Quality Service)". Luồng nghiệp vụ:
+    1. Tra cứu quy tắc chất lượng. Hệ thống đọc `metadata.quality_rules`
+       (các `QualityRule.is_active=True` áp dụng cho `dataset_id`, ưu
+       tiên quy tắc riêng của tập dữ liệu, hợp nhất với quy tắc chung
+       `dataset_id=None`) + `QualityScoreConfig` (ngưỡng + trọng số).
+    2. Chạy quy tắc. Hệ thống tính điểm (`overall_score`, theo từng
+       nhóm `rule_type_scores`) trên các `MappedStandardRecord` của 1
+       `MappingJob` (đầu ra UC-031).
+    3a. Đạt ngưỡng (`overall_score >= pass_threshold`) -> công bố. Hệ
+        thống đẩy vào kho chuẩn hoá (`QualityPublishedRecord`) +
+        phát sự kiện `curated.publish.requested` (cho UC-041 Công bố
+        vào kho chuẩn hoá + batch_summary đọc tiếp).
+    3b. Dưới ngưỡng -> hàng đợi ngoại lệ. Hệ thống đẩy các dòng có ít
+        nhất 1 quy tắc không đạt vào hàng đợi ngoại lệ
+        (`QualityExceptionQueueItem`) cho Phụ trách Dữ liệu xử lý tiếp
+        (UC-040 Xử lý ngoại lệ chất lượng) + phát sự kiện
+        `quality.exception.queued`.
+
+    1 sự kiện `mapping.completed` (phát bởi UC-031 sau khi ánh xạ trường
+    sang dạng chuẩn xong) = 1 QualityCheckJob -- cùng tinh thần vòng đời
+    `ParsingJob`/`OcrJob`/`MappingJob` (start_running -> append_log ->
+    complete).
+    """
+
+    STATUSES = ("RECEIVED", "RUNNING", "PASSED", "BELOW_THRESHOLD", "FAILED")
+
+    id: Optional[int]
+    mapping_job_id: int
+    dataset_id: Optional[int] = None
+    status: str = "RECEIVED"
+    pass_threshold: float = 0.0
+    records_checked: int = 0
+    overall_score: float = 0.0
+    rule_type_scores: Dict[str, float] = field(default_factory=dict)
+    published_count: int = 0
+    exception_count: int = 0
+    publish_event_published: bool = False
+    exception_event_published: bool = False
+    log_entries: List[Dict[str, str]] = field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str = field(default_factory=_utc_now_iso)
+    completed_at: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.mapping_job_id or self.mapping_job_id <= 0:
+            raise ValueError("Phải chỉ định mapping_job_id hợp lệ")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+    def append_log(self, level: str, message: str, timestamp: Optional[str] = None) -> None:
+        self.log_entries.append(
+            {"level": level, "message": message, "timestamp": timestamp or _utc_now_iso()}
+        )
+
+    def start_running(self) -> None:
+        self.status = "RUNNING"
+
+    def complete(
+        self,
+        status: str,
+        pass_threshold: float,
+        records_checked: int,
+        overall_score: float,
+        rule_type_scores: Dict[str, float],
+        published_count: int = 0,
+        exception_count: int = 0,
+        publish_event_published: bool = False,
+        exception_event_published: bool = False,
+        error_message: Optional[str] = None,
+    ) -> None:
+        if status not in ("PASSED", "BELOW_THRESHOLD", "FAILED"):
+            raise ValueError(
+                "Trạng thái kết thúc chỉ có thể là PASSED, BELOW_THRESHOLD hoặc FAILED"
+            )
+        self.status = status
+        self.pass_threshold = pass_threshold
+        self.records_checked = records_checked
+        self.overall_score = overall_score
+        self.rule_type_scores = rule_type_scores
+        self.published_count = published_count
+        self.exception_count = exception_count
+        self.publish_event_published = publish_event_published
+        self.exception_event_published = exception_event_published
+        self.error_message = error_message
+        self.completed_at = _utc_now_iso()
+
+
+@dataclass
+class QualityCheckRuleResult:
+    """Bước 2 'Chạy quy tắc': kết quả áp dụng 1 `QualityRule` lên toàn bộ
+
+    lô bản ghi của 1 `QualityCheckJob` -- phục vụ tra cứu/kiểm tra lại
+    (audit) vì sao 1 lô đạt/không đạt ngưỡng.
+    """
+
+    id: Optional[int]
+    quality_check_job_id: int
+    rule_id: Optional[int]
+    rule_type: str
+    field_names: List[str] = field(default_factory=list)
+    total_checked: int = 0
+    failed_count: int = 0
+    pass_rate: float = 100.0
+
+    def __post_init__(self) -> None:
+        if self.total_checked < 0:
+            raise ValueError("total_checked không được âm")
+        if self.failed_count < 0:
+            raise ValueError("failed_count không được âm")
+
+
+@dataclass
+class QualityPublishedRecord:
+    """Bước 3a 'Đạt ngưỡng -> công bố': 1 bản ghi được đẩy vào kho chuẩn
+
+    hoá (đầu ra UC-039, đầu vào UC-041 Công bố vào kho chuẩn hoá +
+    batch_summary) -- gắn với 1 `QualityCheckJob` đã `status=PASSED`.
+    """
+
+    id: Optional[int]
+    quality_check_job_id: int
+    dataset_id: Optional[int]
+    row_index: int
+    standardized_fields: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.row_index < 0:
+            raise ValueError("row_index không được âm")
+
+
+@dataclass
+class QualityExceptionQueueItem:
+    """Bước 3b 'Dưới ngưỡng -> hàng đợi ngoại lệ': 1 dòng có ít nhất 1
+
+    quy tắc chất lượng không đạt, đẩy vào hàng đợi ngoại lệ cho Phụ
+    trách Dữ liệu xử lý tiếp (UC-040 Xử lý ngoại lệ chất lượng -- xem
+    hàng đợi / xử lý từng ngoại lệ (sửa/từ chối/yêu cầu nguồn) / xử lý
+    hàng loạt). `failed_rules` ghi lại (các) quy tắc dòng này không đạt
+    để UC-040 hiển thị lý do.
+    """
+
+    STATUSES = ("PENDING", "RESOLVED")
+
+    id: Optional[int]
+    quality_check_job_id: int
+    dataset_id: Optional[int]
+    row_index: int
+    standardized_fields: Dict[str, Any] = field(default_factory=dict)
+    failed_rules: List[Dict[str, Any]] = field(default_factory=list)
+    status: str = "PENDING"
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.row_index < 0:
+            raise ValueError("row_index không được âm")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+        if not self.failed_rules:
+            raise ValueError(
+                "failed_rules không được để trống -- dòng đưa vào hàng đợi ngoại lệ "
+                "phải có ít nhất 1 quy tắc không đạt"
+            )

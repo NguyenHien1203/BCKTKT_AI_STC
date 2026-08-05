@@ -12,6 +12,7 @@ from app.interfaces.api.mapping_rule_router import router as mapping_rule_router
 from app.interfaces.api.ocr_job_router import router as ocr_job_router
 from app.interfaces.api.org_unit_catalog_router import router as org_unit_catalog_router
 from app.interfaces.api.parsing_job_router import router as parsing_job_router
+from app.interfaces.api.quality_check_router import router as quality_check_router
 from app.interfaces.api.quality_rule_router import router as quality_rule_router
 from app.interfaces.api.unmapped_queue_router import router as unmapped_queue_router
 
@@ -36,6 +37,7 @@ app.include_router(asset_group_catalog_router)
 app.include_router(catalog_entry_router)
 app.include_router(catalog_change_approval_router)
 app.include_router(quality_rule_router)
+app.include_router(quality_check_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

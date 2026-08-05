@@ -1210,3 +1210,121 @@ class QualityScoreConfigSave(BaseModel):
     pass_threshold: float = Field(ge=0, le=100)
     rule_type_weights: Dict[str, float] = Field(default_factory=dict)
     note: Optional[str] = None
+
+
+# ---------- UC-039: Chạy kiểm tra chất lượng dữ liệu ----------
+
+
+class MappingCompletedEvent(BaseModel):
+    """Payload mô phỏng sự kiện `mapping.completed` (phát bởi UC-031 sau
+
+    khi ánh xạ trường sang dạng chuẩn xong) -- kích hoạt UC-039."""
+
+    mapping_job_id: int
+    dataset_id: Optional[int] = None
+
+
+class QualityCheckJobResponse(BaseModel):
+    id: int
+    mapping_job_id: int
+    dataset_id: Optional[int] = None
+    status: str
+    pass_threshold: float
+    records_checked: int
+    overall_score: float
+    rule_type_scores: Dict[str, float] = Field(default_factory=dict)
+    published_count: int
+    exception_count: int
+    publish_event_published: bool
+    exception_event_published: bool
+    log_entries: List[Dict[str, str]] = Field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str
+    completed_at: Optional[str] = None
+
+    @classmethod
+    def from_entity(cls, j) -> "QualityCheckJobResponse":
+        return cls(
+            id=j.id,
+            mapping_job_id=j.mapping_job_id,
+            dataset_id=j.dataset_id,
+            status=j.status,
+            pass_threshold=j.pass_threshold,
+            records_checked=j.records_checked,
+            overall_score=j.overall_score,
+            rule_type_scores=j.rule_type_scores,
+            published_count=j.published_count,
+            exception_count=j.exception_count,
+            publish_event_published=j.publish_event_published,
+            exception_event_published=j.exception_event_published,
+            log_entries=j.log_entries,
+            error_message=j.error_message,
+            received_at=j.received_at,
+            completed_at=j.completed_at,
+        )
+
+
+class QualityCheckRuleResultResponse(BaseModel):
+    id: int
+    quality_check_job_id: int
+    rule_id: Optional[int] = None
+    rule_type: str
+    field_names: List[str]
+    total_checked: int
+    failed_count: int
+    pass_rate: float
+
+    @classmethod
+    def from_entity(cls, r) -> "QualityCheckRuleResultResponse":
+        return cls(
+            id=r.id,
+            quality_check_job_id=r.quality_check_job_id,
+            rule_id=r.rule_id,
+            rule_type=r.rule_type,
+            field_names=r.field_names,
+            total_checked=r.total_checked,
+            failed_count=r.failed_count,
+            pass_rate=r.pass_rate,
+        )
+
+
+class QualityPublishedRecordResponse(BaseModel):
+    id: int
+    quality_check_job_id: int
+    dataset_id: Optional[int] = None
+    row_index: int
+    standardized_fields: Dict[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def from_entity(cls, r) -> "QualityPublishedRecordResponse":
+        return cls(
+            id=r.id,
+            quality_check_job_id=r.quality_check_job_id,
+            dataset_id=r.dataset_id,
+            row_index=r.row_index,
+            standardized_fields=r.standardized_fields,
+        )
+
+
+class QualityExceptionQueueItemResponse(BaseModel):
+    id: int
+    quality_check_job_id: int
+    dataset_id: Optional[int] = None
+    row_index: int
+    standardized_fields: Dict[str, Any] = Field(default_factory=dict)
+    failed_rules: List[Dict[str, Any]] = Field(default_factory=list)
+    status: str
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, i) -> "QualityExceptionQueueItemResponse":
+        return cls(
+            id=i.id,
+            quality_check_job_id=i.quality_check_job_id,
+            dataset_id=i.dataset_id,
+            row_index=i.row_index,
+            standardized_fields=i.standardized_fields,
+            failed_rules=i.failed_rules,
+            status=i.status,
+            created_at=i.created_at,
+        )
