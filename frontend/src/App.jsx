@@ -9,6 +9,7 @@ import {
   FileStack,
   FileText,
   FileUp,
+  Gauge,
   History,
   Inbox,
   KeyRound,
@@ -58,6 +59,7 @@ import BudgetItemCatalogPage from "./pages/dataquality/BudgetItemCatalogPage.jsx
 import AssetGroupCatalogPage from "./pages/dataquality/AssetGroupCatalogPage.jsx";
 import CatalogChangeApprovalsPage from "./pages/dataquality/CatalogChangeApprovalsPage.jsx";
 import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
+import QualityRulesPage from "./pages/dataquality/QualityRulesPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -268,6 +270,13 @@ function HomePage() {
       description:
         "UC-037 — Xem các yêu cầu chờ duyệt, hệ thống hiển thị diff, phê duyệt/từ chối (áp dụng thay đổi vào danh mục + ghi lý do phê duyệt vào nhật ký).",
       icon: ClipboardCheck,
+    },
+    {
+      to: "/quality-rules",
+      title: "Quản lý quy tắc kiểm tra chất lượng",
+      description:
+        "UC-038 — Xem danh sách quy tắc chất lượng (đầy đủ/hợp lệ/duy nhất/nhất quán); thêm/sửa quy tắc (hệ thống lưu vào metadata.quality_rules + version); cấu hình ngưỡng + trọng số cho điểm (hệ thống lưu).",
+      icon: Gauge,
     },
   ];
 
@@ -610,6 +619,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CatalogChangeApprovalsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quality-rules"
+        element={
+          <ProtectedRoute>
+            <QualityRulesPage />
           </ProtectedRoute>
         }
       />

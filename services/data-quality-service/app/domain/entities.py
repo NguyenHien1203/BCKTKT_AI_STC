@@ -1093,3 +1093,174 @@ class CatalogChangeAuditLog:
                 "decision_reason (lý do phê duyệt) không được để trống -- UC-037 bước 4 "
                 "bắt buộc ghi lý do trước khi lưu vào nhật ký"
             )
+
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+@dataclass
+class QualityRule:
+    """UC-038: 1 quy tắc kiểm tra chất lượng dữ liệu, có phiên bản.
+
+    Actor: "Phụ trách Dữ liệu, Quản trị Dữ liệu". Luồng nghiệp vụ:
+    1. Xem danh sách quy tắc chất lượng (đầy đủ / hợp lệ / duy nhất /
+       nhất quán -- 4 giá trị `rule_type`). Hệ thống hiển thị.
+    2. Thêm / Sửa quy tắc. Hệ thống lưu vào `metadata.quality_rules`
+       (bảng `quality_rules` trong schema `curated`) + version -- mỗi
+       lần sửa tăng `version` + ghi lịch sử vào `QualityRuleVersion`.
+
+    Quy tắc dùng bởi UC-039 "Chạy kiểm tra chất lượng dữ liệu" (hệ
+    thống tự động đọc `metadata.quality_rules`, chạy quy tắc, tính
+    điểm) -- chỉ áp dụng quy tắc có `is_active=True`.
+
+    - `dataset_id`: `None` = quy tắc CHUNG áp dụng cho MỌI tập dữ liệu;
+      chỉ định cụ thể để áp dụng riêng cho 1 tập dữ liệu.
+    - `field_names`: (các) trường quy tắc áp dụng lên -- `COMPLETENESS`/
+      `VALIDITY`/`CONSISTENCY` thường 1 trường, `UNIQUENESS` có thể
+      nhiều trường (khoá duy nhất tổ hợp).
+    - `rule_type`:
+        `COMPLETENESS` (đầy đủ) -- các trường không được NULL/rỗng.
+        `VALIDITY` (hợp lệ) -- giá trị phải khớp `params` (`regex`/
+        `allowed_values`/`min_value`/`max_value`, ít nhất 1 khoá).
+        `UNIQUENESS` (duy nhất) -- tổ hợp `field_names` không được
+        trùng lặp giữa các bản ghi.
+        `CONSISTENCY` (nhất quán) -- yêu cầu `params.expression`
+        (biểu thức mô tả ràng buộc nhất quán, vd so sánh giữa các
+        trường/nguồn dữ liệu).
+    - `weight`: trọng số của quy tắc này khi tổng hợp điểm trong CÙNG
+      1 `rule_type` (bước 3 "Cấu hình ngưỡng + trọng số cho điểm" --
+      xem thêm `QualityScoreConfig` cho trọng số + ngưỡng Ở CẤP tập dữ
+      liệu).
+    - `version`: tăng thêm 1 mỗi lần sửa -- lịch sử chi tiết lưu ở
+      `QualityRuleVersion`.
+    """
+
+    RULE_TYPES = ("COMPLETENESS", "VALIDITY", "UNIQUENESS", "CONSISTENCY")
+
+    id: Optional[int]
+    field_names: List[str]
+    rule_type: str
+    dataset_id: Optional[int] = None
+    params: Dict[str, Any] = field(default_factory=dict)
+    weight: float = 1.0
+    description: Optional[str] = None
+    is_active: bool = True
+    version: int = 1
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.field_names:
+            raise ValueError("field_names không được để trống")
+        for f_name in self.field_names:
+            if not f_name or not str(f_name).strip():
+                raise ValueError("Mỗi phần tử của field_names không được để trống")
+        if self.rule_type not in self.RULE_TYPES:
+            raise ValueError(
+                f"rule_type phải thuộc {self.RULE_TYPES}, nhận '{self.rule_type}'"
+            )
+        if self.weight is None or self.weight <= 0:
+            raise ValueError("weight phải > 0")
+        if self.rule_type == "VALIDITY" and not any(
+            k in self.params for k in ("regex", "allowed_values", "min_value", "max_value")
+        ):
+            raise ValueError(
+                "rule_type=VALIDITY yêu cầu params có ít nhất 1 trong: "
+                "regex/allowed_values/min_value/max_value"
+            )
+        if self.rule_type == "CONSISTENCY" and not str(
+            self.params.get("expression", "")
+        ).strip():
+            raise ValueError(
+                "rule_type=CONSISTENCY yêu cầu params.expression (biểu thức ràng buộc nhất quán)"
+            )
+        if self.rule_type == "UNIQUENESS" and len(self.field_names) < 1:
+            raise ValueError("rule_type=UNIQUENESS yêu cầu ít nhất 1 trường (field_names)")
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 2 'Thêm / Sửa quy tắc': hệ thống lưu vào
+
+        `metadata.quality_rules` + version -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class QualityRuleVersion:
+    """Lịch sử phiên bản (append-only) của 1 quy tắc chất lượng -- ghi
+
+    lại mỗi khi thêm mới (version=1) hoặc sửa quy tắc (bước 2 UC-038)."""
+
+    id: Optional[int]
+    rule_id: int
+    version: int
+    dataset_id: Optional[int]
+    field_names: List[str] = field(default_factory=list)
+    rule_type: str = ""
+    params: Dict[str, Any] = field(default_factory=dict)
+    weight: float = 1.0
+    is_active: bool = True
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
+class QualityScoreConfig:
+    """UC-038 bước 3 'Cấu hình ngưỡng + trọng số cho điểm': hệ thống lưu.
+
+    1 cấu hình điểm chất lượng, gắn với `dataset_id` (`None` = cấu hình
+    MẶC ĐỊNH áp dụng khi 1 tập dữ liệu chưa có cấu hình riêng) -- dùng
+    bởi UC-039 (bước "Chạy quy tắc -- Hệ thống tính điểm", "Đạt ngưỡng
+    -> công bố" / "Dưới ngưỡng -> hàng đợi ngoại lệ").
+
+    - `pass_threshold`: điểm đạt (thang 0-100) để công bố dữ liệu vào
+      kho chuẩn hoá; dưới ngưỡng này -> đẩy vào hàng đợi ngoại lệ.
+    - `rule_type_weights`: trọng số theo TỪNG LOẠI quy tắc (khoá thuộc
+      `QualityRule.RULE_TYPES`) dùng để tổng hợp điểm số cuối cùng từ
+      điểm từng nhóm quy tắc (đầy đủ/hợp lệ/duy nhất/nhất quán) --
+      khác `QualityRule.weight` (trọng số GIỮA CÁC quy tắc trong CÙNG
+      1 loại).
+    - `version`: tăng thêm 1 mỗi lần sửa -- lịch sử lưu ở
+      `QualityScoreConfigVersion`.
+    """
+
+    id: Optional[int]
+    pass_threshold: float
+    dataset_id: Optional[int] = None
+    rule_type_weights: Dict[str, float] = field(default_factory=dict)
+    version: int = 1
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.pass_threshold is None or not (0 <= self.pass_threshold <= 100):
+            raise ValueError("pass_threshold phải trong khoảng [0, 100]")
+        for rule_type, weight in self.rule_type_weights.items():
+            if rule_type not in QualityRule.RULE_TYPES:
+                raise ValueError(
+                    f"rule_type_weights có khoá không hợp lệ '{rule_type}', "
+                    f"phải thuộc {QualityRule.RULE_TYPES}"
+                )
+            if weight is None or weight < 0:
+                raise ValueError(f"Trọng số của '{rule_type}' phải >= 0")
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 3 'Hệ thống lưu' -- tăng version."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class QualityScoreConfigVersion:
+    """Lịch sử phiên bản (append-only) của 1 cấu hình điểm chất lượng --
+
+    ghi lại mỗi khi tạo mới (version=1) hoặc sửa (bước 3 UC-038)."""
+
+    id: Optional[int]
+    config_id: int
+    version: int
+    dataset_id: Optional[int]
+    pass_threshold: float = 0.0
+    rule_type_weights: Dict[str, float] = field(default_factory=dict)
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)

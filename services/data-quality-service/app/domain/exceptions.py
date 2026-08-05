@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class DomainError(Exception):
     """Base class cho lỗi nghiệp vụ."""
 
@@ -376,6 +379,45 @@ class InvalidCatalogChangeApproval(DomainError):
     action không hợp lệ...)."""
 
     code = "INVALID_CATALOG_CHANGE_APPROVAL"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+# ---------- UC-038: Quản lý quy tắc kiểm tra chất lượng ----------
+
+
+class QualityRuleNotFound(DomainError):
+    code = "QUALITY_RULE_NOT_FOUND"
+
+    def __init__(self, rule_id: int):
+        super().__init__(f"Không tìm thấy quy tắc chất lượng id={rule_id}")
+        self.rule_id = rule_id
+
+
+class InvalidQualityRule(DomainError):
+    code = "INVALID_QUALITY_RULE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class QualityScoreConfigNotFound(DomainError):
+    code = "QUALITY_SCORE_CONFIG_NOT_FOUND"
+
+    def __init__(self, config_id: Optional[int] = None, dataset_id: Optional[int] = None):
+        if config_id is not None:
+            super().__init__(f"Không tìm thấy cấu hình điểm chất lượng id={config_id}")
+        else:
+            super().__init__(
+                f"Chưa có cấu hình điểm chất lượng cho dataset_id={dataset_id}"
+            )
+        self.config_id = config_id
+        self.dataset_id = dataset_id
+
+
+class InvalidQualityScoreConfig(DomainError):
+    code = "INVALID_QUALITY_SCORE_CONFIG"
 
     def __init__(self, message: str):
         super().__init__(message)
