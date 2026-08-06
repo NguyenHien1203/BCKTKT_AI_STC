@@ -28,6 +28,7 @@ import {
   ScanSearch,
   Settings,
   ShieldAlert,
+  Tag,
   Ticket,
   UploadCloud,
   UserCog,
@@ -65,6 +66,7 @@ import QualityRulesPage from "./pages/dataquality/QualityRulesPage.jsx";
 import QualityChecksPage from "./pages/dataquality/QualityChecksPage.jsx";
 import QualityExceptionsPage from "./pages/dataquality/QualityExceptionsPage.jsx";
 import CuratedPublishPage from "./pages/dataquality/CuratedPublishPage.jsx";
+import DatasetMetadataPage from "./pages/dataquality/DatasetMetadataPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -303,6 +305,13 @@ function HomePage() {
       description:
         "UC-041 — Nhận sự kiện curated.publish.requested (UC-039/UC-040): chèn/cập nhật dm_*, đặt publish_status=approved, tạo batch_summary + cập nhật độ mới dữ liệu, phát sự kiện curated.published.",
       icon: CloudUpload,
+    },
+    {
+      to: "/dataset-metadata",
+      title: "Đăng ký siêu dữ liệu tập dữ liệu",
+      description:
+        "UC-042 — Đăng ký siêu dữ liệu (chủ sở hữu/mô tả/mức nhạy cảm), hệ thống lưu vào metadata.dataset_catalog; cập nhật lưu phiên bản mới; tra cứu siêu dữ liệu, hệ thống hiển thị.",
+      icon: Tag,
     },
   ];
 
@@ -685,6 +694,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CuratedPublishPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dataset-metadata"
+        element={
+          <ProtectedRoute>
+            <DatasetMetadataPage />
           </ProtectedRoute>
         }
       />

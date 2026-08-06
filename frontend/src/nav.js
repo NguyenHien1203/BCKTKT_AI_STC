@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Tag,
   Ticket,
   UploadCloud,
   CloudUpload,
@@ -97,6 +98,7 @@ export const NAV_SECTIONS = [
       { to: "/quality-checks", label: "Chạy kiểm tra chất lượng dữ liệu", icon: BadgeCheck },
       { to: "/quality-exceptions", label: "Xử lý ngoại lệ chất lượng", icon: ShieldAlert },
       { to: "/curated-publish", label: "Công bố vào kho chuẩn hoá + batch_summary", icon: CloudUpload },
+      { to: "/dataset-metadata", label: "Đăng ký siêu dữ liệu tập dữ liệu", icon: Tag },
 
     ],
   },

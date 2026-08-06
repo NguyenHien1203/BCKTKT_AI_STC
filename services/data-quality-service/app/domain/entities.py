@@ -1668,6 +1668,82 @@ class CuratedBatchSummary:
 
 
 @dataclass
+class DatasetMetadataEntry:
+    """UC-042: Đăng ký siêu dữ liệu tập dữ liệu (chủ sở hữu, mô tả, mức
+
+    nhạy cảm). Theo `docs/use_cases.json` id=42, tài liệu nghiệp vụ gốc
+    ghi "hệ thống lưu vào metadata.dataset_catalog" -- nhưng theo
+    ADR-001 (mỗi service 1 schema Postgres duy nhất, xem ARCHITECTURE.md)
+    và để KHÔNG trùng tên với bảng `dataset_catalog` đã có sẵn ở
+    ingestion-service (UC-018, lưu định nghĩa lược đồ/khoá chính/phân
+    mảnh của 1 tập dữ liệu -- một khái niệm khác), bảng siêu dữ liệu mô
+    tả (chủ sở hữu/mô tả/mức nhạy cảm) này đặt tên `dataset_metadata`
+    trong schema `curated` của data-quality-service, cùng nhất quán với
+    cách UC-018/UC-031/UC-035 đã ghi chú trước đây.
+
+    - `dataset_id`: tham chiếu tới id tập dữ liệu đã định nghĩa ở UC-018
+      (ingestion-service) -- KHÔNG kiểm tra khoá ngoại xuyên service
+      (đúng ranh giới microservice, cùng cách `dataset_id` được lưu dạng
+      số nguyên thô ở `ParsingJob`/`MappingJob`/... trong chính service
+      này), chỉ đảm bảo duy nhất 1 bản ghi siêu dữ liệu / dataset.
+    - `owner`: chủ sở hữu tập dữ liệu (tên/đơn vị chịu trách nhiệm).
+    - `description`: mô tả nghiệp vụ của tập dữ liệu.
+    - `sensitivity_level`: mức nhạy cảm -- dùng chung 4 mức đã định nghĩa
+      ở UC-004 (`PermissionContext.SENSITIVITY_LEVELS`, auth-identity-
+      service) để nhất quán toàn hệ thống: PUBLIC/INTERNAL/CONFIDENTIAL/
+      SECRET.
+    - `version`: tăng mỗi lần "Cập nhật siêu dữ liệu" (bước 2) -- lịch sử
+      chi tiết lưu ở `DatasetMetadataVersion` (append-only, cùng khuôn
+      mẫu UC-033/034/035).
+    """
+
+    SENSITIVITY_LEVELS = ("PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET")
+
+    id: Optional[int]
+    dataset_id: int
+    owner: str
+    description: Optional[str] = None
+    sensitivity_level: str = "INTERNAL"
+    version: int = 1
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.dataset_id is None:
+            raise ValueError("dataset_id không được để trống")
+        if not self.owner or not self.owner.strip():
+            raise ValueError("owner (chủ sở hữu) không được để trống")
+        if self.sensitivity_level not in self.SENSITIVITY_LEVELS:
+            raise ValueError(
+                f"sensitivity_level phải thuộc {self.SENSITIVITY_LEVELS}, "
+                f"nhận '{self.sensitivity_level}'"
+            )
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 2 'Cập nhật siêu dữ liệu': hệ thống lưu phiên bản mới."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class DatasetMetadataVersion:
+    """Lịch sử phiên bản (append-only) của siêu dữ liệu 1 tập dữ liệu --
+
+    ghi lại mỗi khi đăng ký lần đầu (version=1, bước 1) hoặc cập nhật
+    (bước 2 UC-042 'Hệ thống lưu phiên bản mới')."""
+
+    id: Optional[int]
+    dataset_metadata_id: int
+    dataset_id: int
+    version: int
+    owner: str
+    description: Optional[str]
+    sensitivity_level: str
+    change_note: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
 class CuratedDatasetFreshness:
     """Bước 3 'cập nhật độ mới dữ liệu': theo dõi lần công bố gần nhất
 

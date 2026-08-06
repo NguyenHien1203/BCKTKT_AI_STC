@@ -20,6 +20,8 @@ from app.domain.entities import (
     CuratedDatasetFreshness,
     CuratedDmRecord,
     CuratedPublishJob,
+    DatasetMetadataEntry,
+    DatasetMetadataVersion,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -860,4 +862,46 @@ class CuratedDatasetFreshnessRepository(ABC):
 
     @abstractmethod
     def list_all(self) -> List[CuratedDatasetFreshness]:
+        ...
+
+# ---------- UC-042: Đăng ký siêu dữ liệu tập dữ liệu ----------
+
+
+class DatasetMetadataRepository(ABC):
+    @abstractmethod
+    def add(self, metadata: DatasetMetadataEntry) -> DatasetMetadataEntry:
+        ...
+
+    @abstractmethod
+    def update(self, metadata: DatasetMetadataEntry) -> DatasetMetadataEntry:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, metadata_id: int) -> Optional[DatasetMetadataEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_dataset_id(self, dataset_id: int) -> Optional[DatasetMetadataEntry]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        sensitivity_level: Optional[str] = None,
+        owner: Optional[str] = None,
+    ) -> List[DatasetMetadataEntry]:
+        ...
+
+
+class DatasetMetadataVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi đăng ký mới (bước 1)
+
+    hoặc cập nhật (bước 2 UC-042)."""
+
+    @abstractmethod
+    def add(self, version: DatasetMetadataVersion) -> DatasetMetadataVersion:
+        ...
+
+    @abstractmethod
+    def list_for_metadata(self, dataset_metadata_id: int) -> List[DatasetMetadataVersion]:
         ...

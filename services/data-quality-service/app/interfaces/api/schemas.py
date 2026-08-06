@@ -1537,3 +1537,81 @@ class CuratedDatasetFreshnessResponse(BaseModel):
             total_published_records=f.total_published_records,
             updated_at=f.updated_at,
         )
+# ---------- UC-042: Đăng ký siêu dữ liệu tập dữ liệu ----------
+
+
+class DatasetMetadataResponse(BaseModel):
+    id: int
+    dataset_id: int
+    owner: str
+    description: Optional[str] = None
+    sensitivity_level: str
+    version: int
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, m) -> "DatasetMetadataResponse":
+        return cls(
+            id=m.id,
+            dataset_id=m.dataset_id,
+            owner=m.owner,
+            description=m.description,
+            sensitivity_level=m.sensitivity_level,
+            version=m.version,
+            created_at=m.created_at,
+            updated_at=m.updated_at,
+        )
+
+
+class DatasetMetadataVersionResponse(BaseModel):
+    id: int
+    dataset_metadata_id: int
+    dataset_id: int
+    version: int
+    owner: str
+    description: Optional[str] = None
+    sensitivity_level: str
+    change_note: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "DatasetMetadataVersionResponse":
+        return cls(
+            id=v.id,
+            dataset_metadata_id=v.dataset_metadata_id,
+            dataset_id=v.dataset_id,
+            version=v.version,
+            owner=v.owner,
+            description=v.description,
+            sensitivity_level=v.sensitivity_level,
+            change_note=v.change_note,
+            changed_at=v.changed_at,
+        )
+
+
+class DatasetMetadataRegister(BaseModel):
+    """Bước 1 'Đăng ký siêu dữ liệu tập dữ liệu (chủ sở hữu, mô tả, mức
+
+    nhạy cảm)'."""
+
+    dataset_id: int
+    owner: str
+    description: Optional[str] = None
+    sensitivity_level: str = Field(
+        default="INTERNAL", description="PUBLIC / INTERNAL / CONFIDENTIAL / SECRET"
+    )
+    note: Optional[str] = None
+
+
+class DatasetMetadataUpdate(BaseModel):
+    """Bước 2 'Cập nhật siêu dữ liệu' -- hệ thống lưu phiên bản mới."""
+
+    owner: Optional[str] = None
+    description: Optional[str] = None
+    clear_description: bool = Field(
+        default=False,
+        description="True để xoá description hiện có (thay vì giữ nguyên)",
+    )
+    sensitivity_level: Optional[str] = None
+    note: Optional[str] = None
