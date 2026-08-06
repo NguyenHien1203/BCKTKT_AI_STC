@@ -806,3 +806,84 @@ class DatasetMetadataVersionModel(Base):
     sensitivity_level = Column(String(20), nullable=False)
     change_note = Column(Text, nullable=True)
     changed_at = Column(String(40), nullable=False)
+
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+class SemanticIndicatorModel(Base):
+    """UC-043 bước 1/3: chỉ tiêu trong Lớp ngữ nghĩa (bảng thật
+
+    `semantic_indicators`, schema `curated`)."""
+
+    __tablename__ = "semantic_indicators"
+    __table_args__ = (
+        UniqueConstraint("name", name="uq_semantic_indicators_name"),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    expression = Column(Text, nullable=False)
+    domain = Column(String(255), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="DRAFT", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    created_by = Column(String(255), nullable=True)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class SemanticIndicatorVersionModel(Base):
+    """UC-043 bước 3: lịch sử phiên bản (append-only) của 1 chỉ tiêu."""
+
+    __tablename__ = "semantic_indicator_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    indicator_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}semantic_indicators.id"), nullable=False, index=True
+    )
+    version = Column(Integer, nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    expression = Column(Text, nullable=False)
+    domain = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False)
+    change_note = Column(Text, nullable=True)
+    changed_by = Column(String(255), nullable=True)
+    changed_at = Column(String(40), nullable=False)
+
+
+class IndicatorTestRunModel(Base):
+    """UC-043 bước 2: 1 lượt kiểm thử chỉ tiêu trên truy vấn mẫu."""
+
+    __tablename__ = "indicator_test_runs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    indicator_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}semantic_indicators.id"), nullable=False, index=True
+    )
+    expression_snapshot = Column(Text, nullable=False)
+    sample_rows_json = Column(Text, nullable=False, default="[]")
+    status = Column(String(20), nullable=False, index=True)
+    result_value = Column(Float, nullable=True)
+    error_message = Column(Text, nullable=True)
+    tested_by = Column(String(255), nullable=True)
+    tested_at = Column(String(40), nullable=False)
+
+
+class IndicatorAuditLogModel(Base):
+    """UC-043 bước 3: nhật ký append-only (tạo/sửa/kiểm thử chỉ tiêu)."""
+
+    __tablename__ = "indicator_audit_logs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    indicator_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}semantic_indicators.id"), nullable=False, index=True
+    )
+    action = Column(String(20), nullable=False, index=True)
+    actor = Column(String(255), nullable=True)
+    detail_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(String(40), nullable=False)

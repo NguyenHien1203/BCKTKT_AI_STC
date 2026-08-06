@@ -41,6 +41,10 @@ from app.domain.entities import (
     QualityRuleVersion,
     QualityScoreConfig,
     QualityScoreConfigVersion,
+    SemanticIndicator,
+    SemanticIndicatorVersion,
+    IndicatorTestRun,
+    IndicatorAuditLog,
     UnmappedQueueItem,
 )
 from app.domain.repositories import (
@@ -79,6 +83,10 @@ from app.domain.repositories import (
     QualityRuleVersionRepository,
     QualityScoreConfigRepository,
     QualityScoreConfigVersionRepository,
+    SemanticIndicatorRepository,
+    SemanticIndicatorVersionRepository,
+    IndicatorTestRunRepository,
+    IndicatorAuditLogRepository,
     StgStructuredRowRepository,
     UnmappedQueueRepository,
 )
@@ -118,6 +126,10 @@ from app.infrastructure.db.models import (
     QualityRuleVersionModel,
     QualityScoreConfigModel,
     QualityScoreConfigVersionModel,
+    SemanticIndicatorModel,
+    SemanticIndicatorVersionModel,
+    IndicatorTestRunModel,
+    IndicatorAuditLogModel,
     StgStructuredRowModel,
     UnmappedQueueItemModel,
 )
@@ -2554,4 +2566,218 @@ def _dataset_metadata_to_entity(m: DatasetMetadataModel) -> DatasetMetadataEntry
         version=m.version,
         created_at=m.created_at,
         updated_at=m.updated_at,
+    )
+
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+class SqlAlchemySemanticIndicatorRepository(SemanticIndicatorRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, indicator: SemanticIndicator) -> SemanticIndicator:
+        model = SemanticIndicatorModel(
+            name=indicator.name,
+            description=indicator.description,
+            expression=indicator.expression,
+            domain=indicator.domain,
+            status=indicator.status,
+            version=indicator.version,
+            created_by=indicator.created_by,
+            created_at=indicator.created_at,
+            updated_at=indicator.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        indicator.id = model.id
+        return indicator
+
+    def update(self, indicator: SemanticIndicator) -> SemanticIndicator:
+        model = self._db.get(SemanticIndicatorModel, indicator.id)
+        if model is None:
+            return indicator
+        model.name = indicator.name
+        model.description = indicator.description
+        model.expression = indicator.expression
+        model.domain = indicator.domain
+        model.status = indicator.status
+        model.version = indicator.version
+        model.updated_at = indicator.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return indicator
+
+    def get_by_id(self, indicator_id: int) -> Optional[SemanticIndicator]:
+        model = self._db.get(SemanticIndicatorModel, indicator_id)
+        return _semantic_indicator_to_entity(model) if model else None
+
+    def get_by_name(self, name: str) -> Optional[SemanticIndicator]:
+        stmt = select(SemanticIndicatorModel).where(SemanticIndicatorModel.name == name)
+        model = self._db.execute(stmt).scalars().first()
+        return _semantic_indicator_to_entity(model) if model else None
+
+    def list(
+        self,
+        domain: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[SemanticIndicator]:
+        stmt = select(SemanticIndicatorModel)
+        if domain:
+            stmt = stmt.where(SemanticIndicatorModel.domain == domain)
+        if status:
+            stmt = stmt.where(SemanticIndicatorModel.status == status)
+        stmt = stmt.order_by(SemanticIndicatorModel.id.desc())
+        return [_semantic_indicator_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemySemanticIndicatorVersionRepository(SemanticIndicatorVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: SemanticIndicatorVersion) -> SemanticIndicatorVersion:
+        model = SemanticIndicatorVersionModel(
+            indicator_id=version.indicator_id,
+            version=version.version,
+            name=version.name,
+            description=version.description,
+            expression=version.expression,
+            domain=version.domain,
+            status=version.status,
+            change_note=version.change_note,
+            changed_by=version.changed_by,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_indicator(self, indicator_id: int) -> List[SemanticIndicatorVersion]:
+        stmt = (
+            select(SemanticIndicatorVersionModel)
+            .where(SemanticIndicatorVersionModel.indicator_id == indicator_id)
+            .order_by(SemanticIndicatorVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                SemanticIndicatorVersion(
+                    id=m.id,
+                    indicator_id=m.indicator_id,
+                    version=m.version,
+                    name=m.name,
+                    description=m.description,
+                    expression=m.expression,
+                    domain=m.domain,
+                    status=m.status,
+                    change_note=m.change_note,
+                    changed_by=m.changed_by,
+                    changed_at=m.changed_at,
+                )
+            )
+        return result
+
+
+class SqlAlchemyIndicatorTestRunRepository(IndicatorTestRunRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, test_run: IndicatorTestRun) -> IndicatorTestRun:
+        model = IndicatorTestRunModel(
+            indicator_id=test_run.indicator_id,
+            expression_snapshot=test_run.expression_snapshot,
+            sample_rows_json=json.dumps(test_run.sample_rows),
+            status=test_run.status,
+            result_value=test_run.result_value,
+            error_message=test_run.error_message,
+            tested_by=test_run.tested_by,
+            tested_at=test_run.tested_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        test_run.id = model.id
+        return test_run
+
+    def get_by_id(self, test_run_id: int) -> Optional[IndicatorTestRun]:
+        model = self._db.get(IndicatorTestRunModel, test_run_id)
+        return _indicator_test_run_to_entity(model) if model else None
+
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorTestRun]:
+        stmt = (
+            select(IndicatorTestRunModel)
+            .where(IndicatorTestRunModel.indicator_id == indicator_id)
+            .order_by(IndicatorTestRunModel.id.desc())
+        )
+        return [_indicator_test_run_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyIndicatorAuditLogRepository(IndicatorAuditLogRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, log: IndicatorAuditLog) -> IndicatorAuditLog:
+        model = IndicatorAuditLogModel(
+            indicator_id=log.indicator_id,
+            action=log.action,
+            actor=log.actor,
+            detail_json=json.dumps(log.detail or {}),
+            created_at=log.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        log.id = model.id
+        return log
+
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorAuditLog]:
+        stmt = (
+            select(IndicatorAuditLogModel)
+            .where(IndicatorAuditLogModel.indicator_id == indicator_id)
+            .order_by(IndicatorAuditLogModel.id.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                IndicatorAuditLog(
+                    id=m.id,
+                    indicator_id=m.indicator_id,
+                    action=m.action,
+                    actor=m.actor,
+                    detail=json.loads(m.detail_json or "{}"),
+                    created_at=m.created_at,
+                )
+            )
+        return result
+
+
+def _semantic_indicator_to_entity(m: SemanticIndicatorModel) -> SemanticIndicator:
+    return SemanticIndicator(
+        id=m.id,
+        name=m.name,
+        description=m.description,
+        expression=m.expression,
+        domain=m.domain,
+        status=m.status,
+        version=m.version,
+        created_by=m.created_by,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+def _indicator_test_run_to_entity(m: IndicatorTestRunModel) -> IndicatorTestRun:
+    return IndicatorTestRun(
+        id=m.id,
+        indicator_id=m.indicator_id,
+        expression_snapshot=m.expression_snapshot,
+        sample_rows=json.loads(m.sample_rows_json or "[]"),
+        status=m.status,
+        result_value=m.result_value,
+        error_message=m.error_message,
+        tested_by=m.tested_by,
+        tested_at=m.tested_at,
     )

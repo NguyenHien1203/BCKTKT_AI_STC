@@ -578,3 +578,51 @@ class InvalidDatasetMetadata(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+class SemanticIndicatorNotFound(DomainError):
+    code = "SEMANTIC_INDICATOR_NOT_FOUND"
+
+    def __init__(self, indicator_id: int):
+        super().__init__(f"Không tìm thấy chỉ tiêu id={indicator_id}")
+        self.indicator_id = indicator_id
+
+
+class SemanticIndicatorNameAlreadyExists(DomainError):
+    """Bước 1 'Tạo chỉ tiêu mới': tên chỉ tiêu đã tồn tại -- mỗi tên chỉ
+
+    tiêu phải duy nhất toàn hệ thống."""
+
+    code = "SEMANTIC_INDICATOR_NAME_ALREADY_EXISTS"
+
+    def __init__(self, name: str):
+        super().__init__(f"Tên chỉ tiêu '{name}' đã tồn tại")
+        self.name = name
+
+
+class InvalidSemanticIndicator(DomainError):
+    code = "INVALID_SEMANTIC_INDICATOR"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class IndicatorTestRunNotFound(DomainError):
+    code = "INDICATOR_TEST_RUN_NOT_FOUND"
+
+    def __init__(self, test_run_id: int):
+        super().__init__(f"Không tìm thấy lượt kiểm thử id={test_run_id}")
+        self.test_run_id = test_run_id
+
+
+class InvalidIndicatorTestRequest(DomainError):
+    """Bước 2 'Kiểm thử chỉ tiêu trên truy vấn mẫu': dữ liệu mẫu
+
+    (`sample_rows`) không hợp lệ (rỗng/không phải danh sách bản ghi)."""
+
+    code = "INVALID_INDICATOR_TEST_REQUEST"
+
+    def __init__(self, message: str):
+        super().__init__(message)
