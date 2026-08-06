@@ -23,6 +23,7 @@ import {
   Sparkles,
   Ticket,
   UploadCloud,
+  CloudUpload,
   Wrench,
   Users,
   FileBarChart,
@@ -95,6 +96,7 @@ export const NAV_SECTIONS = [
       { to: "/quality-rules", label: "Quản lý quy tắc kiểm tra chất lượng", icon: Gauge },
       { to: "/quality-checks", label: "Chạy kiểm tra chất lượng dữ liệu", icon: BadgeCheck },
       { to: "/quality-exceptions", label: "Xử lý ngoại lệ chất lượng", icon: ShieldAlert },
+      { to: "/curated-publish", label: "Công bố vào kho chuẩn hoá + batch_summary", icon: CloudUpload },
 
     ],
   },

@@ -664,3 +664,96 @@ class QualityExceptionQueueItemModel(Base):
     resolution_reason = Column(Text, nullable=True)
     resolved_at = Column(String(40), nullable=True)
     created_at = Column(String(40), nullable=False)
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+class CuratedPublishJobModel(Base):
+    """UC-041: 1 lượt công bố vào kho chuẩn hoá (nhận sự kiện
+
+    `curated.publish.requested`)."""
+
+    __tablename__ = "curated_publish_jobs"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    quality_check_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}quality_check_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=True, index=True)
+    mapping_job_id = Column(Integer, nullable=True)
+    source = Column(String(40), nullable=False, default="uc039_quality_check")
+    status = Column(String(20), nullable=False, default="RECEIVED", index=True)
+    records_received = Column(Integer, nullable=False, default=0)
+    inserted_count = Column(Integer, nullable=False, default=0)
+    updated_count = Column(Integer, nullable=False, default=0)
+    batch_summary_id = Column(Integer, nullable=True)
+    published_event_published = Column(Boolean, nullable=False, default=False)
+    log_entries_json = Column(Text, nullable=False, default="[]")
+    error_message = Column(Text, nullable=True)
+    received_at = Column(String(40), nullable=False)
+    completed_at = Column(String(40), nullable=True)
+
+
+class CuratedDmRecordModel(Base):
+    """Bước 1 'Chèn/Cập nhật vào dm_*' + bước 2 'Đặt publish_status=
+
+    approved': 1 dòng dữ liệu đã công bố trong kho chuẩn hoá (lớp data
+    mart `dm_*`), khoá nghiệp vụ duy nhất (`dataset_id`, `row_index`)."""
+
+    __tablename__ = "dm_records"
+    __table_args__ = (
+        UniqueConstraint("dataset_id", "row_index", name="uq_dm_records_dataset_row"),
+        _table_args,
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=True, index=True)
+    row_index = Column(Integer, nullable=False)
+    standardized_fields_json = Column(Text, nullable=False)
+    publish_status = Column(String(20), nullable=False, default="approved", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    curated_publish_job_id = Column(Integer, nullable=True, index=True)
+    quality_check_job_id = Column(Integer, nullable=True)
+    source = Column(String(40), nullable=False, default="uc039_quality_check")
+    first_published_at = Column(String(40), nullable=False)
+    last_published_at = Column(String(40), nullable=False)
+
+
+class CuratedBatchSummaryModel(Base):
+    """Bước 3 'Tạo batch_summary'."""
+
+    __tablename__ = "curated_batch_summaries"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    curated_publish_job_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}curated_publish_jobs.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=True, index=True)
+    quality_check_job_id = Column(Integer, nullable=False)
+    mapping_job_id = Column(Integer, nullable=True)
+    source = Column(String(40), nullable=False, default="uc039_quality_check")
+    records_received = Column(Integer, nullable=False, default=0)
+    inserted_count = Column(Integer, nullable=False, default=0)
+    updated_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(String(40), nullable=False)
+
+
+class CuratedDatasetFreshnessModel(Base):
+    """Bước 3 'cập nhật độ mới dữ liệu' -- 1 bản ghi duy nhất mỗi
+
+    `dataset_id`."""
+
+    __tablename__ = "curated_dataset_freshness"
+    __table_args__ = (
+        UniqueConstraint("dataset_id", name="uq_curated_dataset_freshness_dataset"),
+        _table_args,
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=True)
+    last_batch_summary_id = Column(Integer, nullable=True)
+    last_published_at = Column(String(40), nullable=False)
+    total_published_records = Column(Integer, nullable=False, default=0)
+    updated_at = Column(String(40), nullable=False)

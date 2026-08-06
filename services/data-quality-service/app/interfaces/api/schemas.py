@@ -1406,3 +1406,134 @@ class ResolveQualityExceptionBatchResponse(BaseModel):
             ],
             resolved_count=len(result.items),
         )
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+class CuratedPublishRequestedEvent(BaseModel):
+    """Payload mô phỏng sự kiện `curated.publish.requested` (phát bởi
+
+    UC-039 bước 3a khi đạt ngưỡng chất lượng, hoặc UC-040 khi `FIX` 1
+    ngoại lệ chất lượng) -- kích hoạt UC-041."""
+
+    quality_check_job_id: int
+    dataset_id: Optional[int] = None
+    mapping_job_id: Optional[int] = None
+    record_count: Optional[int] = None
+    source: str = Field(default="uc039_quality_check")
+
+
+class CuratedPublishJobResponse(BaseModel):
+    id: int
+    quality_check_job_id: int
+    dataset_id: Optional[int] = None
+    mapping_job_id: Optional[int] = None
+    source: str
+    status: str
+    records_received: int
+    inserted_count: int
+    updated_count: int
+    batch_summary_id: Optional[int] = None
+    published_event_published: bool
+    log_entries: List[Dict[str, str]] = Field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str
+    completed_at: Optional[str] = None
+
+    @classmethod
+    def from_entity(cls, j) -> "CuratedPublishJobResponse":
+        return cls(
+            id=j.id,
+            quality_check_job_id=j.quality_check_job_id,
+            dataset_id=j.dataset_id,
+            mapping_job_id=j.mapping_job_id,
+            source=j.source,
+            status=j.status,
+            records_received=j.records_received,
+            inserted_count=j.inserted_count,
+            updated_count=j.updated_count,
+            batch_summary_id=j.batch_summary_id,
+            published_event_published=j.published_event_published,
+            log_entries=j.log_entries,
+            error_message=j.error_message,
+            received_at=j.received_at,
+            completed_at=j.completed_at,
+        )
+
+
+class CuratedDmRecordResponse(BaseModel):
+    id: int
+    dataset_id: Optional[int] = None
+    row_index: int
+    standardized_fields: Dict[str, Any] = Field(default_factory=dict)
+    publish_status: str
+    version: int
+    curated_publish_job_id: Optional[int] = None
+    quality_check_job_id: Optional[int] = None
+    source: str
+    first_published_at: str
+    last_published_at: str
+
+    @classmethod
+    def from_entity(cls, r) -> "CuratedDmRecordResponse":
+        return cls(
+            id=r.id,
+            dataset_id=r.dataset_id,
+            row_index=r.row_index,
+            standardized_fields=r.standardized_fields,
+            publish_status=r.publish_status,
+            version=r.version,
+            curated_publish_job_id=r.curated_publish_job_id,
+            quality_check_job_id=r.quality_check_job_id,
+            source=r.source,
+            first_published_at=r.first_published_at,
+            last_published_at=r.last_published_at,
+        )
+
+
+class CuratedBatchSummaryResponse(BaseModel):
+    id: int
+    curated_publish_job_id: int
+    dataset_id: Optional[int] = None
+    quality_check_job_id: int
+    mapping_job_id: Optional[int] = None
+    source: str
+    records_received: int
+    inserted_count: int
+    updated_count: int
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, s) -> "CuratedBatchSummaryResponse":
+        return cls(
+            id=s.id,
+            curated_publish_job_id=s.curated_publish_job_id,
+            dataset_id=s.dataset_id,
+            quality_check_job_id=s.quality_check_job_id,
+            mapping_job_id=s.mapping_job_id,
+            source=s.source,
+            records_received=s.records_received,
+            inserted_count=s.inserted_count,
+            updated_count=s.updated_count,
+            created_at=s.created_at,
+        )
+
+
+class CuratedDatasetFreshnessResponse(BaseModel):
+    id: int
+    dataset_id: Optional[int] = None
+    last_batch_summary_id: Optional[int] = None
+    last_published_at: str
+    total_published_records: int
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, f) -> "CuratedDatasetFreshnessResponse":
+        return cls(
+            id=f.id,
+            dataset_id=f.dataset_id,
+            last_batch_summary_id=f.last_batch_summary_id,
+            last_published_at=f.last_published_at,
+            total_published_records=f.total_published_records,
+            updated_at=f.updated_at,
+        )

@@ -16,6 +16,10 @@ from app.domain.entities import (
     CatalogChangeRequest,
     CatalogEntry,
     CatalogEntryVersion,
+    CuratedBatchSummary,
+    CuratedDatasetFreshness,
+    CuratedDmRecord,
+    CuratedPublishJob,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -48,6 +52,10 @@ from app.domain.repositories import (
     CatalogChangeRequestRepository,
     CatalogEntryRepository,
     CatalogEntryVersionRepository,
+    CuratedBatchSummaryRepository,
+    CuratedDatasetFreshnessRepository,
+    CuratedDmRecordRepository,
+    CuratedPublishJobRepository,
     MappedStandardRecordRepository,
     MappingJobRepository,
     MappingRejectionRepository,
@@ -81,6 +89,10 @@ from app.infrastructure.db.models import (
     CatalogChangeRequestModel,
     CatalogEntryModel,
     CatalogEntryVersionModel,
+    CuratedBatchSummaryModel,
+    CuratedDatasetFreshnessModel,
+    CuratedDmRecordModel,
+    CuratedPublishJobModel,
     MappedStandardRecordModel,
     MappingJobModel,
     MappingRejectionModel,
@@ -2128,3 +2140,295 @@ class SqlAlchemyQualityExceptionQueueRepository(QualityExceptionQueueRepository)
             resolved_at=m.resolved_at,
             created_at=m.created_at,
         )
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+def _curated_publish_job_to_entity(m: CuratedPublishJobModel) -> CuratedPublishJob:
+    return CuratedPublishJob(
+        id=m.id,
+        quality_check_job_id=m.quality_check_job_id,
+        dataset_id=m.dataset_id,
+        mapping_job_id=m.mapping_job_id,
+        source=m.source,
+        status=m.status,
+        records_received=m.records_received,
+        inserted_count=m.inserted_count,
+        updated_count=m.updated_count,
+        batch_summary_id=m.batch_summary_id,
+        published_event_published=m.published_event_published,
+        log_entries=json.loads(m.log_entries_json or "[]"),
+        error_message=m.error_message,
+        received_at=m.received_at,
+        completed_at=m.completed_at,
+    )
+
+
+class SqlAlchemyCuratedPublishJobRepository(CuratedPublishJobRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, job: CuratedPublishJob) -> CuratedPublishJob:
+        model = CuratedPublishJobModel(
+            quality_check_job_id=job.quality_check_job_id,
+            dataset_id=job.dataset_id,
+            mapping_job_id=job.mapping_job_id,
+            source=job.source,
+            status=job.status,
+            records_received=job.records_received,
+            inserted_count=job.inserted_count,
+            updated_count=job.updated_count,
+            batch_summary_id=job.batch_summary_id,
+            published_event_published=job.published_event_published,
+            log_entries_json=json.dumps(job.log_entries),
+            error_message=job.error_message,
+            received_at=job.received_at,
+            completed_at=job.completed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        job.id = model.id
+        return job
+
+    def update(self, job: CuratedPublishJob) -> CuratedPublishJob:
+        model = self._db.get(CuratedPublishJobModel, job.id)
+        if model is None:
+            return job
+        model.dataset_id = job.dataset_id
+        model.mapping_job_id = job.mapping_job_id
+        model.source = job.source
+        model.status = job.status
+        model.records_received = job.records_received
+        model.inserted_count = job.inserted_count
+        model.updated_count = job.updated_count
+        model.batch_summary_id = job.batch_summary_id
+        model.published_event_published = job.published_event_published
+        model.log_entries_json = json.dumps(job.log_entries)
+        model.error_message = job.error_message
+        model.completed_at = job.completed_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return job
+
+    def get_by_id(self, curated_publish_job_id: int) -> Optional[CuratedPublishJob]:
+        model = self._db.get(CuratedPublishJobModel, curated_publish_job_id)
+        return _curated_publish_job_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        quality_check_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[CuratedPublishJob]:
+        stmt = select(CuratedPublishJobModel)
+        if dataset_id is not None:
+            stmt = stmt.where(CuratedPublishJobModel.dataset_id == dataset_id)
+        if quality_check_job_id is not None:
+            stmt = stmt.where(CuratedPublishJobModel.quality_check_job_id == quality_check_job_id)
+        if status is not None:
+            stmt = stmt.where(CuratedPublishJobModel.status == status)
+        stmt = stmt.order_by(CuratedPublishJobModel.id.desc())
+        return [
+            _curated_publish_job_to_entity(m) for m in self._db.execute(stmt).scalars().all()
+        ]
+
+
+def _dm_record_to_entity(m: CuratedDmRecordModel) -> CuratedDmRecord:
+    return CuratedDmRecord(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        row_index=m.row_index,
+        standardized_fields=json.loads(m.standardized_fields_json or "{}"),
+        publish_status=m.publish_status,
+        version=m.version,
+        curated_publish_job_id=m.curated_publish_job_id,
+        quality_check_job_id=m.quality_check_job_id,
+        source=m.source,
+        first_published_at=m.first_published_at,
+        last_published_at=m.last_published_at,
+    )
+
+
+class SqlAlchemyCuratedDmRecordRepository(CuratedDmRecordRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get_by_dataset_and_row(
+        self, dataset_id: Optional[int], row_index: int
+    ) -> Optional[CuratedDmRecord]:
+        stmt = select(CuratedDmRecordModel).where(
+            CuratedDmRecordModel.dataset_id == dataset_id,
+            CuratedDmRecordModel.row_index == row_index,
+        )
+        model = self._db.execute(stmt).scalars().first()
+        return _dm_record_to_entity(model) if model else None
+
+    def add(self, record: CuratedDmRecord) -> CuratedDmRecord:
+        model = CuratedDmRecordModel(
+            dataset_id=record.dataset_id,
+            row_index=record.row_index,
+            standardized_fields_json=json.dumps(record.standardized_fields, ensure_ascii=False, default=str),
+            publish_status=record.publish_status,
+            version=record.version,
+            curated_publish_job_id=record.curated_publish_job_id,
+            quality_check_job_id=record.quality_check_job_id,
+            source=record.source,
+            first_published_at=record.first_published_at,
+            last_published_at=record.last_published_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        record.id = model.id
+        return record
+
+    def update(self, record: CuratedDmRecord) -> CuratedDmRecord:
+        model = self._db.get(CuratedDmRecordModel, record.id)
+        if model is None:
+            return record
+        model.standardized_fields_json = json.dumps(
+            record.standardized_fields, ensure_ascii=False, default=str
+        )
+        model.publish_status = record.publish_status
+        model.version = record.version
+        model.curated_publish_job_id = record.curated_publish_job_id
+        model.quality_check_job_id = record.quality_check_job_id
+        model.source = record.source
+        model.last_published_at = record.last_published_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return record
+
+    def list_by_dataset(
+        self,
+        dataset_id: Optional[int] = None,
+        publish_status: Optional[str] = None,
+    ) -> List[CuratedDmRecord]:
+        stmt = select(CuratedDmRecordModel)
+        if dataset_id is not None:
+            stmt = stmt.where(CuratedDmRecordModel.dataset_id == dataset_id)
+        if publish_status is not None:
+            stmt = stmt.where(CuratedDmRecordModel.publish_status == publish_status)
+        stmt = stmt.order_by(CuratedDmRecordModel.row_index.asc())
+        return [_dm_record_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+    def list_by_publish_job(self, curated_publish_job_id: int) -> List[CuratedDmRecord]:
+        stmt = (
+            select(CuratedDmRecordModel)
+            .where(CuratedDmRecordModel.curated_publish_job_id == curated_publish_job_id)
+            .order_by(CuratedDmRecordModel.row_index.asc())
+        )
+        return [_dm_record_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+def _batch_summary_to_entity(m: CuratedBatchSummaryModel) -> CuratedBatchSummary:
+    return CuratedBatchSummary(
+        id=m.id,
+        curated_publish_job_id=m.curated_publish_job_id,
+        dataset_id=m.dataset_id,
+        quality_check_job_id=m.quality_check_job_id,
+        mapping_job_id=m.mapping_job_id,
+        source=m.source,
+        records_received=m.records_received,
+        inserted_count=m.inserted_count,
+        updated_count=m.updated_count,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyCuratedBatchSummaryRepository(CuratedBatchSummaryRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, summary: CuratedBatchSummary) -> CuratedBatchSummary:
+        model = CuratedBatchSummaryModel(
+            curated_publish_job_id=summary.curated_publish_job_id,
+            dataset_id=summary.dataset_id,
+            quality_check_job_id=summary.quality_check_job_id,
+            mapping_job_id=summary.mapping_job_id,
+            source=summary.source,
+            records_received=summary.records_received,
+            inserted_count=summary.inserted_count,
+            updated_count=summary.updated_count,
+            created_at=summary.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        summary.id = model.id
+        return summary
+
+    def get_by_id(self, batch_summary_id: int) -> Optional[CuratedBatchSummary]:
+        model = self._db.get(CuratedBatchSummaryModel, batch_summary_id)
+        return _batch_summary_to_entity(model) if model else None
+
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        quality_check_job_id: Optional[int] = None,
+    ) -> List[CuratedBatchSummary]:
+        stmt = select(CuratedBatchSummaryModel)
+        if dataset_id is not None:
+            stmt = stmt.where(CuratedBatchSummaryModel.dataset_id == dataset_id)
+        if quality_check_job_id is not None:
+            stmt = stmt.where(
+                CuratedBatchSummaryModel.quality_check_job_id == quality_check_job_id
+            )
+        stmt = stmt.order_by(CuratedBatchSummaryModel.id.desc())
+        return [_batch_summary_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+def _freshness_to_entity(m: CuratedDatasetFreshnessModel) -> CuratedDatasetFreshness:
+    return CuratedDatasetFreshness(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        last_batch_summary_id=m.last_batch_summary_id,
+        last_published_at=m.last_published_at,
+        total_published_records=m.total_published_records,
+        updated_at=m.updated_at,
+    )
+
+
+class SqlAlchemyCuratedDatasetFreshnessRepository(CuratedDatasetFreshnessRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def get_by_dataset(self, dataset_id: Optional[int]) -> Optional[CuratedDatasetFreshness]:
+        stmt = select(CuratedDatasetFreshnessModel).where(
+            CuratedDatasetFreshnessModel.dataset_id == dataset_id
+        )
+        model = self._db.execute(stmt).scalars().first()
+        return _freshness_to_entity(model) if model else None
+
+    def upsert(self, freshness: CuratedDatasetFreshness) -> CuratedDatasetFreshness:
+        model = self._db.get(CuratedDatasetFreshnessModel, freshness.id) if freshness.id else None
+        if model is None:
+            model = CuratedDatasetFreshnessModel(
+                dataset_id=freshness.dataset_id,
+                last_batch_summary_id=freshness.last_batch_summary_id,
+                last_published_at=freshness.last_published_at,
+                total_published_records=freshness.total_published_records,
+                updated_at=freshness.updated_at,
+            )
+            self._db.add(model)
+            self._db.commit()
+            self._db.refresh(model)
+            freshness.id = model.id
+            return freshness
+        model.last_batch_summary_id = freshness.last_batch_summary_id
+        model.last_published_at = freshness.last_published_at
+        model.total_published_records = freshness.total_published_records
+        model.updated_at = freshness.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return freshness
+
+    def list_all(self) -> List[CuratedDatasetFreshness]:
+        stmt = select(CuratedDatasetFreshnessModel).order_by(
+            CuratedDatasetFreshnessModel.dataset_id.asc()
+        )
+        return [_freshness_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
