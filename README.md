@@ -105,3 +105,5 @@ Invoke-RestMethod -Uri "http://localhost:8001/users" -Method Post -ContentType "
 } | ConvertTo-Json)
 
 - Test: py -m pytest services/ingestion-service -q 
+
+py -m pytest services/data-quality-service -q 

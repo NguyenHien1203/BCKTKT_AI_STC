@@ -2051,6 +2051,12 @@ class SqlAlchemyQualityExceptionQueueRepository(QualityExceptionQueueRepository)
                 standardized_fields_json=json.dumps(i.standardized_fields),
                 failed_rules_json=json.dumps(i.failed_rules),
                 status=i.status,
+                resolution_action=i.resolution_action,
+                corrected_fields_json=(
+                    json.dumps(i.corrected_fields, ensure_ascii=False) if i.corrected_fields else None
+                ),
+                resolution_reason=i.resolution_reason,
+                resolved_at=i.resolved_at,
                 created_at=i.created_at,
             )
             for i in items
@@ -2085,6 +2091,27 @@ class SqlAlchemyQualityExceptionQueueRepository(QualityExceptionQueueRepository)
         stmt = stmt.order_by(QualityExceptionQueueItemModel.id.asc())
         return [self._to_entity(m) for m in self._db.execute(stmt).scalars().all()]
 
+    def get_by_id(self, item_id: int) -> Optional[QualityExceptionQueueItem]:
+        model = self._db.get(QualityExceptionQueueItemModel, item_id)
+        return self._to_entity(model) if model else None
+
+    def update(self, item: QualityExceptionQueueItem) -> QualityExceptionQueueItem:
+        model = self._db.get(QualityExceptionQueueItemModel, item.id)
+        if model is None:
+            return item
+        model.standardized_fields_json = json.dumps(item.standardized_fields, ensure_ascii=False, default=str)
+        model.status = item.status
+        model.resolution_action = item.resolution_action
+        model.corrected_fields_json = (
+            json.dumps(item.corrected_fields, ensure_ascii=False) if item.corrected_fields else None
+        )
+        model.resolution_reason = item.resolution_reason
+        model.resolved_at = item.resolved_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return item
+
     @staticmethod
     def _to_entity(m: QualityExceptionQueueItemModel) -> QualityExceptionQueueItem:
         return QualityExceptionQueueItem(
@@ -2095,5 +2122,9 @@ class SqlAlchemyQualityExceptionQueueRepository(QualityExceptionQueueRepository)
             standardized_fields=json.loads(m.standardized_fields_json or "{}"),
             failed_rules=json.loads(m.failed_rules_json or "[]"),
             status=m.status,
+            resolution_action=m.resolution_action,
+            corrected_fields=json.loads(m.corrected_fields_json) if m.corrected_fields_json else {},
+            resolution_reason=m.resolution_reason,
+            resolved_at=m.resolved_at,
             created_at=m.created_at,
         )

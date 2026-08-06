@@ -94,6 +94,7 @@ export const NAV_SECTIONS = [
       { to: "/catalog-change-approvals", label: "Phê duyệt thay đổi danh mục nhạy cảm", icon: ClipboardCheck },
       { to: "/quality-rules", label: "Quản lý quy tắc kiểm tra chất lượng", icon: Gauge },
       { to: "/quality-checks", label: "Chạy kiểm tra chất lượng dữ liệu", icon: BadgeCheck },
+      { to: "/quality-exceptions", label: "Xử lý ngoại lệ chất lượng", icon: ShieldAlert },
 
     ],
   },

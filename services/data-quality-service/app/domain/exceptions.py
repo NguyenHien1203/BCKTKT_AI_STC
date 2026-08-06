@@ -448,6 +448,44 @@ class NoStandardRecordsToCheck(DomainError):
 
     code = "NO_STANDARD_RECORDS_TO_CHECK"
 
+
+# ---------- UC-040: Xử lý ngoại lệ chất lượng ----------
+
+
+class QualityExceptionQueueItemNotFound(DomainError):
+    code = "QUALITY_EXCEPTION_QUEUE_ITEM_NOT_FOUND"
+
+    def __init__(self, item_id: int):
+        super().__init__(f"Không tìm thấy ngoại lệ chất lượng id={item_id}")
+        self.item_id = item_id
+
+
+class InvalidQualityExceptionResolution(DomainError):
+    """Yêu cầu xử lý (bước 2: sửa/từ chối/yêu cầu nguồn) không hợp lệ,
+
+    hoặc ngoại lệ đã được xử lý trước đó (không còn PENDING)."""
+
+    code = "INVALID_QUALITY_EXCEPTION_RESOLUTION"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NoMatchingExceptionItemsForBatch(DomainError):
+    """Bước 3 'Xử lý hàng loạt ngoại lệ cùng loại': không có ngoại lệ
+
+    PENDING nào của dataset khớp `rule_type` yêu cầu."""
+
+    code = "NO_MATCHING_EXCEPTION_ITEMS_FOR_BATCH"
+
+    def __init__(self, dataset_id: Optional[int], rule_type: str):
+        super().__init__(
+            f"Không có ngoại lệ PENDING nào của dataset_id={dataset_id} "
+            f"khớp rule_type='{rule_type}'"
+        )
+        self.dataset_id = dataset_id
+        self.rule_type = rule_type
+
     def __init__(self, mapping_job_id: int):
         super().__init__(
             f"Phiên ánh xạ id={mapping_job_id} chưa có bản ghi chuẩn hoá nào để kiểm tra chất lượng"
