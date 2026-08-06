@@ -1794,13 +1794,13 @@ class SemanticIndicator:
     - `domain`: "lĩnh vực" nghiệp vụ của chỉ tiêu (vd Ngân sách/Tài
       sản/Giá/Văn bản) -- text tự do, không ràng buộc danh mục cứng vì
       tài liệu gốc không quy định enum cụ thể.
-    - `status`: DRAFT (mới tạo/vừa sửa) / ACTIVE / INACTIVE -- UC-043
-      không xử lý phê duyệt (đó là UC-044 "Phê duyệt chỉ tiêu", ngoài
-      phạm vi UC này); mặc định DRAFT khi tạo mới.
+    - `status`: DRAFT (mới tạo/vừa sửa) / PENDING_APPROVAL (đã gửi UC-044
+      "Phê duyệt chỉ tiêu" chờ Chủ quản Nghiệp vụ duyệt) / ACTIVE (đã
+      được duyệt + công bố) / INACTIVE -- mặc định DRAFT khi tạo mới.
     - `version`: tăng mỗi lần sửa (bước 3 "Quản lý phiên bản chỉ tiêu").
     """
 
-    STATUSES = ("DRAFT", "ACTIVE", "INACTIVE")
+    STATUSES = ("DRAFT", "PENDING_APPROVAL", "ACTIVE", "INACTIVE")
 
     id: Optional[int]
     name: str
@@ -1856,7 +1856,16 @@ class IndicatorTestRun:
     `expression` của 1 chỉ tiêu trên tập bản ghi mẫu (`sample_rows`) do
     người dùng cung cấp, mô phỏng "truy vấn mẫu" (UC-043 chỉ đăng ký
     định nghĩa chỉ tiêu, chưa gắn nguồn dữ liệu thật để truy vấn Lớp
-    ngữ nghĩa -- việc đó thuộc phạm vi UC khai thác/báo cáo khác)."""
+    ngữ nghĩa -- việc đó thuộc phạm vi UC khai thác/báo cáo khác).
+
+    `indicator_status_snapshot`: trạng thái của `SemanticIndicator` tại
+    ĐÚNG thời điểm chạy lượt kiểm thử này (ghi lại bởi
+    `SemanticIndicatorService.test_indicator()`) -- dùng bởi UC-044
+    "Phê duyệt chỉ tiêu" bước 2 để tìm "số liệu hiện tại" (lượt kiểm
+    thử SUCCESS gần nhất lúc chỉ tiêu đang ACTIVE, tức số liệu đang
+    được công bố) so sánh với "kết quả kiểm thử" (lượt kiểm thử mới
+    nhất, thường chạy trên biểu thức mới lúc DRAFT/PENDING_APPROVAL).
+    """
 
     STATUSES = ("SUCCESS", "FAILED")
 
@@ -1869,6 +1878,7 @@ class IndicatorTestRun:
     error_message: Optional[str] = None
     tested_by: Optional[str] = None
     tested_at: str = field(default_factory=_utc_now_iso)
+    indicator_status_snapshot: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.status not in self.STATUSES:
@@ -1882,7 +1892,7 @@ class IndicatorAuditLog:
     thao tác tạo/sửa/kiểm thử trên 1 chỉ tiêu (đúng NFR mục 4 RULE.md
     'Log audit cho mọi thao tác tạo/sửa/xoá trên dữ liệu nhạy cảm')."""
 
-    ACTIONS = ("CREATED", "UPDATED", "TESTED")
+    ACTIONS = ("CREATED", "UPDATED", "TESTED", "SUBMITTED_FOR_APPROVAL", "APPROVED", "REJECTED")
 
     id: Optional[int]
     indicator_id: int
@@ -1894,3 +1904,41 @@ class IndicatorAuditLog:
     def __post_init__(self) -> None:
         if self.action not in self.ACTIONS:
             raise ValueError(f"action phải thuộc {self.ACTIONS}, nhận '{self.action}'")
+
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+@dataclass
+class IndicatorApprovalDecision:
+    """UC-044: quyết định phê duyệt/từ chối 1 chỉ tiêu đang chờ duyệt.
+
+    Theo `docs/use_cases.json` id=44, actor "Chủ quản Nghiệp vụ", luồng:
+    1. Xem chỉ tiêu chờ phê duyệt (status=PENDING_APPROVAL). Hệ thống
+       hiển thị.
+    2. Xem kết quả kiểm thử + so sánh với số liệu hiện tại. Hệ thống
+       hiển thị (xem `IndicatorTestRun.indicator_status_snapshot`).
+    3. Phê duyệt / từ chối chỉ tiêu. Hệ thống công bố (status=ACTIVE)
+       hoặc trả về cho Quản trị Dữ liệu (status=DRAFT).
+
+    Bản ghi append-only (nhật ký), cùng tinh thần
+    `CatalogChangeAuditLog` (UC-037): `decision_reason` BẮT BUỘC không
+    được rỗng, `comparison_snapshot` chụp lại đúng số liệu so sánh
+    (bước 2) tại thời điểm quyết định để tra cứu lại sau này.
+    """
+
+    ACTIONS = ("APPROVED", "REJECTED")
+
+    id: Optional[int]
+    indicator_id: int
+    action: str
+    decided_by: Optional[str]
+    decision_reason: str
+    comparison_snapshot: Dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.action not in self.ACTIONS:
+            raise ValueError(f"action phải thuộc {self.ACTIONS}, nhận '{self.action}'")
+        if not self.decision_reason or not self.decision_reason.strip():
+            raise ValueError("decision_reason (lý do phê duyệt/từ chối) không được để trống")

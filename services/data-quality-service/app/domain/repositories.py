@@ -42,6 +42,7 @@ from app.domain.entities import (
     SemanticIndicatorVersion,
     IndicatorTestRun,
     IndicatorAuditLog,
+    IndicatorApprovalDecision,
     QualityRuleVersion,
     QualityScoreConfig,
     QualityScoreConfigVersion,
@@ -979,3 +980,19 @@ class IndicatorAuditLogRepository(ABC):
     def list_for_indicator(self, indicator_id: int) -> List[IndicatorAuditLog]:
         ...
 
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+class IndicatorApprovalDecisionRepository(ABC):
+    """Bước 3 UC-044 'Phê duyệt / từ chối chỉ tiêu' -- nhật ký
+
+    append-only, KHÔNG có `update`/`delete` (đúng tính chất nhật ký)."""
+
+    @abstractmethod
+    def add(self, decision: IndicatorApprovalDecision) -> IndicatorApprovalDecision:
+        ...
+
+    @abstractmethod
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorApprovalDecision]:
+        ...

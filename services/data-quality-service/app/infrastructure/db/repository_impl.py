@@ -45,6 +45,7 @@ from app.domain.entities import (
     SemanticIndicatorVersion,
     IndicatorTestRun,
     IndicatorAuditLog,
+    IndicatorApprovalDecision,
     UnmappedQueueItem,
 )
 from app.domain.repositories import (
@@ -87,6 +88,7 @@ from app.domain.repositories import (
     SemanticIndicatorVersionRepository,
     IndicatorTestRunRepository,
     IndicatorAuditLogRepository,
+    IndicatorApprovalDecisionRepository,
     StgStructuredRowRepository,
     UnmappedQueueRepository,
 )
@@ -130,6 +132,7 @@ from app.infrastructure.db.models import (
     SemanticIndicatorVersionModel,
     IndicatorTestRunModel,
     IndicatorAuditLogModel,
+    IndicatorApprovalDecisionModel,
     StgStructuredRowModel,
     UnmappedQueueItemModel,
 )
@@ -2695,6 +2698,7 @@ class SqlAlchemyIndicatorTestRunRepository(IndicatorTestRunRepository):
             error_message=test_run.error_message,
             tested_by=test_run.tested_by,
             tested_at=test_run.tested_at,
+            indicator_status_snapshot=test_run.indicator_status_snapshot,
         )
         self._db.add(model)
         self._db.commit()
@@ -2780,4 +2784,49 @@ def _indicator_test_run_to_entity(m: IndicatorTestRunModel) -> IndicatorTestRun:
         error_message=m.error_message,
         tested_by=m.tested_by,
         tested_at=m.tested_at,
+        indicator_status_snapshot=m.indicator_status_snapshot,
     )
+
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+class SqlAlchemyIndicatorApprovalDecisionRepository(IndicatorApprovalDecisionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, decision: IndicatorApprovalDecision) -> IndicatorApprovalDecision:
+        model = IndicatorApprovalDecisionModel(
+            indicator_id=decision.indicator_id,
+            action=decision.action,
+            decided_by=decision.decided_by,
+            decision_reason=decision.decision_reason,
+            comparison_snapshot_json=json.dumps(decision.comparison_snapshot or {}),
+            created_at=decision.created_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        decision.id = model.id
+        return decision
+
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorApprovalDecision]:
+        stmt = (
+            select(IndicatorApprovalDecisionModel)
+            .where(IndicatorApprovalDecisionModel.indicator_id == indicator_id)
+            .order_by(IndicatorApprovalDecisionModel.id.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                IndicatorApprovalDecision(
+                    id=m.id,
+                    indicator_id=m.indicator_id,
+                    action=m.action,
+                    decided_by=m.decided_by,
+                    decision_reason=m.decision_reason,
+                    comparison_snapshot=json.loads(m.comparison_snapshot_json or "{}"),
+                    created_at=m.created_at,
+                )
+            )
+        return result

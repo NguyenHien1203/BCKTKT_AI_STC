@@ -626,3 +626,34 @@ class InvalidIndicatorTestRequest(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+class IndicatorNotPendingApproval(DomainError):
+    """Bước 3 UC-044: chỉ được phê duyệt/từ chối chỉ tiêu đang
+
+    `status=PENDING_APPROVAL` -- và chỉ được gửi duyệt (bước 0, tiền đề
+    của bước 1) chỉ tiêu đang `status=DRAFT`."""
+
+    code = "INDICATOR_NOT_PENDING_APPROVAL"
+
+    def __init__(self, indicator_id: int, current_status: str, expected_status: str):
+        super().__init__(
+            f"Chỉ tiêu id={indicator_id} đang ở trạng thái '{current_status}', "
+            f"yêu cầu trạng thái '{expected_status}' để thực hiện thao tác này"
+        )
+        self.indicator_id = indicator_id
+        self.current_status = current_status
+
+
+class InvalidIndicatorApprovalDecision(DomainError):
+    """Bước 3 UC-044: quyết định phê duyệt/từ chối không hợp lệ (vd
+
+    thiếu lý do bắt buộc)."""
+
+    code = "INVALID_INDICATOR_APPROVAL_DECISION"
+
+    def __init__(self, message: str):
+        super().__init__(message)

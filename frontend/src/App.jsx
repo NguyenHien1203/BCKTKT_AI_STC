@@ -9,6 +9,7 @@ import {
   FileScan,
   FileStack,
   FlaskConical,
+  CheckCheck,
   FileText,
   FileUp,
   Gauge,
@@ -69,6 +70,7 @@ import QualityExceptionsPage from "./pages/dataquality/QualityExceptionsPage.jsx
 import CuratedPublishPage from "./pages/dataquality/CuratedPublishPage.jsx";
 import DatasetMetadataPage from "./pages/dataquality/DatasetMetadataPage.jsx";
 import SemanticIndicatorsPage from "./pages/dataquality/SemanticIndicatorsPage.jsx";
+import IndicatorApprovalsPage from "./pages/dataquality/IndicatorApprovalsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -321,6 +323,13 @@ function HomePage() {
       description:
         "UC-043 — Tạo chỉ tiêu mới (tên/mô tả/biểu thức/lĩnh vực), hệ thống lưu vào PostgreSQL; kiểm thử chỉ tiêu trên truy vấn mẫu, hệ thống chạy và hiển thị kết quả; quản lý phiên bản chỉ tiêu, hệ thống lưu version + audit.",
       icon: FlaskConical,
+    },
+    {
+      to: "/indicator-approvals",
+      title: "Phê duyệt chỉ tiêu",
+      description:
+        "UC-044 — Xem chỉ tiêu chờ phê duyệt.Hệ thống hiển thịXem kết quả kiểm thử + so sánh với số liệu hiện tại.Hệ thống hiển thịPhê duyệt / từ chối chỉ tiêu.Hệ thống công bố hoặc trả về cho Quản trị Dữ liệu",
+      icon: CheckCheck,
     },
   ];
 
@@ -719,6 +728,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SemanticIndicatorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/indicator-approvals"
+        element={
+          <ProtectedRoute>
+            <IndicatorApprovalsPage />
           </ProtectedRoute>
         }
       />

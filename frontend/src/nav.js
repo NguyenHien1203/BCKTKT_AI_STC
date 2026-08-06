@@ -36,7 +36,8 @@ import {
   Landmark,
   Percent,
   BookCopy,
-  FlaskConical
+  FlaskConical,
+  CheckCheck
 } from "lucide-react";
 
 // Mỗi mục tương ứng 1 UC/nhóm UC đã có giao diện. Khi thêm UC mới có màn hình,
@@ -101,6 +102,8 @@ export const NAV_SECTIONS = [
       { to: "/curated-publish", label: "Công bố vào kho chuẩn hoá + batch_summary", icon: CloudUpload },
       { to: "/dataset-metadata", label: "Đăng ký siêu dữ liệu tập dữ liệu", icon: Tag },
       { to: "/semantic-indicators", label: "Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa", icon: FlaskConical },
+      { to: "/indicator-approvals", label: "Phê duyệt chỉ tiêu", icon: CheckCheck },
+
 
     ],
   },

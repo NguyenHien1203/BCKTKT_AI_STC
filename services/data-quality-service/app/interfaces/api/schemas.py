@@ -1687,6 +1687,7 @@ class IndicatorTestRunResponse(BaseModel):
     error_message: Optional[str] = None
     tested_by: Optional[str] = None
     tested_at: str
+    indicator_status_snapshot: Optional[str] = None
 
     @classmethod
     def from_entity(cls, t) -> "IndicatorTestRunResponse":
@@ -1700,6 +1701,7 @@ class IndicatorTestRunResponse(BaseModel):
             error_message=t.error_message,
             tested_by=t.tested_by,
             tested_at=t.tested_at,
+            indicator_status_snapshot=t.indicator_status_snapshot,
         )
 
 
@@ -1760,3 +1762,94 @@ class IndicatorTestRequest(BaseModel):
         min_length=1, description="Tập bản ghi mẫu (mô phỏng kết quả 1 truy vấn mẫu)"
     )
     tested_by: Optional[str] = None
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+class SubmitIndicatorApprovalRequest(BaseModel):
+    """Tiền đề bước 1: Quản trị Dữ liệu gửi 1 chỉ tiêu DRAFT để chờ duyệt."""
+
+    submitted_by: Optional[str] = None
+    note: Optional[str] = None
+
+
+class IndicatorComparisonResponse(BaseModel):
+    """Bước 2 'Xem kết quả kiểm thử + so sánh với số liệu hiện tại'."""
+
+    indicator: SemanticIndicatorResponse
+    latest_test_run: Optional[IndicatorTestRunResponse] = None
+    current_test_run: Optional[IndicatorTestRunResponse] = None
+    current_value: Optional[float] = None
+    new_value: Optional[float] = None
+    delta: Optional[float] = None
+    delta_percent: Optional[float] = None
+    has_current_value: bool = False
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "IndicatorComparisonResponse":
+        return cls(
+            indicator=SemanticIndicatorResponse.from_entity(d["indicator"]),
+            latest_test_run=(
+                IndicatorTestRunResponse.from_entity(d["latest_test_run"])
+                if d["latest_test_run"]
+                else None
+            ),
+            current_test_run=(
+                IndicatorTestRunResponse.from_entity(d["current_test_run"])
+                if d["current_test_run"]
+                else None
+            ),
+            current_value=d["current_value"],
+            new_value=d["new_value"],
+            delta=d["delta"],
+            delta_percent=d["delta_percent"],
+            has_current_value=d["has_current_value"],
+        )
+
+
+class IndicatorApprovalDecisionRequest(BaseModel):
+    """Bước 3 'Phê duyệt / từ chối chỉ tiêu' -- `reason` BẮT BUỘC, lưu
+
+    vào nhật ký append-only."""
+
+    decided_by: Optional[str] = None
+    reason: str = Field(min_length=1, description="Lý do phê duyệt/từ chối -- bắt buộc")
+    note: Optional[str] = None
+
+
+class IndicatorApprovalDecisionResponse(BaseModel):
+    id: int
+    indicator_id: int
+    action: str
+    decided_by: Optional[str] = None
+    decision_reason: str
+    comparison_snapshot: Dict[str, Any] = {}
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, d) -> "IndicatorApprovalDecisionResponse":
+        return cls(
+            id=d.id,
+            indicator_id=d.indicator_id,
+            action=d.action,
+            decided_by=d.decided_by,
+            decision_reason=d.decision_reason,
+            comparison_snapshot=d.comparison_snapshot,
+            created_at=d.created_at,
+        )
+
+
+class IndicatorApprovalResultResponse(BaseModel):
+    """Kết quả bước 3: chỉ tiêu sau khi công bố (ACTIVE) hoặc trả về
+
+    (DRAFT), kèm quyết định vừa ghi vào nhật ký."""
+
+    indicator: SemanticIndicatorResponse
+    decision: IndicatorApprovalDecisionResponse
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "IndicatorApprovalResultResponse":
+        return cls(
+            indicator=SemanticIndicatorResponse.from_entity(d["indicator"]),
+            decision=IndicatorApprovalDecisionResponse.from_entity(d["decision"]),
+        )
