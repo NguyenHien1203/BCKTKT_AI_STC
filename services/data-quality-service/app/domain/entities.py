@@ -1412,9 +1412,20 @@ class QualityExceptionQueueItem:
     hàng đợi / xử lý từng ngoại lệ (sửa/từ chối/yêu cầu nguồn) / xử lý
     hàng loạt). `failed_rules` ghi lại (các) quy tắc dòng này không đạt
     để UC-040 hiển thị lý do.
+
+    UC-040 (actor "Phụ trách Dữ liệu"), luồng nghiệp vụ:
+    1. Xem hàng đợi ngoại lệ. Hệ thống hiển thị (status=PENDING).
+    2. Xử lý từng ngoại lệ (`resolution_action`: `FIX` sửa trực tiếp
+       giá trị field bị lỗi rồi công bố vào kho chuẩn hoá, `REJECT` từ
+       chối dòng (không công bố), `REQUEST_SOURCE` yêu cầu nguồn gửi
+       lại dữ liệu). Hệ thống lưu quyết định (xem `resolve.py`).
+    3. Xử lý hàng loạt ngoại lệ cùng loại (`failed_rule_types()` dùng
+       để nhóm các dòng PENDING khác cùng `dataset_id` có chung 1 loại
+       quy tắc không đạt). Hệ thống áp dụng đồng loạt cùng quyết định.
     """
 
     STATUSES = ("PENDING", "RESOLVED")
+    RESOLUTION_ACTIONS = ("FIX", "REJECT", "REQUEST_SOURCE")
 
     id: Optional[int]
     quality_check_job_id: int
@@ -1423,6 +1434,10 @@ class QualityExceptionQueueItem:
     standardized_fields: Dict[str, Any] = field(default_factory=dict)
     failed_rules: List[Dict[str, Any]] = field(default_factory=list)
     status: str = "PENDING"
+    resolution_action: Optional[str] = None
+    corrected_fields: Dict[str, Any] = field(default_factory=dict)
+    resolution_reason: Optional[str] = None
+    resolved_at: Optional[str] = None
     created_at: str = field(default_factory=_utc_now_iso)
 
     def __post_init__(self) -> None:
@@ -1435,3 +1450,63 @@ class QualityExceptionQueueItem:
                 "failed_rules không được để trống -- dòng đưa vào hàng đợi ngoại lệ "
                 "phải có ít nhất 1 quy tắc không đạt"
             )
+        if (
+            self.resolution_action is not None
+            and self.resolution_action not in self.RESOLUTION_ACTIONS
+        ):
+            raise ValueError(
+                f"resolution_action phải thuộc {self.RESOLUTION_ACTIONS} hoặc None, "
+                f"nhận '{self.resolution_action}'"
+            )
+
+    def failed_rule_types(self) -> List[str]:
+        """Các loại quy tắc (không trùng, giữ thứ tự) dòng này không đạt
+
+        -- dùng ở bước 3 'Xử lý hàng loạt ngoại lệ cùng loại' để nhóm
+        các dòng PENDING khác cùng `rule_type`."""
+        seen: List[str] = []
+        for f in self.failed_rules:
+            rt = f.get("rule_type")
+            if rt and rt not in seen:
+                seen.append(rt)
+        return seen
+
+    def resolve(
+        self,
+        action: str,
+        corrected_fields: Optional[Dict[str, Any]] = None,
+        reason: Optional[str] = None,
+        resolved_at: Optional[str] = None,
+    ) -> None:
+        """Bước 2 'Xử lý từng ngoại lệ': đánh dấu dòng đã xử lý.
+
+        - `FIX`: `corrected_fields` (giá trị sửa lại cho (các) trường
+          lỗi) không được để trống -- merge vào `standardized_fields`
+          hiện có, dòng này sẽ được công bố vào kho chuẩn hoá.
+        - `REJECT`/`REQUEST_SOURCE`: `reason` không được để trống.
+        """
+        if self.status != "PENDING":
+            raise ValueError(
+                f"Ngoại lệ id={self.id} đã được xử lý trước đó (status={self.status})"
+            )
+        if action not in self.RESOLUTION_ACTIONS:
+            raise ValueError(
+                f"action phải thuộc {self.RESOLUTION_ACTIONS}, nhận '{action}'"
+            )
+        if action == "FIX" and not corrected_fields:
+            raise ValueError(
+                "corrected_fields không được để trống khi action là FIX"
+            )
+        if action in ("REJECT", "REQUEST_SOURCE") and (reason is None or not reason.strip()):
+            raise ValueError(
+                "reason không được để trống khi action là REJECT hoặc REQUEST_SOURCE"
+            )
+        if action == "FIX":
+            merged = dict(self.standardized_fields)
+            merged.update(corrected_fields)
+            self.standardized_fields = merged
+            self.corrected_fields = dict(corrected_fields)
+        self.status = "RESOLVED"
+        self.resolution_action = action
+        self.resolution_reason = reason.strip() if reason else None
+        self.resolved_at = resolved_at or _utc_now_iso()

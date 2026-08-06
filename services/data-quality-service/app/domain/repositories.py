@@ -754,3 +754,13 @@ class QualityExceptionQueueRepository(ABC):
         1 `quality_check_job_id` cụ thể (Phụ trách Dữ liệu xem toàn bộ
         hàng đợi ngoại lệ của tập dữ liệu, mọi lượt kiểm tra)."""
         ...
+
+    @abstractmethod
+    def get_by_id(self, item_id: int) -> Optional[QualityExceptionQueueItem]:
+        """UC-040 bước 2 'Xử lý từng ngoại lệ' -- tra cứu 1 ngoại lệ cụ thể."""
+        ...
+
+    @abstractmethod
+    def update(self, item: QualityExceptionQueueItem) -> QualityExceptionQueueItem:
+        """UC-040 bước 2/3 -- lưu quyết định xử lý (sửa/từ chối/yêu cầu nguồn)."""
+        ...

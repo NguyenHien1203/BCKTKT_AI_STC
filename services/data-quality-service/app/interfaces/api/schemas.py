@@ -1314,6 +1314,10 @@ class QualityExceptionQueueItemResponse(BaseModel):
     standardized_fields: Dict[str, Any] = Field(default_factory=dict)
     failed_rules: List[Dict[str, Any]] = Field(default_factory=list)
     status: str
+    resolution_action: Optional[str] = None
+    corrected_fields: Dict[str, Any] = Field(default_factory=dict)
+    resolution_reason: Optional[str] = None
+    resolved_at: Optional[str] = None
     created_at: str
 
     @classmethod
@@ -1326,5 +1330,79 @@ class QualityExceptionQueueItemResponse(BaseModel):
             standardized_fields=i.standardized_fields,
             failed_rules=i.failed_rules,
             status=i.status,
+            resolution_action=i.resolution_action,
+            corrected_fields=i.corrected_fields,
+            resolution_reason=i.resolution_reason,
+            resolved_at=i.resolved_at,
             created_at=i.created_at,
+        )
+
+
+# ---------- UC-040: Xử lý ngoại lệ chất lượng ----------
+
+
+class ResolveQualityExceptionRequest(BaseModel):
+    """Body của endpoint xử lý 1 ngoại lệ chất lượng (bước 2 UC-040)."""
+
+    action: str = Field(
+        description="FIX (sửa giá trị) / REJECT (từ chối) / REQUEST_SOURCE (yêu cầu nguồn)"
+    )
+    corrected_fields: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Giá trị sửa lại cho (các) trường lỗi -- bắt buộc khi action=FIX",
+    )
+    reason: Optional[str] = Field(
+        default=None,
+        description="Lý do -- bắt buộc khi action=REJECT hoặc action=REQUEST_SOURCE",
+    )
+
+
+class ResolveQualityExceptionResponse(BaseModel):
+    item: QualityExceptionQueueItemResponse
+    published_record: Optional[QualityPublishedRecordResponse] = None
+
+    @classmethod
+    def from_result(cls, result) -> "ResolveQualityExceptionResponse":
+        return cls(
+            item=QualityExceptionQueueItemResponse.from_entity(result.item),
+            published_record=(
+                QualityPublishedRecordResponse.from_entity(result.published_record)
+                if result.published_record is not None
+                else None
+            ),
+        )
+
+
+class ResolveQualityExceptionBatchRequest(BaseModel):
+    """Body của endpoint xử lý hàng loạt ngoại lệ cùng loại (bước 3 UC-040)."""
+
+    dataset_id: Optional[int] = Field(
+        default=None, description="Chỉ áp dụng cho ngoại lệ PENDING của tập dữ liệu này"
+    )
+    rule_type: str = Field(
+        description="Loại quy tắc không đạt dùng để nhóm các dòng 'cùng loại' "
+        "(COMPLETENESS/VALIDITY/UNIQUENESS/CONSISTENCY)"
+    )
+    action: str = Field(description="FIX / REJECT / REQUEST_SOURCE -- áp dụng đồng loạt")
+    corrected_fields: Optional[Dict[str, Any]] = Field(
+        default=None, description="Giá trị sửa đồng loạt -- bắt buộc khi action=FIX"
+    )
+    reason: Optional[str] = Field(
+        default=None, description="Lý do đồng loạt -- bắt buộc khi action=REJECT/REQUEST_SOURCE"
+    )
+
+
+class ResolveQualityExceptionBatchResponse(BaseModel):
+    items: List[QualityExceptionQueueItemResponse] = Field(default_factory=list)
+    published_records: List[QualityPublishedRecordResponse] = Field(default_factory=list)
+    resolved_count: int = 0
+
+    @classmethod
+    def from_result(cls, result) -> "ResolveQualityExceptionBatchResponse":
+        return cls(
+            items=[QualityExceptionQueueItemResponse.from_entity(i) for i in result.items],
+            published_records=[
+                QualityPublishedRecordResponse.from_entity(r) for r in result.published_records
+            ],
+            resolved_count=len(result.items),
         )

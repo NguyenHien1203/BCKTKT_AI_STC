@@ -62,6 +62,7 @@ import CatalogChangeApprovalsPage from "./pages/dataquality/CatalogChangeApprova
 import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
 import QualityRulesPage from "./pages/dataquality/QualityRulesPage.jsx";
 import QualityChecksPage from "./pages/dataquality/QualityChecksPage.jsx";
+import QualityExceptionsPage from "./pages/dataquality/QualityExceptionsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -286,6 +287,13 @@ function HomePage() {
       description:
         "UC-039 — Nhận sự kiện mapping.completed: tra cứu quy tắc chất lượng + chạy từng quy tắc để tính điểm; đạt ngưỡng thì công bố vào kho chuẩn hoá, dưới ngưỡng thì đẩy vào hàng đợi ngoại lệ cho Phụ trách Dữ liệu.",
       icon: BadgeCheck,
+    },
+    {
+      to: "/quality-exceptions",
+      title: "Xử lý ngoại lệ chất lượng",
+      description:
+        "UC-040 — Xem hàng đợi ngoại lệ (UC-039 đẩy vào); xử lý từng ngoại lệ (sửa/từ chối/yêu cầu nguồn) để hệ thống lưu quyết định; xử lý hàng loạt ngoại lệ cùng loại để hệ thống áp dụng đồng loạt.",
+      icon: ShieldAlert,
     },
   ];
 
@@ -644,6 +652,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <QualityChecksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/quality-exceptions"
+        element={
+          <ProtectedRoute>
+            <QualityExceptionsPage />
           </ProtectedRoute>
         }
       />

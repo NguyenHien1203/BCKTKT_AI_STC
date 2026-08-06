@@ -658,4 +658,9 @@ class QualityExceptionQueueItemModel(Base):
     standardized_fields_json = Column(Text, nullable=False)
     failed_rules_json = Column(Text, nullable=False, default="[]")
     status = Column(String(20), nullable=False, default="PENDING", index=True)
+    # ---------- UC-040: Xử lý ngoại lệ chất lượng ----------
+    resolution_action = Column(String(20), nullable=True)
+    corrected_fields_json = Column(Text, nullable=True)
+    resolution_reason = Column(Text, nullable=True)
+    resolved_at = Column(String(40), nullable=True)
     created_at = Column(String(40), nullable=False)
