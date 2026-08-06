@@ -219,6 +219,9 @@ class SemanticIndicatorService:
             result_value=result_value,
             error_message=error_message,
             tested_by=tested_by,
+            # UC-044 bước 2 dùng trường này để tìm "số liệu hiện tại"
+            # (lượt kiểm thử SUCCESS gần nhất lúc chỉ tiêu đang ACTIVE).
+            indicator_status_snapshot=indicator.status,
         )
         saved = self._test_runs.add(test_run)
         self._record_audit(

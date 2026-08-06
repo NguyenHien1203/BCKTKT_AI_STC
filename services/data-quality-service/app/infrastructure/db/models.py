@@ -871,6 +871,9 @@ class IndicatorTestRunModel(Base):
     error_message = Column(Text, nullable=True)
     tested_by = Column(String(255), nullable=True)
     tested_at = Column(String(40), nullable=False)
+    # UC-044: trạng thái của chỉ tiêu tại đúng thời điểm chạy lượt kiểm
+    # thử này (nullable -- các bản ghi cũ trước UC-044 không có).
+    indicator_status_snapshot = Column(String(20), nullable=True)
 
 
 class IndicatorAuditLogModel(Base):
@@ -886,4 +889,26 @@ class IndicatorAuditLogModel(Base):
     action = Column(String(20), nullable=False, index=True)
     actor = Column(String(255), nullable=True)
     detail_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(String(40), nullable=False)
+
+# ---------- UC-044: Phê duyệt chỉ tiêu ----------
+
+
+class IndicatorApprovalDecisionModel(Base):
+    """UC-044 bước 3: nhật ký append-only quyết định phê duyệt/từ chối
+
+    1 chỉ tiêu (bảng thật `indicator_approval_decisions`, schema
+    `curated`)."""
+
+    __tablename__ = "indicator_approval_decisions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    indicator_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}semantic_indicators.id"), nullable=False, index=True
+    )
+    action = Column(String(20), nullable=False, index=True)
+    decided_by = Column(String(255), nullable=True)
+    decision_reason = Column(Text, nullable=False)
+    comparison_snapshot_json = Column(Text, nullable=False, default="{}")
     created_at = Column(String(40), nullable=False)
