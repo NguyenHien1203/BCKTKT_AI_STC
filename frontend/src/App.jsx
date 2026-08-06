@@ -21,6 +21,7 @@ import {
   Package,
   Percent,
   BookCopy,
+  CloudUpload,
   Plug,
   PlugZap,
   RefreshCw,
@@ -63,6 +64,7 @@ import CatalogEntriesPage from "./pages/dataquality/CatalogEntriesPage.jsx";
 import QualityRulesPage from "./pages/dataquality/QualityRulesPage.jsx";
 import QualityChecksPage from "./pages/dataquality/QualityChecksPage.jsx";
 import QualityExceptionsPage from "./pages/dataquality/QualityExceptionsPage.jsx";
+import CuratedPublishPage from "./pages/dataquality/CuratedPublishPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -294,6 +296,13 @@ function HomePage() {
       description:
         "UC-040 — Xem hàng đợi ngoại lệ (UC-039 đẩy vào); xử lý từng ngoại lệ (sửa/từ chối/yêu cầu nguồn) để hệ thống lưu quyết định; xử lý hàng loạt ngoại lệ cùng loại để hệ thống áp dụng đồng loạt.",
       icon: ShieldAlert,
+    },
+    {
+      to: "/curated-publish",
+      title: "Công bố vào kho chuẩn hoá + batch_summary",
+      description:
+        "UC-041 — Nhận sự kiện curated.publish.requested (UC-039/UC-040): chèn/cập nhật dm_*, đặt publish_status=approved, tạo batch_summary + cập nhật độ mới dữ liệu, phát sự kiện curated.published.",
+      icon: CloudUpload,
     },
   ];
 
@@ -668,6 +677,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <VanBanIntakePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/curated-publish"
+        element={
+          <ProtectedRoute>
+            <CuratedPublishPage />
           </ProtectedRoute>
         }
       />

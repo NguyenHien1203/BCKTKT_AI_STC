@@ -491,3 +491,51 @@ class NoMatchingExceptionItemsForBatch(DomainError):
             f"Phiên ánh xạ id={mapping_job_id} chưa có bản ghi chuẩn hoá nào để kiểm tra chất lượng"
         )
         self.mapping_job_id = mapping_job_id
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+class CuratedPublishJobNotFound(DomainError):
+    code = "CURATED_PUBLISH_JOB_NOT_FOUND"
+
+    def __init__(self, curated_publish_job_id: int):
+        super().__init__(f"Không tìm thấy lượt công bố kho chuẩn hoá id={curated_publish_job_id}")
+        self.curated_publish_job_id = curated_publish_job_id
+
+
+class InvalidCuratedPublishJob(DomainError):
+    code = "INVALID_CURATED_PUBLISH_JOB"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class QualityCheckJobNotFoundForPublish(DomainError):
+    """`quality_check_job_id` trong sự kiện `curated.publish.requested`
+
+    không tồn tại -- không thể xác định lượt kiểm tra chất lượng nguồn
+    gốc."""
+
+    code = "QUALITY_CHECK_JOB_NOT_FOUND"
+
+    def __init__(self, quality_check_job_id: int):
+        super().__init__(
+            f"Không tìm thấy lượt kiểm tra chất lượng id={quality_check_job_id}"
+        )
+        self.quality_check_job_id = quality_check_job_id
+
+
+class NoPublishedRecordsToCurate(DomainError):
+    """`quality_check_job_id` chưa có `QualityPublishedRecord` nào (đầu
+
+    ra UC-039 bước 3a / UC-040 FIX) để UC-041 công bố vào kho chuẩn
+    hoá."""
+
+    code = "NO_PUBLISHED_RECORDS_TO_CURATE"
+
+    def __init__(self, quality_check_job_id: int):
+        super().__init__(
+            f"Lượt kiểm tra chất lượng id={quality_check_job_id} chưa có bản ghi nào "
+            "để công bố vào kho chuẩn hoá"
+        )
+        self.quality_check_job_id = quality_check_job_id

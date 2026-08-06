@@ -16,6 +16,10 @@ from app.domain.entities import (
     CatalogChangeRequest,
     CatalogEntry,
     CatalogEntryVersion,
+    CuratedBatchSummary,
+    CuratedDatasetFreshness,
+    CuratedDmRecord,
+    CuratedPublishJob,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -763,4 +767,97 @@ class QualityExceptionQueueRepository(ABC):
     @abstractmethod
     def update(self, item: QualityExceptionQueueItem) -> QualityExceptionQueueItem:
         """UC-040 bước 2/3 -- lưu quyết định xử lý (sửa/từ chối/yêu cầu nguồn)."""
+        ...
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+class CuratedPublishJobRepository(ABC):
+    @abstractmethod
+    def add(self, job: CuratedPublishJob) -> CuratedPublishJob:
+        ...
+
+    @abstractmethod
+    def update(self, job: CuratedPublishJob) -> CuratedPublishJob:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, curated_publish_job_id: int) -> Optional[CuratedPublishJob]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        quality_check_job_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[CuratedPublishJob]:
+        ...
+
+
+class CuratedDmRecordRepository(ABC):
+    """Bước 1 'Chèn/Cập nhật vào dm_*' + bước 2 'Đặt publish_status=approved'."""
+
+    @abstractmethod
+    def get_by_dataset_and_row(
+        self, dataset_id: Optional[int], row_index: int
+    ) -> Optional[CuratedDmRecord]:
+        ...
+
+    @abstractmethod
+    def add(self, record: CuratedDmRecord) -> CuratedDmRecord:
+        ...
+
+    @abstractmethod
+    def update(self, record: CuratedDmRecord) -> CuratedDmRecord:
+        ...
+
+    @abstractmethod
+    def list_by_dataset(
+        self,
+        dataset_id: Optional[int] = None,
+        publish_status: Optional[str] = None,
+    ) -> List[CuratedDmRecord]:
+        ...
+
+    @abstractmethod
+    def list_by_publish_job(self, curated_publish_job_id: int) -> List[CuratedDmRecord]:
+        ...
+
+
+class CuratedBatchSummaryRepository(ABC):
+    """Bước 3 'Tạo batch_summary'."""
+
+    @abstractmethod
+    def add(self, summary: CuratedBatchSummary) -> CuratedBatchSummary:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, batch_summary_id: int) -> Optional[CuratedBatchSummary]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        dataset_id: Optional[int] = None,
+        quality_check_job_id: Optional[int] = None,
+    ) -> List[CuratedBatchSummary]:
+        ...
+
+
+class CuratedDatasetFreshnessRepository(ABC):
+    """Bước 3 'cập nhật độ mới dữ liệu' -- 1 bản ghi duy nhất mỗi
+
+    `dataset_id`."""
+
+    @abstractmethod
+    def get_by_dataset(self, dataset_id: Optional[int]) -> Optional[CuratedDatasetFreshness]:
+        ...
+
+    @abstractmethod
+    def upsert(self, freshness: CuratedDatasetFreshness) -> CuratedDatasetFreshness:
+        ...
+
+    @abstractmethod
+    def list_all(self) -> List[CuratedDatasetFreshness]:
         ...

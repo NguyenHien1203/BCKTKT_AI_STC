@@ -1510,3 +1510,186 @@ class QualityExceptionQueueItem:
         self.resolution_action = action
         self.resolution_reason = reason.strip() if reason else None
         self.resolved_at = resolved_at or _utc_now_iso()
+
+# ---------- UC-041: Công bố vào kho chuẩn hoá + batch_summary ----------
+
+
+@dataclass
+class CuratedPublishJob:
+    """UC-041: 1 lượt công bố vào kho chuẩn hoá (docs/use_cases.json id=41).
+
+    Actor: "Hệ thống tự động (Curated Service)". Luồng nghiệp vụ:
+    1. Chèn/Cập nhật vào dm_*. Hệ thống lưu (`CuratedDmRecord`, upsert
+       theo (`dataset_id`, `row_index`) -- 1 dòng dữ liệu nguồn có thể
+       được công bố lại nhiều lần, ví dụ sau khi UC-040 `FIX` sửa 1
+       ngoại lệ chất lượng, nên phải CẬP NHẬT bản ghi curated cũ thay
+       vì chèn trùng).
+    2. Đặt `publish_status=approved`. Hệ thống cập nhật (đánh dấu từng
+       `CuratedDmRecord` vừa chèn/cập nhật đã được duyệt công bố).
+    3. Tạo `batch_summary` + cập nhật độ mới dữ liệu. Hệ thống ghi
+       metadata (`CuratedBatchSummary` cho 1 lượt công bố +
+       `CuratedDatasetFreshness` theo dõi lần công bố gần nhất/tổng số
+       bản ghi hiện có của 1 `dataset_id`).
+    4. Kích hoạt sự kiện `curated.published`. Hệ thống phát sự kiện.
+
+    Nhận sự kiện `curated.publish.requested` (phát bởi UC-039 bước 3a
+    khi đạt ngưỡng chất lượng, hoặc UC-040 khi `FIX` 1 ngoại lệ) rồi
+    đọc lại `QualityPublishedRecord` của `quality_check_job_id` tương
+    ứng -- cùng tinh thần vòng đời `ParsingJob`/`MappingJob`/
+    `QualityCheckJob` (start_running -> append_log -> complete).
+    """
+
+    STATUSES = ("RECEIVED", "RUNNING", "COMPLETED", "FAILED")
+
+    id: Optional[int]
+    quality_check_job_id: int
+    dataset_id: Optional[int] = None
+    mapping_job_id: Optional[int] = None
+    source: str = "uc039_quality_check"
+    status: str = "RECEIVED"
+    records_received: int = 0
+    inserted_count: int = 0
+    updated_count: int = 0
+    batch_summary_id: Optional[int] = None
+    published_event_published: bool = False
+    log_entries: List[Dict[str, str]] = field(default_factory=list)
+    error_message: Optional[str] = None
+    received_at: str = field(default_factory=_utc_now_iso)
+    completed_at: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.quality_check_job_id or self.quality_check_job_id <= 0:
+            raise ValueError("Phải chỉ định quality_check_job_id hợp lệ")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+    def append_log(self, level: str, message: str, timestamp: Optional[str] = None) -> None:
+        self.log_entries.append(
+            {"level": level, "message": message, "timestamp": timestamp or _utc_now_iso()}
+        )
+
+    def start_running(self) -> None:
+        self.status = "RUNNING"
+
+    def complete(
+        self,
+        status: str,
+        records_received: int,
+        inserted_count: int,
+        updated_count: int,
+        batch_summary_id: Optional[int] = None,
+        published_event_published: bool = False,
+        error_message: Optional[str] = None,
+    ) -> None:
+        if status not in ("COMPLETED", "FAILED"):
+            raise ValueError("Trạng thái kết thúc chỉ có thể là COMPLETED hoặc FAILED")
+        self.status = status
+        self.records_received = records_received
+        self.inserted_count = inserted_count
+        self.updated_count = updated_count
+        self.batch_summary_id = batch_summary_id
+        self.published_event_published = published_event_published
+        self.error_message = error_message
+        self.completed_at = _utc_now_iso()
+
+
+@dataclass
+class CuratedDmRecord:
+    """Bước 1 'Chèn/Cập nhật vào dm_*' + bước 2 'Đặt publish_status=approved':
+
+    1 dòng dữ liệu đã công bố trong kho chuẩn hoá (lớp data mart
+    `dm_*`) -- khoá nghiệp vụ duy nhất là (`dataset_id`, `row_index`),
+    CHÈN MỚI nếu chưa có, CẬP NHẬT tại chỗ (tăng `version`, giữ
+    `first_published_at`) nếu đã có -- phục vụ trường hợp 1 dòng được
+    công bố lại (ví dụ sau khi UC-040 sửa 1 ngoại lệ chất lượng).
+    """
+
+    PUBLISH_STATUSES = ("approved",)
+
+    id: Optional[int]
+    dataset_id: Optional[int]
+    row_index: int
+    standardized_fields: Dict[str, Any] = field(default_factory=dict)
+    publish_status: str = "approved"
+    version: int = 1
+    curated_publish_job_id: Optional[int] = None
+    quality_check_job_id: Optional[int] = None
+    source: str = "uc039_quality_check"
+    first_published_at: str = field(default_factory=_utc_now_iso)
+    last_published_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.row_index < 0:
+            raise ValueError("row_index không được âm")
+
+    def apply_upsert(
+        self,
+        standardized_fields: Dict[str, Any],
+        curated_publish_job_id: Optional[int],
+        quality_check_job_id: Optional[int],
+        source: str,
+        published_at: Optional[str] = None,
+    ) -> None:
+        """Bước 1+2: cập nhật tại chỗ 1 bản ghi `dm_*` đã có -- ghi đè
+
+        `standardized_fields` mới nhất, tăng `version`, đặt lại
+        `publish_status=approved`."""
+        self.standardized_fields = dict(standardized_fields)
+        self.publish_status = "approved"
+        self.version += 1
+        self.curated_publish_job_id = curated_publish_job_id
+        self.quality_check_job_id = quality_check_job_id
+        self.source = source
+        self.last_published_at = published_at or _utc_now_iso()
+
+
+@dataclass
+class CuratedBatchSummary:
+    """Bước 3 'Tạo batch_summary': metadata tóm tắt 1 lượt công bố vào
+
+    kho chuẩn hoá -- phục vụ tra cứu/đối soát (bao nhiêu bản ghi mới,
+    bao nhiêu bản ghi cập nhật, nguồn gốc lô).
+    """
+
+    id: Optional[int]
+    curated_publish_job_id: int
+    dataset_id: Optional[int]
+    quality_check_job_id: int
+    mapping_job_id: Optional[int]
+    source: str
+    records_received: int
+    inserted_count: int
+    updated_count: int
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.records_received < 0 or self.inserted_count < 0 or self.updated_count < 0:
+            raise ValueError("Số lượng bản ghi trong batch_summary không được âm")
+
+
+@dataclass
+class CuratedDatasetFreshness:
+    """Bước 3 'cập nhật độ mới dữ liệu': theo dõi lần công bố gần nhất
+
+    + tổng số bản ghi hiện có trong kho chuẩn hoá của 1 `dataset_id`
+    -- 1 bản ghi duy nhất mỗi `dataset_id` (upsert mỗi lượt công bố).
+    """
+
+    id: Optional[int]
+    dataset_id: Optional[int]
+    last_batch_summary_id: Optional[int]
+    last_published_at: str
+    total_published_records: int = 0
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.total_published_records < 0:
+            raise ValueError("total_published_records không được âm")
+
+    def record_batch(
+        self, batch_summary_id: int, record_count: int, published_at: Optional[str] = None
+    ) -> None:
+        self.last_batch_summary_id = batch_summary_id
+        self.last_published_at = published_at or _utc_now_iso()
+        self.total_published_records += record_count
+        self.updated_at = _utc_now_iso()
