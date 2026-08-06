@@ -539,3 +539,42 @@ class NoPublishedRecordsToCurate(DomainError):
             "để công bố vào kho chuẩn hoá"
         )
         self.quality_check_job_id = quality_check_job_id
+
+# ---------- UC-042: Đăng ký siêu dữ liệu tập dữ liệu ----------
+
+
+class DatasetMetadataNotFound(DomainError):
+    """Bước 3 'Tra cứu siêu dữ liệu tập dữ liệu': chưa đăng ký siêu dữ
+
+    liệu cho `dataset_id` này."""
+
+    code = "DATASET_METADATA_NOT_FOUND"
+
+    def __init__(self, dataset_id: int):
+        super().__init__(
+            f"Chưa đăng ký siêu dữ liệu cho tập dữ liệu id={dataset_id}"
+        )
+        self.dataset_id = dataset_id
+
+
+class DatasetMetadataAlreadyExists(DomainError):
+    """Bước 1 'Đăng ký siêu dữ liệu tập dữ liệu': dataset đã được đăng
+
+    ký siêu dữ liệu trước đó -- dùng bước 2 'Cập nhật siêu dữ liệu' để
+    sửa, không đăng ký lại."""
+
+    code = "DATASET_METADATA_ALREADY_EXISTS"
+
+    def __init__(self, dataset_id: int):
+        super().__init__(
+            f"Tập dữ liệu id={dataset_id} đã được đăng ký siêu dữ liệu -- "
+            "dùng chức năng cập nhật để sửa"
+        )
+        self.dataset_id = dataset_id
+
+
+class InvalidDatasetMetadata(DomainError):
+    code = "INVALID_DATASET_METADATA"
+
+    def __init__(self, message: str):
+        super().__init__(message)

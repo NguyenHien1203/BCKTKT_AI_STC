@@ -8,6 +8,7 @@ from app.interfaces.api.catalog_change_approval_router import (
 )
 from app.interfaces.api.catalog_entry_router import router as catalog_entry_router
 from app.interfaces.api.curated_publish_router import router as curated_publish_router
+from app.interfaces.api.dataset_metadata_router import router as dataset_metadata_router
 from app.interfaces.api.mapping_job_router import router as mapping_job_router
 from app.interfaces.api.mapping_rule_router import router as mapping_rule_router
 from app.interfaces.api.ocr_job_router import router as ocr_job_router
@@ -42,6 +43,7 @@ app.include_router(quality_rule_router)
 app.include_router(quality_check_router)
 app.include_router(quality_exception_router)
 app.include_router(curated_publish_router)
+app.include_router(dataset_metadata_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

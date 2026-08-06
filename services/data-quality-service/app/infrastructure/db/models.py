@@ -757,3 +757,52 @@ class CuratedDatasetFreshnessModel(Base):
     last_published_at = Column(String(40), nullable=False)
     total_published_records = Column(Integer, nullable=False, default=0)
     updated_at = Column(String(40), nullable=False)
+
+# ---------- UC-042: Đăng ký siêu dữ liệu tập dữ liệu ----------
+
+
+class DatasetMetadataModel(Base):
+    """UC-042: siêu dữ liệu (chủ sở hữu/mô tả/mức nhạy cảm) của 1 tập
+
+    dữ liệu -- 1 bản ghi duy nhất mỗi `dataset_id` (bảng thật
+    `dataset_metadata`, xem ghi chú đặt tên ở `DatasetMetadataEntry`
+    trong `app/domain/entities.py`: tài liệu nghiệp vụ gốc gọi là
+    "metadata.dataset_catalog" nhưng đặt trong schema `curated` của
+    service này để không trùng bảng `dataset_catalog` của UC-018 bên
+    ingestion-service)."""
+
+    __tablename__ = "dataset_metadata"
+    __table_args__ = (
+        UniqueConstraint("dataset_id", name="uq_dataset_metadata_dataset_id"),
+        *([_table_args] if _SCHEMA else []),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_id = Column(Integer, nullable=False, index=True)
+    owner = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    sensitivity_level = Column(String(20), nullable=False, default="INTERNAL", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(String(40), nullable=False)
+    updated_at = Column(String(40), nullable=False)
+
+
+class DatasetMetadataVersionModel(Base):
+    """UC-042 bước 2: lịch sử phiên bản (append-only) của siêu dữ liệu
+
+    1 tập dữ liệu."""
+
+    __tablename__ = "dataset_metadata_versions"
+    __table_args__ = _table_args
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    dataset_metadata_id = Column(
+        Integer, ForeignKey(f"{_fk_prefix}dataset_metadata.id"), nullable=False, index=True
+    )
+    dataset_id = Column(Integer, nullable=False, index=True)
+    version = Column(Integer, nullable=False)
+    owner = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    sensitivity_level = Column(String(20), nullable=False)
+    change_note = Column(Text, nullable=True)
+    changed_at = Column(String(40), nullable=False)

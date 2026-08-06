@@ -20,6 +20,8 @@ from app.domain.entities import (
     CuratedDatasetFreshness,
     CuratedDmRecord,
     CuratedPublishJob,
+    DatasetMetadataEntry,
+    DatasetMetadataVersion,
     MappedStandardRecord,
     MappingJob,
     MappingRejection,
@@ -56,6 +58,8 @@ from app.domain.repositories import (
     CuratedDatasetFreshnessRepository,
     CuratedDmRecordRepository,
     CuratedPublishJobRepository,
+    DatasetMetadataRepository,
+    DatasetMetadataVersionRepository,
     MappedStandardRecordRepository,
     MappingJobRepository,
     MappingRejectionRepository,
@@ -93,6 +97,8 @@ from app.infrastructure.db.models import (
     CuratedDatasetFreshnessModel,
     CuratedDmRecordModel,
     CuratedPublishJobModel,
+    DatasetMetadataModel,
+    DatasetMetadataVersionModel,
     MappedStandardRecordModel,
     MappingJobModel,
     MappingRejectionModel,
@@ -2432,3 +2438,120 @@ class SqlAlchemyCuratedDatasetFreshnessRepository(CuratedDatasetFreshnessReposit
             CuratedDatasetFreshnessModel.dataset_id.asc()
         )
         return [_freshness_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+# ---------- UC-042: Đăng ký siêu dữ liệu tập dữ liệu ----------
+
+
+class SqlAlchemyDatasetMetadataRepository(DatasetMetadataRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, metadata: DatasetMetadataEntry) -> DatasetMetadataEntry:
+        model = DatasetMetadataModel(
+            dataset_id=metadata.dataset_id,
+            owner=metadata.owner,
+            description=metadata.description,
+            sensitivity_level=metadata.sensitivity_level,
+            version=metadata.version,
+            created_at=metadata.created_at,
+            updated_at=metadata.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        metadata.id = model.id
+        return metadata
+
+    def update(self, metadata: DatasetMetadataEntry) -> DatasetMetadataEntry:
+        model = self._db.get(DatasetMetadataModel, metadata.id)
+        if model is None:
+            return metadata
+        model.owner = metadata.owner
+        model.description = metadata.description
+        model.sensitivity_level = metadata.sensitivity_level
+        model.version = metadata.version
+        model.updated_at = metadata.updated_at
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return metadata
+
+    def get_by_id(self, metadata_id: int) -> Optional[DatasetMetadataEntry]:
+        model = self._db.get(DatasetMetadataModel, metadata_id)
+        return _dataset_metadata_to_entity(model) if model else None
+
+    def get_by_dataset_id(self, dataset_id: int) -> Optional[DatasetMetadataEntry]:
+        stmt = select(DatasetMetadataModel).where(DatasetMetadataModel.dataset_id == dataset_id)
+        model = self._db.execute(stmt).scalars().first()
+        return _dataset_metadata_to_entity(model) if model else None
+
+    def list(
+        self,
+        sensitivity_level: Optional[str] = None,
+        owner: Optional[str] = None,
+    ) -> List[DatasetMetadataEntry]:
+        stmt = select(DatasetMetadataModel)
+        if sensitivity_level:
+            stmt = stmt.where(DatasetMetadataModel.sensitivity_level == sensitivity_level)
+        if owner:
+            stmt = stmt.where(DatasetMetadataModel.owner == owner)
+        stmt = stmt.order_by(DatasetMetadataModel.dataset_id.asc())
+        return [_dataset_metadata_to_entity(m) for m in self._db.execute(stmt).scalars().all()]
+
+
+class SqlAlchemyDatasetMetadataVersionRepository(DatasetMetadataVersionRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, version: DatasetMetadataVersion) -> DatasetMetadataVersion:
+        model = DatasetMetadataVersionModel(
+            dataset_metadata_id=version.dataset_metadata_id,
+            dataset_id=version.dataset_id,
+            version=version.version,
+            owner=version.owner,
+            description=version.description,
+            sensitivity_level=version.sensitivity_level,
+            change_note=version.change_note,
+            changed_at=version.changed_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        version.id = model.id
+        return version
+
+    def list_for_metadata(self, dataset_metadata_id: int) -> List[DatasetMetadataVersion]:
+        stmt = (
+            select(DatasetMetadataVersionModel)
+            .where(DatasetMetadataVersionModel.dataset_metadata_id == dataset_metadata_id)
+            .order_by(DatasetMetadataVersionModel.version.desc())
+        )
+        result = []
+        for m in self._db.execute(stmt).scalars().all():
+            result.append(
+                DatasetMetadataVersion(
+                    id=m.id,
+                    dataset_metadata_id=m.dataset_metadata_id,
+                    dataset_id=m.dataset_id,
+                    version=m.version,
+                    owner=m.owner,
+                    description=m.description,
+                    sensitivity_level=m.sensitivity_level,
+                    change_note=m.change_note,
+                    changed_at=m.changed_at,
+                )
+            )
+        return result
+
+
+def _dataset_metadata_to_entity(m: DatasetMetadataModel) -> DatasetMetadataEntry:
+    return DatasetMetadataEntry(
+        id=m.id,
+        dataset_id=m.dataset_id,
+        owner=m.owner,
+        description=m.description,
+        sensitivity_level=m.sensitivity_level,
+        version=m.version,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
