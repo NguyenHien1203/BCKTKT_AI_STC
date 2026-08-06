@@ -1769,3 +1769,128 @@ class CuratedDatasetFreshness:
         self.last_published_at = published_at or _utc_now_iso()
         self.total_published_records += record_count
         self.updated_at = _utc_now_iso()
+
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+@dataclass
+class SemanticIndicator:
+    """UC-043: chỉ tiêu (indicator) trong Lớp ngữ nghĩa (Semantic Layer).
+
+    Theo `docs/use_cases.json` id=43, actor "Quản trị Dữ liệu", luồng:
+    1. Tạo chỉ tiêu mới (tên, mô tả, biểu thức, lĩnh vực). Hệ thống lưu
+       vào PostgreSQL (bảng `semantic_indicators`, schema `curated`).
+    2. Kiểm thử chỉ tiêu trên truy vấn mẫu -- hệ thống chạy `expression`
+       trên tập bản ghi mẫu (`IndicatorTestRun`) và hiển thị kết quả.
+    3. Quản lý phiên bản chỉ tiêu -- hệ thống lưu version + audit
+       (`SemanticIndicatorVersion` + `IndicatorAuditLog`).
+
+    - `expression`: biểu thức tính chỉ tiêu, dùng các hàm tổng hợp
+      SUM(field)/AVG(field)/COUNT()/COUNT(field)/MIN(field)/MAX(field)
+      kết hợp phép toán số học +-*/ -- được biên dịch + đánh giá AN
+      TOÀN (whitelist AST, không dùng `eval` trực tiếp trên chuỗi thô)
+      ở tầng application (`app/application/use_cases/manage_semantic_indicator.py`),
+      cùng tinh thần UC-038 `QualityRule` (rule_type=CONSISTENCY).
+    - `domain`: "lĩnh vực" nghiệp vụ của chỉ tiêu (vd Ngân sách/Tài
+      sản/Giá/Văn bản) -- text tự do, không ràng buộc danh mục cứng vì
+      tài liệu gốc không quy định enum cụ thể.
+    - `status`: DRAFT (mới tạo/vừa sửa) / ACTIVE / INACTIVE -- UC-043
+      không xử lý phê duyệt (đó là UC-044 "Phê duyệt chỉ tiêu", ngoài
+      phạm vi UC này); mặc định DRAFT khi tạo mới.
+    - `version`: tăng mỗi lần sửa (bước 3 "Quản lý phiên bản chỉ tiêu").
+    """
+
+    STATUSES = ("DRAFT", "ACTIVE", "INACTIVE")
+
+    id: Optional[int]
+    name: str
+    description: Optional[str]
+    expression: str
+    domain: str
+    status: str = "DRAFT"
+    version: int = 1
+    created_by: Optional[str] = None
+    created_at: str = field(default_factory=_utc_now_iso)
+    updated_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if not self.name or not self.name.strip():
+            raise ValueError("name (tên chỉ tiêu) không được để trống")
+        if not self.expression or not self.expression.strip():
+            raise ValueError("expression (biểu thức) không được để trống")
+        if not self.domain or not self.domain.strip():
+            raise ValueError("domain (lĩnh vực) không được để trống")
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+    def bump_version(self, updated_at: Optional[str] = None) -> None:
+        """Bước 3 'Quản lý phiên bản chỉ tiêu': hệ thống lưu phiên bản mới."""
+        self.version += 1
+        self.updated_at = updated_at or _utc_now_iso()
+
+
+@dataclass
+class SemanticIndicatorVersion:
+    """Lịch sử phiên bản (append-only) của 1 chỉ tiêu -- ghi lại mỗi khi
+
+    tạo mới (version=1, bước 1) hoặc sửa (bước 3 UC-043 'Hệ thống lưu
+    version + audit')."""
+
+    id: Optional[int]
+    indicator_id: int
+    version: int
+    name: str
+    description: Optional[str]
+    expression: str
+    domain: str
+    status: str
+    change_note: Optional[str] = None
+    changed_by: Optional[str] = None
+    changed_at: str = field(default_factory=_utc_now_iso)
+
+
+@dataclass
+class IndicatorTestRun:
+    """Bước 2 'Kiểm thử chỉ tiêu trên truy vấn mẫu' -- 1 lượt chạy thử
+
+    `expression` của 1 chỉ tiêu trên tập bản ghi mẫu (`sample_rows`) do
+    người dùng cung cấp, mô phỏng "truy vấn mẫu" (UC-043 chỉ đăng ký
+    định nghĩa chỉ tiêu, chưa gắn nguồn dữ liệu thật để truy vấn Lớp
+    ngữ nghĩa -- việc đó thuộc phạm vi UC khai thác/báo cáo khác)."""
+
+    STATUSES = ("SUCCESS", "FAILED")
+
+    id: Optional[int]
+    indicator_id: int
+    expression_snapshot: str
+    sample_rows: List[Dict[str, Any]]
+    status: str
+    result_value: Optional[float] = None
+    error_message: Optional[str] = None
+    tested_by: Optional[str] = None
+    tested_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.status not in self.STATUSES:
+            raise ValueError(f"status phải thuộc {self.STATUSES}, nhận '{self.status}'")
+
+
+@dataclass
+class IndicatorAuditLog:
+    """Bước 3 'Hệ thống lưu version + audit' -- nhật ký append-only mọi
+
+    thao tác tạo/sửa/kiểm thử trên 1 chỉ tiêu (đúng NFR mục 4 RULE.md
+    'Log audit cho mọi thao tác tạo/sửa/xoá trên dữ liệu nhạy cảm')."""
+
+    ACTIONS = ("CREATED", "UPDATED", "TESTED")
+
+    id: Optional[int]
+    indicator_id: int
+    action: str
+    actor: Optional[str]
+    detail: Dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=_utc_now_iso)
+
+    def __post_init__(self) -> None:
+        if self.action not in self.ACTIONS:
+            raise ValueError(f"action phải thuộc {self.ACTIONS}, nhận '{self.action}'")

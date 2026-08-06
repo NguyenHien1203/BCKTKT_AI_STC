@@ -272,7 +272,8 @@ body {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   font-family: inherit;
   font-size: 14px;
@@ -283,11 +284,31 @@ body {
   color: var(--color-text-primary);
 }
 
+.field textarea {
+  resize: vertical;
+  min-height: 40px;
+  line-height: 1.5;
+}
+
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.field small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.field + .field,
+.form-grid + .field,
+.field + .form-grid {
+  margin-top: 14px;
 }
 
 table.data-table {

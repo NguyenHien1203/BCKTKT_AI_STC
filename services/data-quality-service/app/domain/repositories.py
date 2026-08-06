@@ -38,6 +38,10 @@ from app.domain.entities import (
     QualityExceptionQueueItem,
     QualityPublishedRecord,
     QualityRule,
+    SemanticIndicator,
+    SemanticIndicatorVersion,
+    IndicatorTestRun,
+    IndicatorAuditLog,
     QualityRuleVersion,
     QualityScoreConfig,
     QualityScoreConfigVersion,
@@ -905,3 +909,73 @@ class DatasetMetadataVersionRepository(ABC):
     @abstractmethod
     def list_for_metadata(self, dataset_metadata_id: int) -> List[DatasetMetadataVersion]:
         ...
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+class SemanticIndicatorRepository(ABC):
+    @abstractmethod
+    def add(self, indicator: SemanticIndicator) -> SemanticIndicator:
+        ...
+
+    @abstractmethod
+    def update(self, indicator: SemanticIndicator) -> SemanticIndicator:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, indicator_id: int) -> Optional[SemanticIndicator]:
+        ...
+
+    @abstractmethod
+    def get_by_name(self, name: str) -> Optional[SemanticIndicator]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        domain: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[SemanticIndicator]:
+        ...
+
+
+class SemanticIndicatorVersionRepository(ABC):
+    """Lịch sử phiên bản (append-only), ghi mỗi khi tạo mới (bước 1)
+
+    hoặc sửa (bước 3 UC-043)."""
+
+    @abstractmethod
+    def add(self, version: SemanticIndicatorVersion) -> SemanticIndicatorVersion:
+        ...
+
+    @abstractmethod
+    def list_for_indicator(self, indicator_id: int) -> List[SemanticIndicatorVersion]:
+        ...
+
+
+class IndicatorTestRunRepository(ABC):
+    """Bước 2 'Kiểm thử chỉ tiêu trên truy vấn mẫu'."""
+
+    @abstractmethod
+    def add(self, test_run: IndicatorTestRun) -> IndicatorTestRun:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, test_run_id: int) -> Optional[IndicatorTestRun]:
+        ...
+
+    @abstractmethod
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorTestRun]:
+        ...
+
+
+class IndicatorAuditLogRepository(ABC):
+    """Bước 3 'Hệ thống lưu version + audit' -- nhật ký append-only."""
+
+    @abstractmethod
+    def add(self, log: IndicatorAuditLog) -> IndicatorAuditLog:
+        ...
+
+    @abstractmethod
+    def list_for_indicator(self, indicator_id: int) -> List[IndicatorAuditLog]:
+        ...
+

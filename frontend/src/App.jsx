@@ -8,6 +8,7 @@ import {
   Database,
   FileScan,
   FileStack,
+  FlaskConical,
   FileText,
   FileUp,
   Gauge,
@@ -67,6 +68,7 @@ import QualityChecksPage from "./pages/dataquality/QualityChecksPage.jsx";
 import QualityExceptionsPage from "./pages/dataquality/QualityExceptionsPage.jsx";
 import CuratedPublishPage from "./pages/dataquality/CuratedPublishPage.jsx";
 import DatasetMetadataPage from "./pages/dataquality/DatasetMetadataPage.jsx";
+import SemanticIndicatorsPage from "./pages/dataquality/SemanticIndicatorsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -312,6 +314,13 @@ function HomePage() {
       description:
         "UC-042 — Đăng ký siêu dữ liệu (chủ sở hữu/mô tả/mức nhạy cảm), hệ thống lưu vào metadata.dataset_catalog; cập nhật lưu phiên bản mới; tra cứu siêu dữ liệu, hệ thống hiển thị.",
       icon: Tag,
+    },
+    {
+      to: "/semantic-indicators",
+      title: "Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa",
+      description:
+        "UC-043 — Tạo chỉ tiêu mới (tên/mô tả/biểu thức/lĩnh vực), hệ thống lưu vào PostgreSQL; kiểm thử chỉ tiêu trên truy vấn mẫu, hệ thống chạy và hiển thị kết quả; quản lý phiên bản chỉ tiêu, hệ thống lưu version + audit.",
+      icon: FlaskConical,
     },
   ];
 
@@ -702,6 +711,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DatasetMetadataPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/semantic-indicators"
+        element={
+          <ProtectedRoute>
+            <SemanticIndicatorsPage />
           </ProtectedRoute>
         }
       />

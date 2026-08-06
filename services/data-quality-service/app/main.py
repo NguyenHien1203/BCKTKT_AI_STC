@@ -17,6 +17,7 @@ from app.interfaces.api.parsing_job_router import router as parsing_job_router
 from app.interfaces.api.quality_check_router import router as quality_check_router
 from app.interfaces.api.quality_exception_router import router as quality_exception_router
 from app.interfaces.api.quality_rule_router import router as quality_rule_router
+from app.interfaces.api.semantic_indicator_router import router as semantic_indicator_router
 from app.interfaces.api.unmapped_queue_router import router as unmapped_queue_router
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
@@ -44,6 +45,7 @@ app.include_router(quality_check_router)
 app.include_router(quality_exception_router)
 app.include_router(curated_publish_router)
 app.include_router(dataset_metadata_router)
+app.include_router(semantic_indicator_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

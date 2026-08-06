@@ -1615,3 +1615,148 @@ class DatasetMetadataUpdate(BaseModel):
     )
     sensitivity_level: Optional[str] = None
     note: Optional[str] = None
+
+# ---------- UC-043: Định nghĩa chỉ tiêu trong Lớp ngữ nghĩa ----------
+
+
+class SemanticIndicatorResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    expression: str
+    domain: str
+    status: str
+    version: int
+    created_by: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_entity(cls, i) -> "SemanticIndicatorResponse":
+        return cls(
+            id=i.id,
+            name=i.name,
+            description=i.description,
+            expression=i.expression,
+            domain=i.domain,
+            status=i.status,
+            version=i.version,
+            created_by=i.created_by,
+            created_at=i.created_at,
+            updated_at=i.updated_at,
+        )
+
+
+class SemanticIndicatorVersionResponse(BaseModel):
+    id: int
+    indicator_id: int
+    version: int
+    name: str
+    description: Optional[str] = None
+    expression: str
+    domain: str
+    status: str
+    change_note: Optional[str] = None
+    changed_by: Optional[str] = None
+    changed_at: str
+
+    @classmethod
+    def from_entity(cls, v) -> "SemanticIndicatorVersionResponse":
+        return cls(
+            id=v.id,
+            indicator_id=v.indicator_id,
+            version=v.version,
+            name=v.name,
+            description=v.description,
+            expression=v.expression,
+            domain=v.domain,
+            status=v.status,
+            change_note=v.change_note,
+            changed_by=v.changed_by,
+            changed_at=v.changed_at,
+        )
+
+
+class IndicatorTestRunResponse(BaseModel):
+    id: int
+    indicator_id: int
+    expression_snapshot: str
+    sample_rows: List[Dict[str, Any]]
+    status: str
+    result_value: Optional[float] = None
+    error_message: Optional[str] = None
+    tested_by: Optional[str] = None
+    tested_at: str
+
+    @classmethod
+    def from_entity(cls, t) -> "IndicatorTestRunResponse":
+        return cls(
+            id=t.id,
+            indicator_id=t.indicator_id,
+            expression_snapshot=t.expression_snapshot,
+            sample_rows=t.sample_rows,
+            status=t.status,
+            result_value=t.result_value,
+            error_message=t.error_message,
+            tested_by=t.tested_by,
+            tested_at=t.tested_at,
+        )
+
+
+class IndicatorAuditLogResponse(BaseModel):
+    id: int
+    indicator_id: int
+    action: str
+    actor: Optional[str] = None
+    detail: Dict[str, Any] = {}
+    created_at: str
+
+    @classmethod
+    def from_entity(cls, a) -> "IndicatorAuditLogResponse":
+        return cls(
+            id=a.id,
+            indicator_id=a.indicator_id,
+            action=a.action,
+            actor=a.actor,
+            detail=a.detail,
+            created_at=a.created_at,
+        )
+
+
+class SemanticIndicatorCreate(BaseModel):
+    """Bước 1 'Tạo chỉ tiêu mới (tên, mô tả, biểu thức, lĩnh vực)'."""
+
+    name: str = Field(min_length=1)
+    expression: str = Field(
+        min_length=1,
+        description="Biểu thức chỉ tiêu, vd \"SUM('so_tien') / COUNT()\"",
+    )
+    domain: str = Field(min_length=1, description="Lĩnh vực nghiệp vụ, vd Ngân sách/Tài sản")
+    description: Optional[str] = None
+    created_by: Optional[str] = None
+    note: Optional[str] = None
+
+
+class SemanticIndicatorUpdate(BaseModel):
+    """Bước 3 'Quản lý phiên bản chỉ tiêu' -- hệ thống lưu version + audit."""
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    clear_description: bool = Field(
+        default=False,
+        description="True để xoá description hiện có (thay vì giữ nguyên)",
+    )
+    expression: Optional[str] = None
+    domain: Optional[str] = None
+    status: Optional[str] = None
+    changed_by: Optional[str] = None
+    note: Optional[str] = None
+
+
+class IndicatorTestRequest(BaseModel):
+    """Bước 2 'Kiểm thử chỉ tiêu trên truy vấn mẫu'."""
+
+    sample_rows: List[Dict[str, Any]] = Field(
+        min_length=1, description="Tập bản ghi mẫu (mô phỏng kết quả 1 truy vấn mẫu)"
+    )
+    tested_by: Optional[str] = None
