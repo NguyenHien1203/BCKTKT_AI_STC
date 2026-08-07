@@ -812,6 +812,14 @@ class CuratedDmRecordRepository(ABC):
         ...
 
     @abstractmethod
+    def get_by_id(self, curated_dm_record_id: int) -> Optional[CuratedDmRecord]:
+        """UC-045 bước 1 'Chọn bản ghi curated' -- tra cứu 1 bản ghi cụ
+
+        thể theo id (khác `get_by_dataset_and_row` tra theo khoá nghiệp
+        vụ)."""
+        ...
+
+    @abstractmethod
     def add(self, record: CuratedDmRecord) -> CuratedDmRecord:
         ...
 

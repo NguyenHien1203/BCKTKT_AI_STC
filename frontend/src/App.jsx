@@ -13,6 +13,7 @@ import {
   FileText,
   FileUp,
   Gauge,
+  GitBranch,
   History,
   Inbox,
   KeyRound,
@@ -71,6 +72,7 @@ import CuratedPublishPage from "./pages/dataquality/CuratedPublishPage.jsx";
 import DatasetMetadataPage from "./pages/dataquality/DatasetMetadataPage.jsx";
 import SemanticIndicatorsPage from "./pages/dataquality/SemanticIndicatorsPage.jsx";
 import IndicatorApprovalsPage from "./pages/dataquality/IndicatorApprovalsPage.jsx";
+import RecordLineagePage from "./pages/dataquality/RecordLineagePage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -330,6 +332,13 @@ function HomePage() {
       description:
         "UC-044 — Xem chỉ tiêu chờ phê duyệt.Hệ thống hiển thịXem kết quả kiểm thử + so sánh với số liệu hiện tại.Hệ thống hiển thịPhê duyệt / từ chối chỉ tiêu.Hệ thống công bố hoặc trả về cho Quản trị Dữ liệu",
       icon: CheckCheck,
+    },
+    {
+      to: "/record-lineage",
+      title: "Truy vết nguồn gốc bản ghi",
+      description:
+        "UC-045 — Chọn bản ghi curated, hệ thống hiển thị; xem nguồn gốc dữ liệu qua các bước (thô -> phân tích -> ánh xạ -> chất lượng -> công bố), hệ thống hiển thị chuỗi; xem chi tiết từng bước, hệ thống hiển thị dữ liệu vào/ra + phép biến đổi.",
+      icon: GitBranch,
     },
   ];
 
@@ -736,6 +745,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <IndicatorApprovalsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/record-lineage"
+        element={
+          <ProtectedRoute>
+            <RecordLineagePage />
           </ProtectedRoute>
         }
       />

@@ -657,3 +657,28 @@ class InvalidIndicatorApprovalDecision(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-045: Truy vết nguồn gốc bản ghi ----------
+
+
+class CuratedDmRecordNotFound(DomainError):
+    """Bước 1 UC-045 'Chọn bản ghi curated': không tìm thấy bản ghi
+
+    `dm_*` theo id."""
+
+    code = "CURATED_DM_RECORD_NOT_FOUND"
+
+    def __init__(self, curated_dm_record_id: int):
+        super().__init__(f"Không tìm thấy bản ghi curated id={curated_dm_record_id}")
+        self.curated_dm_record_id = curated_dm_record_id
+
+
+class InvalidLineageStep(DomainError):
+    """Bước 3 UC-045 'Xem chi tiết từng bước': tên bước không hợp lệ."""
+
+    code = "INVALID_LINEAGE_STEP"
+
+    def __init__(self, step: str, allowed_steps):
+        super().__init__(f"Bước '{step}' không hợp lệ, phải thuộc {list(allowed_steps)}")
+        self.step = step
