@@ -1853,3 +1853,75 @@ class IndicatorApprovalResultResponse(BaseModel):
             indicator=SemanticIndicatorResponse.from_entity(d["indicator"]),
             decision=IndicatorApprovalDecisionResponse.from_entity(d["decision"]),
         )
+
+# ---------- UC-045: Truy vết nguồn gốc bản ghi ----------
+
+
+class LineageStepSummaryResponse(BaseModel):
+    """Bước 2 'Xem nguồn gốc dữ liệu qua các bước': 1 mắt xích trong chuỗi
+
+    thô -> phân tích -> ánh xạ -> chất lượng -> công bố."""
+
+    step: str
+    label: str
+    available: bool
+    job_id: Optional[int] = None
+    status: Optional[str] = None
+    timestamp: Optional[str] = None
+    note: Optional[str] = None
+
+    @classmethod
+    def from_entity(cls, s) -> "LineageStepSummaryResponse":
+        return cls(
+            step=s.step,
+            label=s.label,
+            available=s.available,
+            job_id=s.job_id,
+            status=s.status,
+            timestamp=s.timestamp,
+            note=s.note,
+        )
+
+
+class LineageChainResponse(BaseModel):
+    """Bước 2: toàn bộ chuỗi nguồn gốc của 1 bản ghi curated."""
+
+    curated_dm_record_id: int
+    dataset_id: Optional[int] = None
+    row_index: int
+    steps: List[LineageStepSummaryResponse] = Field(default_factory=list)
+
+    @classmethod
+    def from_entity(cls, c) -> "LineageChainResponse":
+        return cls(
+            curated_dm_record_id=c.curated_dm_record_id,
+            dataset_id=c.dataset_id,
+            row_index=c.row_index,
+            steps=[LineageStepSummaryResponse.from_entity(s) for s in c.steps],
+        )
+
+
+class LineageStepDetailResponse(BaseModel):
+    """Bước 3 'Xem chi tiết từng bước': dữ liệu vào/ra + phép biến đổi."""
+
+    step: str
+    label: str
+    available: bool
+    input: Optional[Any] = None
+    output: Optional[Any] = None
+    transformation: Optional[str] = None
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    note: Optional[str] = None
+
+    @classmethod
+    def from_entity(cls, d) -> "LineageStepDetailResponse":
+        return cls(
+            step=d.step,
+            label=d.label,
+            available=d.available,
+            input=d.input,
+            output=d.output,
+            transformation=d.transformation,
+            meta=d.meta,
+            note=d.note,
+        )

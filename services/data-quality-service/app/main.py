@@ -18,6 +18,7 @@ from app.interfaces.api.parsing_job_router import router as parsing_job_router
 from app.interfaces.api.quality_check_router import router as quality_check_router
 from app.interfaces.api.quality_exception_router import router as quality_exception_router
 from app.interfaces.api.quality_rule_router import router as quality_rule_router
+from app.interfaces.api.record_lineage_router import router as record_lineage_router
 from app.interfaces.api.semantic_indicator_router import router as semantic_indicator_router
 from app.interfaces.api.unmapped_queue_router import router as unmapped_queue_router
 
@@ -45,6 +46,7 @@ app.include_router(quality_rule_router)
 app.include_router(quality_check_router)
 app.include_router(quality_exception_router)
 app.include_router(curated_publish_router)
+app.include_router(record_lineage_router)
 app.include_router(dataset_metadata_router)
 app.include_router(semantic_indicator_router)
 app.include_router(indicator_approval_router)

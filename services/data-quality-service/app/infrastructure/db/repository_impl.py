@@ -2286,6 +2286,10 @@ class SqlAlchemyCuratedDmRecordRepository(CuratedDmRecordRepository):
         model = self._db.execute(stmt).scalars().first()
         return _dm_record_to_entity(model) if model else None
 
+    def get_by_id(self, curated_dm_record_id: int) -> Optional[CuratedDmRecord]:
+        model = self._db.get(CuratedDmRecordModel, curated_dm_record_id)
+        return _dm_record_to_entity(model) if model else None
+
     def add(self, record: CuratedDmRecord) -> CuratedDmRecord:
         model = CuratedDmRecordModel(
             dataset_id=record.dataset_id,
