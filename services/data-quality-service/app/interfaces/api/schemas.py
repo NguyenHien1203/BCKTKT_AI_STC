@@ -1925,3 +1925,67 @@ class LineageStepDetailResponse(BaseModel):
             meta=d.meta,
             note=d.note,
         )
+
+
+# ---------- UC-046: Xuất báo cáo nguồn gốc dữ liệu ----------
+
+
+class ProvenanceReportRecordResponse(BaseModel):
+    """1 bản ghi trong báo cáo nguồn gốc dữ liệu -- chuỗi 5 bước (bước 2)
+
+    + tuỳ chọn chi tiết từng bước (bước 3, chỉ có khi phạm vi RECORD
+    hoặc khi chủ động bật `include_step_details`)."""
+
+    curated_dm_record_id: int
+    dataset_id: Optional[int] = None
+    row_index: int
+    publish_status: str
+    version: int
+    chain: LineageChainResponse
+    step_details: Optional[List[LineageStepDetailResponse]] = None
+
+    @classmethod
+    def from_entity(cls, r) -> "ProvenanceReportRecordResponse":
+        return cls(
+            curated_dm_record_id=r.curated_dm_record_id,
+            dataset_id=r.dataset_id,
+            row_index=r.row_index,
+            publish_status=r.publish_status,
+            version=r.version,
+            chain=LineageChainResponse.from_entity(r.chain),
+            step_details=(
+                [LineageStepDetailResponse.from_entity(d) for d in r.step_details]
+                if r.step_details is not None
+                else None
+            ),
+        )
+
+
+class ProvenanceReportResponse(BaseModel):
+    """Bước 1-2 UC-046: kết quả 'Hệ thống hiển thị' + 'Sinh báo cáo nguồn
+
+    gốc dữ liệu' (xem trước dạng JSON trước khi kết xuất PDF)."""
+
+    scope_type: str
+    scope_label: str
+    scope_value: str
+    generated_at: str
+    total_matched: int
+    returned_count: int
+    truncated: bool
+    fully_traced_count: int
+    records: List[ProvenanceReportRecordResponse] = Field(default_factory=list)
+
+    @classmethod
+    def from_entity(cls, report) -> "ProvenanceReportResponse":
+        return cls(
+            scope_type=report.scope_type,
+            scope_label=report.scope_label,
+            scope_value=report.scope_value,
+            generated_at=report.generated_at,
+            total_matched=report.total_matched,
+            returned_count=report.returned_count,
+            truncated=report.truncated,
+            fully_traced_count=report.fully_traced_count,
+            records=[ProvenanceReportRecordResponse.from_entity(r) for r in report.records],
+        )

@@ -14,6 +14,7 @@ import {
   FileUp,
   Gauge,
   GitBranch,
+  FileOutput,
   History,
   Inbox,
   KeyRound,
@@ -73,6 +74,7 @@ import DatasetMetadataPage from "./pages/dataquality/DatasetMetadataPage.jsx";
 import SemanticIndicatorsPage from "./pages/dataquality/SemanticIndicatorsPage.jsx";
 import IndicatorApprovalsPage from "./pages/dataquality/IndicatorApprovalsPage.jsx";
 import RecordLineagePage from "./pages/dataquality/RecordLineagePage.jsx";
+import ProvenanceReportPage from "./pages/dataquality/ProvenanceReportPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import GuideDocumentsPage from "./pages/GuideDocumentsPage.jsx";
 import IntegrationConfigPage from "./pages/IntegrationConfigPage.jsx";
@@ -339,6 +341,13 @@ function HomePage() {
       description:
         "UC-045 — Chọn bản ghi curated, hệ thống hiển thị; xem nguồn gốc dữ liệu qua các bước (thô -> phân tích -> ánh xạ -> chất lượng -> công bố), hệ thống hiển thị chuỗi; xem chi tiết từng bước, hệ thống hiển thị dữ liệu vào/ra + phép biến đổi.",
       icon: GitBranch,
+    },
+    {
+      to: "/provenance-reports",
+      title: "Xuất báo cáo nguồn gốc dữ liệu",
+      description:
+        "UC-046 — Chọn phạm vi (tập dữ liệu / bản ghi / nguồn), hệ thống hiển thị; sinh báo cáo nguồn gốc dữ liệu, hệ thống kết xuất PDF; kết xuất PDF, hệ thống trả file.",
+      icon: FileOutput,
     },
   ];
 
@@ -753,6 +762,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <RecordLineagePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/provenance-reports"
+        element={
+          <ProtectedRoute>
+            <ProvenanceReportPage />
           </ProtectedRoute>
         }
       />

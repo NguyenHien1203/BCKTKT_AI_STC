@@ -682,3 +682,34 @@ class InvalidLineageStep(DomainError):
     def __init__(self, step: str, allowed_steps):
         super().__init__(f"Bước '{step}' không hợp lệ, phải thuộc {list(allowed_steps)}")
         self.step = step
+
+
+# ---------- UC-046: Xuất báo cáo nguồn gốc dữ liệu ----------
+
+
+class InvalidProvenanceReportScope(DomainError):
+    """Bước 1 UC-046 'Chọn phạm vi': loại phạm vi hoặc giá trị phạm vi
+
+    không hợp lệ (scope_type không thuộc DATASET/RECORD/SOURCE, hoặc
+    scope_value không phải số nguyên hợp lệ)."""
+
+    code = "INVALID_PROVENANCE_REPORT_SCOPE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ProvenanceReportScopeNotFound(DomainError):
+    """Bước 1-2 UC-046: không tìm thấy bản ghi/tập dữ liệu/nguồn dữ liệu
+
+    nào khớp với phạm vi đã chọn để dựng báo cáo nguồn gốc."""
+
+    code = "PROVENANCE_REPORT_SCOPE_NOT_FOUND"
+
+    def __init__(self, scope_type: str, scope_value: str):
+        super().__init__(
+            f"Không tìm thấy dữ liệu nào khớp phạm vi {scope_type}={scope_value} "
+            "để truy vết nguồn gốc"
+        )
+        self.scope_type = scope_type
+        self.scope_value = scope_value
