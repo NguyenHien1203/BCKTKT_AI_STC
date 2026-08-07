@@ -15,6 +15,7 @@ from app.interfaces.api.mapping_rule_router import router as mapping_rule_router
 from app.interfaces.api.ocr_job_router import router as ocr_job_router
 from app.interfaces.api.org_unit_catalog_router import router as org_unit_catalog_router
 from app.interfaces.api.parsing_job_router import router as parsing_job_router
+from app.interfaces.api.provenance_report_router import router as provenance_report_router
 from app.interfaces.api.quality_check_router import router as quality_check_router
 from app.interfaces.api.quality_exception_router import router as quality_exception_router
 from app.interfaces.api.quality_rule_router import router as quality_rule_router
@@ -47,6 +48,7 @@ app.include_router(quality_check_router)
 app.include_router(quality_exception_router)
 app.include_router(curated_publish_router)
 app.include_router(record_lineage_router)
+app.include_router(provenance_report_router)
 app.include_router(dataset_metadata_router)
 app.include_router(semantic_indicator_router)
 app.include_router(indicator_approval_router)
