@@ -8,6 +8,8 @@ from app.domain.entities import (
     DashboardFilter,
     DashboardKpi,
     KpiExplanation,
+    ReportFilterConfig,
+    ReportTemplate,
 )
 
 
@@ -150,6 +152,71 @@ class UserAccessContextProvider(ABC):
         """Trả về danh sách RLS clause dạng
         `{"dataset": <tên dataset Superset, tuỳ chọn>, "clause": "<SQL WHERE clause>"}`
         để nhúng vào guest token (tham số `rls` của Superset)."""
+        ...
+
+
+class ReportTemplateRepository(ABC):
+    """Repository cho UC-049: danh mục mẫu báo cáo."""
+
+    @abstractmethod
+    def add(self, template: ReportTemplate) -> ReportTemplate:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, template_id: int) -> Optional[ReportTemplate]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[ReportTemplate]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        only_active: bool = False,
+        category: Optional[str] = None,
+    ) -> List[ReportTemplate]:
+        ...
+
+    @abstractmethod
+    def update(self, template: ReportTemplate) -> ReportTemplate:
+        ...
+
+
+class ReportFilterConfigRepository(ABC):
+    """Repository cho UC-049 bước 3: trạng thái bộ lọc đã lưu theo mẫu +
+    người dùng (1 người dùng chỉ có 1 cấu hình đang lưu cho 1 mẫu)."""
+
+    @abstractmethod
+    def add(self, config: ReportFilterConfig) -> ReportFilterConfig:
+        ...
+
+    @abstractmethod
+    def get(self, template_id: int, user_id: int) -> Optional[ReportFilterConfig]:
+        ...
+
+    @abstractmethod
+    def update(self, config: ReportFilterConfig) -> ReportFilterConfig:
+        ...
+
+    @abstractmethod
+    def list_for_user(self, user_id: int) -> List[ReportFilterConfig]:
+        ...
+
+
+class ReportPreviewGenerator(ABC):
+    """Cổng (port) UC-049 bước 2: "Chọn mẫu báo cáo -> Hệ thống hiển thị
+    xem trước". Triển khai thật (khi tích hợp) nên truy vấn Lớp ngữ nghĩa
+    (UC-043) lấy vài bản ghi mẫu theo `columns` của mẫu báo cáo — xem
+    `infrastructure/report_preview_generator.py`.
+    """
+
+    @abstractmethod
+    def generate_sample_rows(
+        self, template: ReportTemplate, sample_size: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Trả về tối đa `sample_size` dòng dữ liệu mẫu, mỗi dòng là dict
+        `{field: value}` theo đúng `template.columns`."""
         ...
 
 
