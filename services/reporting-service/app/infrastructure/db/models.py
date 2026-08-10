@@ -94,6 +94,63 @@ class KpiExplanationModel(Base):
     )
 
 
+class ReportTemplateModel(Base):
+    """UC-049: danh mục mẫu báo cáo. `columns`/`available_periods` lưu
+    dạng JSON text (SQLite/Postgres đều hỗ trợ Text, không cần kiểu JSON
+    riêng theo Postgres)."""
+
+    __tablename__ = "report_templates"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_reporting_report_templates_code"),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    columns_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    available_periods_json: Mapped[str] = mapped_column(Text, nullable=False, default='["NAM"]')
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class ReportFilterConfigModel(Base):
+    """UC-049 bước 3: trạng thái bộ lọc đã lưu theo mẫu báo cáo + người
+    dùng — 1 người dùng chỉ có 1 bản ghi cho 1 mẫu (unique constraint)."""
+
+    __tablename__ = "report_filter_configs"
+    __table_args__ = (
+        UniqueConstraint(
+            "template_id",
+            "user_id",
+            name="uq_reporting_report_filter_configs_template_user",
+        ),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    template_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}report_templates.id"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    period_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    period_value: Mapped[int] = mapped_column(Integer, nullable=True)
+    org_unit_code: Mapped[str] = mapped_column(String(50), nullable=True)
+    sector: Mapped[str] = mapped_column(String(30), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="SAVED")
+    saved_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
 class DashboardFavoriteModel(Base):
     """UC-047: tuỳ chọn cá nhân "ghim bảng điều khiển yêu thích"."""
 

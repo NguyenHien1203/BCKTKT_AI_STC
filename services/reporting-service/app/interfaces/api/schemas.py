@@ -140,6 +140,74 @@ class KpiExplanationRequest(BaseModel):
     sector: Optional[str] = Field(None, max_length=30)
 
 
+# ---------- UC-049: Chọn báo cáo theo mẫu + cấu hình bộ lọc ----------
+
+_PERIOD_TYPE_PATTERN = "^(THANG|QUY|NAM)$"
+
+
+class ReportTemplateColumn(BaseModel):
+    field: str = Field(..., min_length=1, max_length=100)
+    label: str = Field(..., min_length=1, max_length=255)
+    data_type: str = Field("STRING", max_length=20)
+
+
+class ReportTemplateCreate(BaseModel):
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = Field("", max_length=2000)
+    category: str = Field(..., pattern=_CATEGORY_PATTERN)
+    columns: List[ReportTemplateColumn] = Field(..., min_length=1)
+    available_periods: List[str] = Field(default_factory=lambda: ["NAM"])
+
+
+class ReportTemplateResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str
+    category: str
+    columns: List[ReportTemplateColumn]
+    available_periods: List[str]
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ReportTemplatePreviewResponse(BaseModel):
+    """Bước 2 — "Chọn mẫu báo cáo": hệ thống hiển thị xem trước."""
+
+    template: ReportTemplateResponse
+    columns: List[ReportTemplateColumn]
+    sample_rows: List[dict]
+
+
+class ReportFilterConfigSave(BaseModel):
+    """Bước 3 — "Cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ)"."""
+
+    user_id: int = Field(..., gt=0)
+    year: int = Field(..., ge=1900, le=2100)
+    period_type: str = Field(..., pattern=_PERIOD_TYPE_PATTERN)
+    period_value: Optional[int] = Field(None, ge=1, le=12)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class ReportFilterConfigResponse(BaseModel):
+    id: int
+    template_id: int
+    user_id: int
+    year: int
+    period_type: str
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    status: str
+    saved_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class KpiExplanationResponse(BaseModel):
     id: int
     dashboard_id: int

@@ -6,6 +6,7 @@ import {
   CalendarClock,
   ClipboardCheck,
   Database,
+  FileBarChart,
   FileScan,
   FileStack,
   FlaskConical,
@@ -47,6 +48,7 @@ import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import DashboardsPage from "./pages/DashboardsPage.jsx";
 import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
+import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -358,6 +360,13 @@ function HomePage() {
       description:
         "UC-047 — Chọn Bảng điều khiển từ danh mục, xem trực tiếp từ Superset, ghim bảng điều khiển yêu thích vào tùy chọn cá nhân.",
       icon: LayoutDashboard,
+    },
+    {
+      to: "/report-templates",
+      title: "Chọn báo cáo theo mẫu + cấu hình bộ lọc",
+      description:
+        "UC-049 — Xem danh mục mẫu báo cáo, hệ thống hiển thị; chọn mẫu báo cáo, hệ thống hiển thị xem trước; cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ), hệ thống lưu trạng thái.",
+      icon: FileBarChart,
     },
   ];
 
@@ -796,6 +805,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DashboardDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/report-templates"
+        element={
+          <ProtectedRoute>
+            <ReportTemplatesPage />
           </ProtectedRoute>
         }
       />

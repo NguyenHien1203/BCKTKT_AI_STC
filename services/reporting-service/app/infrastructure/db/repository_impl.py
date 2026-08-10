@@ -1,20 +1,33 @@
+import json
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import Dashboard, DashboardFavorite, DashboardKpi, KpiExplanation
+from app.domain.entities import (
+    Dashboard,
+    DashboardFavorite,
+    DashboardKpi,
+    KpiExplanation,
+    ReportFilterConfig,
+    ReportTemplate,
+)
 from app.domain.repositories import (
     DashboardFavoriteRepository,
     DashboardKpiRepository,
     DashboardRepository,
     KpiExplanationRepository,
+    ReportFilterConfigRepository,
+    ReportTemplateRepository,
 )
 from app.infrastructure.db.models import (
     DashboardFavoriteModel,
     DashboardKpiModel,
     DashboardModel,
     KpiExplanationModel,
+    ReportFilterConfigModel,
+    ReportTemplateModel,
 )
 
 
@@ -199,6 +212,145 @@ class SqlAlchemyKpiExplanationRepository(KpiExplanationRepository):
         )
         models = self._db.execute(stmt).scalars().all()
         return [_explanation_to_entity(m) for m in models]
+
+
+def _report_template_to_entity(m: ReportTemplateModel) -> ReportTemplate:
+    return ReportTemplate(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        description=m.description,
+        category=m.category,
+        columns=json.loads(m.columns_json) if m.columns_json else [],
+        available_periods=(
+            json.loads(m.available_periods_json) if m.available_periods_json else ["NAM"]
+        ),
+        is_active=m.is_active,
+        created_at=m.created_at,
+    )
+
+
+def _report_filter_config_to_entity(m: ReportFilterConfigModel) -> ReportFilterConfig:
+    return ReportFilterConfig(
+        id=m.id,
+        template_id=m.template_id,
+        user_id=m.user_id,
+        year=m.year,
+        period_type=m.period_type,
+        period_value=m.period_value,
+        org_unit_code=m.org_unit_code,
+        sector=m.sector,
+        status=m.status,
+        saved_at=m.saved_at,
+    )
+
+
+class SqlAlchemyReportTemplateRepository(ReportTemplateRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, template: ReportTemplate) -> ReportTemplate:
+        model = ReportTemplateModel(
+            code=template.code,
+            name=template.name,
+            description=template.description,
+            category=template.category,
+            columns_json=json.dumps(template.columns, ensure_ascii=False),
+            available_periods_json=json.dumps(template.available_periods, ensure_ascii=False),
+            is_active=template.is_active,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_template_to_entity(model)
+
+    def get_by_id(self, template_id: int) -> Optional[ReportTemplate]:
+        model = self._db.get(ReportTemplateModel, template_id)
+        return _report_template_to_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[ReportTemplate]:
+        stmt = select(ReportTemplateModel).where(ReportTemplateModel.code == code)
+        model = self._db.execute(stmt).scalar_one_or_none()
+        return _report_template_to_entity(model) if model else None
+
+    def list(
+        self,
+        only_active: bool = False,
+        category: Optional[str] = None,
+    ) -> List[ReportTemplate]:
+        stmt = select(ReportTemplateModel)
+        if only_active:
+            stmt = stmt.where(ReportTemplateModel.is_active.is_(True))
+        if category:
+            stmt = stmt.where(ReportTemplateModel.category == category)
+        stmt = stmt.order_by(ReportTemplateModel.name)
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_template_to_entity(m) for m in models]
+
+    def update(self, template: ReportTemplate) -> ReportTemplate:
+        model = self._db.get(ReportTemplateModel, template.id)
+        model.name = template.name
+        model.description = template.description
+        model.category = template.category
+        model.columns_json = json.dumps(template.columns, ensure_ascii=False)
+        model.available_periods_json = json.dumps(
+            template.available_periods, ensure_ascii=False
+        )
+        model.is_active = template.is_active
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_template_to_entity(model)
+
+
+class SqlAlchemyReportFilterConfigRepository(ReportFilterConfigRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, config: ReportFilterConfig) -> ReportFilterConfig:
+        model = ReportFilterConfigModel(
+            template_id=config.template_id,
+            user_id=config.user_id,
+            year=config.year,
+            period_type=config.period_type,
+            period_value=config.period_value,
+            org_unit_code=config.org_unit_code,
+            sector=config.sector,
+            status=config.status,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_filter_config_to_entity(model)
+
+    def get(self, template_id: int, user_id: int) -> Optional[ReportFilterConfig]:
+        stmt = select(ReportFilterConfigModel).where(
+            ReportFilterConfigModel.template_id == template_id,
+            ReportFilterConfigModel.user_id == user_id,
+        )
+        model = self._db.execute(stmt).scalar_one_or_none()
+        return _report_filter_config_to_entity(model) if model else None
+
+    def update(self, config: ReportFilterConfig) -> ReportFilterConfig:
+        model = self._db.get(ReportFilterConfigModel, config.id)
+        model.year = config.year
+        model.period_type = config.period_type
+        model.period_value = config.period_value
+        model.org_unit_code = config.org_unit_code
+        model.sector = config.sector
+        model.status = config.status
+        model.saved_at = datetime.now(timezone.utc)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_filter_config_to_entity(model)
+
+    def list_for_user(self, user_id: int) -> List[ReportFilterConfig]:
+        stmt = (
+            select(ReportFilterConfigModel)
+            .where(ReportFilterConfigModel.user_id == user_id)
+            .order_by(ReportFilterConfigModel.saved_at.desc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_filter_config_to_entity(m) for m in models]
 
 
 class SqlAlchemyDashboardFavoriteRepository(DashboardFavoriteRepository):

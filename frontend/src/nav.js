@@ -113,7 +113,11 @@ export const NAV_SECTIONS = [
     label: "Khai thác",
     items: [
       { to: "/dashboards", label: "Bảng điều khiển điều hành", icon: LayoutDashboard },
-      { to: "/reports", label: "Báo cáo", icon: FileBarChart, disabled: true },
+      {
+        to: "/report-templates",
+        label: "Chọn báo cáo theo mẫu + cấu hình bộ lọc",
+        icon: FileBarChart,
+      },
     ],
   },
   {

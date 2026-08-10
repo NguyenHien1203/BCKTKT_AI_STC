@@ -102,6 +102,53 @@ class AIOrchestratorCallFailed(DomainError):
         super().__init__(message)
 
 
+class ReportTemplateCodeAlreadyExists(DomainError):
+    code = "REPORT_TEMPLATE_CODE_EXISTS"
+
+    def __init__(self, code_value: str):
+        super().__init__(f"Mã mẫu báo cáo '{code_value}' đã tồn tại")
+
+
+class ReportTemplateNotFound(DomainError):
+    code = "REPORT_TEMPLATE_NOT_FOUND"
+
+    def __init__(self, template_id: int):
+        super().__init__(f"Không tìm thấy mẫu báo cáo id={template_id}")
+
+
+class ReportTemplateInactive(DomainError):
+    code = "REPORT_TEMPLATE_INACTIVE"
+
+    def __init__(self, template_id: int):
+        super().__init__(f"Mẫu báo cáo id={template_id} đã ngừng hoạt động")
+
+
+class InvalidReportTemplate(DomainError):
+    code = "INVALID_REPORT_TEMPLATE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidReportFilterConfig(DomainError):
+    """UC-049 bước 3: bộ lọc (năm/đơn vị/lĩnh vực/kỳ) không hợp lệ."""
+
+    code = "INVALID_REPORT_FILTER_CONFIG"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ReportFilterConfigNotFound(DomainError):
+    code = "REPORT_FILTER_CONFIG_NOT_FOUND"
+
+    def __init__(self, template_id: int, user_id: int):
+        super().__init__(
+            f"Chưa có cấu hình bộ lọc đã lưu cho mẫu báo cáo id={template_id}, "
+            f"người dùng id={user_id}"
+        )
+
+
 class GuestTokenIssueFailed(DomainError):
     """UC-047 (nâng cấp Embedded SDK): không lấy được guest token từ Superset
     (Superset không phản hồi, sai tài khoản dịch vụ, hoặc dashboard chưa
