@@ -17,6 +17,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/data-quality/, ""),
       },
+      // UC-047 (Xem Bảng điều khiển điều hành) -> reporting-service.
+      "/api/reporting": {
+        target: "http://localhost:8004",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/reporting/, ""),
+      },
     },
   },
 });

@@ -1,0 +1,65 @@
+import os
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.infrastructure.db.session import Base
+
+# Schema "reporting" chỉ áp dụng khi chạy trên Postgres (theo ARCHITECTURE.md:
+# database-per-schema). SQLite không hỗ trợ schema nên bỏ qua khi dev/test.
+_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./reporting_service_dev.db")
+_SCHEMA = "reporting" if not _DATABASE_URL.startswith("sqlite") else None
+
+class DashboardModel(Base):
+    """UC-047: danh mục Bảng điều khiển điều hành (nhúng từ Superset)."""
+
+    __tablename__ = "dashboards"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_reporting_dashboards_code"),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    superset_dashboard_uid: Mapped[str] = mapped_column(String(255), nullable=False)
+    embed_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class DashboardFavoriteModel(Base):
+    """UC-047: tuỳ chọn cá nhân "ghim bảng điều khiển yêu thích"."""
+
+    __tablename__ = "dashboard_favorites"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "dashboard_id", name="uq_reporting_dashboard_favorites_user_dashboard"
+        ),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    dashboard_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboards.id"),
+        nullable=False,
+        index=True,
+    )
+    pinned_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

@@ -108,6 +108,42 @@ services:
     ports:
       - "3001:3000"
 
+  # UC-047 (nâng cấp Embedded Dashboard SDK + Guest Token) — xem ADR-005
+  # trong ARCHITECTURE.md. Sau khi container chạy lần đầu, cần 1 lượt cấu
+  # hình thủ công qua UI/CLI Superset (chưa tự động hoá trong compose này):
+  #   1. Tạo tài khoản dịch vụ riêng (vd. `guest_token_svc`) + gán role có
+  #      quyền tối thiểu để gọi `/api/v1/security/guest_token/` (Superset
+  #      gọi là role "Public"/role tự tạo cho embedding, KHÔNG dùng admin).
+  #   2. Với mỗi dashboard muốn nhúng: mở dashboard -> "..." -> "Embed
+  #      dashboard" -> lấy đúng UUID (chính là `superset_dashboard_uid`
+  #      lưu ở bảng `reporting.dashboards`).
+  #   3. Đặt `SUPERSET_GUEST_TOKEN_USERNAME`/`SUPERSET_GUEST_TOKEN_PASSWORD`
+  #      trong `.env` khớp tài khoản dịch vụ ở bước 1.
+  superset:
+    image: apache/superset:3.1.0
+    container_name: hy-superset
+    restart: unless-stopped
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-change_me_in_production}
+      SUPERSET_GUEST_TOKEN_JWT_SECRET: ${SUPERSET_GUEST_TOKEN_JWT_SECRET:-change_me_in_production}
+      SUPERSET_GUEST_TOKEN_TTL_SECONDS: ${SUPERSET_GUEST_TOKEN_TTL_SECONDS:-300}
+      SUPERSET_ALLOWED_EMBEDDED_ORIGINS: ${SUPERSET_ALLOWED_EMBEDDED_ORIGINS:-http://localhost:5173}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/superset
+      PYTHONPATH: /app/pythonpath
+    volumes:
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+    command: >
+      /bin/sh -c "
+      superset db upgrade &&
+      superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME:-admin} --password ${SUPERSET_ADMIN_PASSWORD:-admin} --firstname Admin --lastname User --email admin@example.com || true &&
+      superset init &&
+      superset run -h 0.0.0.0 -p 8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8088:8088"
+
   # ---------- Microservices (Clean Architecture) ----------
   auth-identity-service:
     build: ./services/auth-identity-service
@@ -201,9 +237,17 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-financial_dw}
+      # UC-047 (nâng cấp) — xem ADR-005 trong ARCHITECTURE.md.
+      SUPERSET_BASE_URL: http://superset:8088
+      SUPERSET_PUBLIC_URL: ${SUPERSET_PUBLIC_URL:-http://localhost:8088}
+      SUPERSET_GUEST_TOKEN_USERNAME: ${SUPERSET_GUEST_TOKEN_USERNAME:-}
+      SUPERSET_GUEST_TOKEN_PASSWORD: ${SUPERSET_GUEST_TOKEN_PASSWORD:-}
+      SUPERSET_AUTH_PROVIDER: db
     depends_on:
       postgres:
         condition: service_healthy
+      superset:
+        condition: service_started
     ports:
       - "8004:8000"
 

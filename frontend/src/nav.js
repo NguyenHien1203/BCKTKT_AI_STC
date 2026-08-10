@@ -112,7 +112,7 @@ export const NAV_SECTIONS = [
   {
     label: "Khai thác",
     items: [
-      { to: "/dashboard", label: "Bảng điều khiển", icon: LayoutDashboard, disabled: true },
+      { to: "/dashboards", label: "Bảng điều khiển điều hành", icon: LayoutDashboard },
       { to: "/reports", label: "Báo cáo", icon: FileBarChart, disabled: true },
     ],
   },
