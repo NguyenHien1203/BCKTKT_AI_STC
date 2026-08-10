@@ -3,9 +3,19 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.entities import Dashboard, DashboardFavorite
-from app.domain.repositories import DashboardFavoriteRepository, DashboardRepository
-from app.infrastructure.db.models import DashboardFavoriteModel, DashboardModel
+from app.domain.entities import Dashboard, DashboardFavorite, DashboardKpi, KpiExplanation
+from app.domain.repositories import (
+    DashboardFavoriteRepository,
+    DashboardKpiRepository,
+    DashboardRepository,
+    KpiExplanationRepository,
+)
+from app.infrastructure.db.models import (
+    DashboardFavoriteModel,
+    DashboardKpiModel,
+    DashboardModel,
+    KpiExplanationModel,
+)
 
 
 def _dashboard_to_entity(m: DashboardModel) -> Dashboard:
@@ -83,6 +93,112 @@ class SqlAlchemyDashboardRepository(DashboardRepository):
         self._db.commit()
         self._db.refresh(model)
         return _dashboard_to_entity(model)
+
+
+def _kpi_to_entity(m: DashboardKpiModel) -> DashboardKpi:
+    return DashboardKpi(
+        id=m.id,
+        dashboard_id=m.dashboard_id,
+        code=m.code,
+        name=m.name,
+        unit_of_measure=m.unit_of_measure,
+        higher_is_better=m.higher_is_better,
+        is_active=m.is_active,
+        created_at=m.created_at,
+    )
+
+
+def _explanation_to_entity(m: KpiExplanationModel) -> KpiExplanation:
+    return KpiExplanation(
+        id=m.id,
+        dashboard_id=m.dashboard_id,
+        kpi_code=m.kpi_code,
+        year=m.year,
+        org_unit_code=m.org_unit_code,
+        sector=m.sector,
+        requested_by=m.requested_by,
+        explanation=m.explanation,
+        model=m.model,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyDashboardKpiRepository(DashboardKpiRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, kpi: DashboardKpi) -> DashboardKpi:
+        model = DashboardKpiModel(
+            dashboard_id=kpi.dashboard_id,
+            code=kpi.code,
+            name=kpi.name,
+            unit_of_measure=kpi.unit_of_measure,
+            higher_is_better=kpi.higher_is_better,
+            is_active=kpi.is_active,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _kpi_to_entity(model)
+
+    def get_by_code(self, dashboard_id: int, code: str) -> Optional[DashboardKpi]:
+        stmt = select(DashboardKpiModel).where(
+            DashboardKpiModel.dashboard_id == dashboard_id,
+            DashboardKpiModel.code == code,
+        )
+        model = self._db.execute(stmt).scalar_one_or_none()
+        return _kpi_to_entity(model) if model else None
+
+    def list(self, dashboard_id: int, only_active: bool = True) -> List[DashboardKpi]:
+        stmt = select(DashboardKpiModel).where(DashboardKpiModel.dashboard_id == dashboard_id)
+        if only_active:
+            stmt = stmt.where(DashboardKpiModel.is_active.is_(True))
+        stmt = stmt.order_by(DashboardKpiModel.name)
+        models = self._db.execute(stmt).scalars().all()
+        return [_kpi_to_entity(m) for m in models]
+
+    def update(self, kpi: DashboardKpi) -> DashboardKpi:
+        model = self._db.get(DashboardKpiModel, kpi.id)
+        model.name = kpi.name
+        model.unit_of_measure = kpi.unit_of_measure
+        model.higher_is_better = kpi.higher_is_better
+        model.is_active = kpi.is_active
+        self._db.commit()
+        self._db.refresh(model)
+        return _kpi_to_entity(model)
+
+
+class SqlAlchemyKpiExplanationRepository(KpiExplanationRepository):
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, explanation: KpiExplanation) -> KpiExplanation:
+        model = KpiExplanationModel(
+            dashboard_id=explanation.dashboard_id,
+            kpi_code=explanation.kpi_code,
+            year=explanation.year,
+            org_unit_code=explanation.org_unit_code,
+            sector=explanation.sector,
+            requested_by=explanation.requested_by,
+            explanation=explanation.explanation,
+            model=explanation.model,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _explanation_to_entity(model)
+
+    def list(self, dashboard_id: int, kpi_code: str) -> List[KpiExplanation]:
+        stmt = (
+            select(KpiExplanationModel)
+            .where(
+                KpiExplanationModel.dashboard_id == dashboard_id,
+                KpiExplanationModel.kpi_code == kpi_code,
+            )
+            .order_by(KpiExplanationModel.created_at.desc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_explanation_to_entity(m) for m in models]
 
 
 class SqlAlchemyDashboardFavoriteRepository(DashboardFavoriteRepository):

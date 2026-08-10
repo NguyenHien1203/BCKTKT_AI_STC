@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -58,3 +58,98 @@ class GuestTokenResponse(BaseModel):
     superset_domain: str = Field(
         ..., description="Domain Superset mà trình duyệt gọi thẳng (SUPERSET_PUBLIC_URL)."
     )
+
+
+# ---------- UC-048: Áp bộ lọc + xem chi tiết Bảng điều khiển ----------
+
+
+class DashboardKpiCreate(BaseModel):
+    code: str = Field(..., min_length=1, max_length=50)
+    name: str = Field(..., min_length=1, max_length=255)
+    unit_of_measure: str = Field("", max_length=50)
+    higher_is_better: bool = True
+
+
+class DashboardKpiResponse(BaseModel):
+    id: int
+    dashboard_id: int
+    code: str
+    name: str
+    unit_of_measure: str
+    higher_is_better: bool
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DashboardFilterInput(BaseModel):
+    """Bước 1 UC-048 — bộ lọc năm/đơn vị/lĩnh vực."""
+
+    year: int = Field(..., ge=1900, le=2100)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class KpiValueItem(BaseModel):
+    kpi_code: str
+    kpi_name: str
+    unit_of_measure: str
+    value: Optional[float] = None
+
+
+class ApplyFiltersResponse(BaseModel):
+    dashboard_id: int
+    filters: DashboardFilterInput
+    kpi_values: List[KpiValueItem]
+
+
+class KpiBreakdownItem(BaseModel):
+    label: str
+    value: Optional[float] = None
+
+
+class KpiDetailResponse(BaseModel):
+    dashboard_id: int
+    kpi_code: str
+    kpi_name: str
+    unit_of_measure: str
+    filters: DashboardFilterInput
+    value: Optional[float] = None
+    breakdown: List[KpiBreakdownItem]
+
+
+class KpiComparisonResponse(BaseModel):
+    dashboard_id: int
+    kpi_code: str
+    kpi_name: str
+    unit_of_measure: str
+    filters: DashboardFilterInput
+    current_year: int
+    current_value: Optional[float] = None
+    prior_year: int
+    prior_value: Optional[float] = None
+    delta: Optional[float] = None
+    delta_percent: Optional[float] = None
+
+
+class KpiExplanationRequest(BaseModel):
+    requested_by: int = Field(..., gt=0)
+    year: int = Field(..., ge=1900, le=2100)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class KpiExplanationResponse(BaseModel):
+    id: int
+    dashboard_id: int
+    kpi_code: str
+    year: int
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    requested_by: int
+    explanation: str
+    model: str
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
