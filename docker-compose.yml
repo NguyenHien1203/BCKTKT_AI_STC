@@ -243,10 +243,15 @@ services:
       SUPERSET_GUEST_TOKEN_USERNAME: ${SUPERSET_GUEST_TOKEN_USERNAME:-}
       SUPERSET_GUEST_TOKEN_PASSWORD: ${SUPERSET_GUEST_TOKEN_PASSWORD:-}
       SUPERSET_AUTH_PROVIDER: db
+      # UC-048: reporting-service gọi sang ai-service ("AI Bộ điều phối")
+      # để giải thích KPI — POST {AI_SERVICE_URL}/ai-orchestrator/kpi-explanations.
+      AI_SERVICE_URL: http://hy-ai-service:8000
     depends_on:
       postgres:
         condition: service_healthy
       superset:
+        condition: service_started
+      ai-service:
         condition: service_started
     ports:
       - "8004:8000"

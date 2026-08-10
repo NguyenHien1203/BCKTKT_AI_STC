@@ -60,3 +60,78 @@ export async function unpinFavoriteDashboard(dashboardId, userId) {
     params: { user_id: userId },
   });
 }
+
+// ---------- UC-048: Áp bộ lọc + xem chi tiết Bảng điều khiển ----------
+
+export async function listDashboardKpis(dashboardId, { onlyActive = true } = {}) {
+  const { data } = await reportingClient.get(`/dashboards/${dashboardId}/kpis`, {
+    params: { only_active: onlyActive },
+  });
+  return data;
+}
+
+export async function registerDashboardKpi(dashboardId, payload) {
+  const { data } = await reportingClient.post(`/dashboards/${dashboardId}/kpis`, payload);
+  return data;
+}
+
+export async function applyDashboardFilters(dashboardId, { year, orgUnitCode, sector }) {
+  const { data } = await reportingClient.post(`/dashboards/${dashboardId}/filters/apply`, {
+    year,
+    org_unit_code: orgUnitCode || null,
+    sector: sector || null,
+  });
+  return data;
+}
+
+export async function getKpiDetail(dashboardId, kpiCode, { year, orgUnitCode, sector }) {
+  const { data } = await reportingClient.get(
+    `/dashboards/${dashboardId}/kpis/${kpiCode}/detail`,
+    {
+      params: {
+        year,
+        ...(orgUnitCode ? { org_unit_code: orgUnitCode } : {}),
+        ...(sector ? { sector } : {}),
+      },
+    }
+  );
+  return data;
+}
+
+export async function getKpiComparison(dashboardId, kpiCode, { year, orgUnitCode, sector }) {
+  const { data } = await reportingClient.get(
+    `/dashboards/${dashboardId}/kpis/${kpiCode}/comparison`,
+    {
+      params: {
+        year,
+        ...(orgUnitCode ? { org_unit_code: orgUnitCode } : {}),
+        ...(sector ? { sector } : {}),
+      },
+    }
+  );
+  return data;
+}
+
+export async function requestKpiAiExplanation(
+  dashboardId,
+  kpiCode,
+  { requestedBy, year, orgUnitCode, sector }
+) {
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/kpis/${kpiCode}/ai-explanation`,
+    {
+      requested_by: requestedBy,
+      year,
+      org_unit_code: orgUnitCode || null,
+      sector: sector || null,
+    }
+  );
+  return data;
+}
+
+export async function listKpiAiExplanations(dashboardId, kpiCode) {
+  const { data } = await reportingClient.get(
+    `/dashboards/${dashboardId}/kpis/${kpiCode}/ai-explanations`
+  );
+  return data;
+}

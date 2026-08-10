@@ -2,7 +2,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from app.domain.entities import Dashboard, DashboardFavorite
+from app.domain.entities import (
+    Dashboard,
+    DashboardFavorite,
+    DashboardFilter,
+    DashboardKpi,
+    KpiExplanation,
+)
 
 
 class DashboardRepository(ABC):
@@ -50,6 +56,81 @@ class DashboardFavoriteRepository(ABC):
 
     @abstractmethod
     def delete(self, user_id: int, dashboard_id: int) -> bool:
+        ...
+
+
+class DashboardKpiRepository(ABC):
+    """Repository cho UC-048: danh mục chỉ tiêu (KPI) thuộc 1 Bảng điều khiển."""
+
+    @abstractmethod
+    def add(self, kpi: DashboardKpi) -> DashboardKpi:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, dashboard_id: int, code: str) -> Optional[DashboardKpi]:
+        ...
+
+    @abstractmethod
+    def list(self, dashboard_id: int, only_active: bool = True) -> List[DashboardKpi]:
+        ...
+
+    @abstractmethod
+    def update(self, kpi: DashboardKpi) -> DashboardKpi:
+        ...
+
+
+class KpiExplanationRepository(ABC):
+    """Repository cho UC-048: lịch sử "Yêu cầu AI giải thích KPI" (append-only)."""
+
+    @abstractmethod
+    def add(self, explanation: KpiExplanation) -> KpiExplanation:
+        ...
+
+    @abstractmethod
+    def list(self, dashboard_id: int, kpi_code: str) -> List[KpiExplanation]:
+        ...
+
+
+class SupersetDashboardQueryClient(ABC):
+    """Cổng (port) UC-048 bước 1-3: "Hệ thống truy vấn lại qua Superset"
+    khi người dùng áp bộ lọc / xem chi tiết KPI / so sánh cùng kỳ năm
+    trước. Triển khai thật (khi tích hợp) nên gọi Superset Chart Data API
+    (`POST /api/v1/chart/data`) với `extra_filters` dựng từ
+    `DashboardFilter` — xem `infrastructure/superset_query_client.py`.
+    """
+
+    @abstractmethod
+    def query_kpi_values(
+        self, dashboard: Dashboard, kpis: List[DashboardKpi], filters: DashboardFilter
+    ) -> Dict[str, float]:
+        """Bước 1-2: trả về `{kpi_code: giá_trị}` sau khi áp bộ lọc."""
+        ...
+
+    @abstractmethod
+    def query_kpi_breakdown(
+        self, dashboard: Dashboard, kpi: DashboardKpi, filters: DashboardFilter
+    ) -> List[Dict[str, Any]]:
+        """Bước "Xem chi tiết KPI": trả về danh sách
+        `{"label": str, "value": float}` — phân rã chi tiết theo đơn vị/
+        khoản mục con."""
+        ...
+
+    @abstractmethod
+    def query_kpi_prior_year_value(
+        self, dashboard: Dashboard, kpi: DashboardKpi, filters: DashboardFilter
+    ) -> Optional[float]:
+        """Bước "So sánh cùng kỳ năm trước": truy vấn lại với `year - 1`."""
+        ...
+
+
+class AIOrchestratorClient(ABC):
+    """Cổng (port) UC-048 bước cuối: "Yêu cầu AI giải thích KPI" ->
+    "Hệ thống gọi AI Bộ điều phối" (`ai-service`, endpoint
+    `POST /ai-orchestrator/kpi-explanations`)."""
+
+    @abstractmethod
+    def explain_kpi(self, context: Dict[str, Any]) -> Dict[str, str]:
+        """Trả về `{"explanation": str, "model": str}`."""
         ...
 
 

@@ -41,6 +41,59 @@ class DashboardModel(Base):
     )
 
 
+class DashboardKpiModel(Base):
+    """UC-048: danh mục chỉ tiêu (KPI) thuộc 1 Bảng điều khiển."""
+
+    __tablename__ = "dashboard_kpis"
+    __table_args__ = (
+        UniqueConstraint(
+            "dashboard_id", "code", name="uq_reporting_dashboard_kpis_dashboard_code"
+        ),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dashboard_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboards.id"),
+        nullable=False,
+        index=True,
+    )
+    code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    unit_of_measure: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    higher_is_better: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class KpiExplanationModel(Base):
+    """UC-048: lịch sử (append-only) "Yêu cầu AI giải thích KPI"."""
+
+    __tablename__ = "kpi_explanations"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dashboard_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboards.id"),
+        nullable=False,
+        index=True,
+    )
+    kpi_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    org_unit_code: Mapped[str] = mapped_column(String(50), nullable=True)
+    sector: Mapped[str] = mapped_column(String(30), nullable=True)
+    requested_by: Mapped[int] = mapped_column(Integer, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
 class DashboardFavoriteModel(Base):
     """UC-047: tuỳ chọn cá nhân "ghim bảng điều khiển yêu thích"."""
 

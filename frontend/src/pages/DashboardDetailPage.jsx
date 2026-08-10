@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Pin, PinOff } from "lucide-react";
+import { ArrowLeft, Pin, PinOff, Filter, Sparkles } from "lucide-react";
 import AppLayout from "../components/AppLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
@@ -9,6 +9,12 @@ import {
   listFavoriteDashboards,
   pinFavoriteDashboard,
   unpinFavoriteDashboard,
+  listDashboardKpis,
+  applyDashboardFilters,
+  getKpiDetail,
+  getKpiComparison,
+  requestKpiAiExplanation,
+  listKpiAiExplanations,
 } from "../api/dashboards.js";
 
 const CATEGORY_LABELS = {
