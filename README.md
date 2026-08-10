@@ -40,7 +40,7 @@ project/
 │   ├── auth-identity-service/    # Nhóm I: Quản trị hệ thống (UC 1-14) — ✅ UC-01 đã code+test
 │   ├── ingestion-service/        # Nhóm II: Tiếp nhận & đồng bộ dữ liệu (UC 15-28) — khung sẵn sàng
 │   ├── data-quality-service/     # Nhóm III: Chuẩn hóa & quản trị dữ liệu (UC 29-46) — khung sẵn sàng
-│   ├── reporting-service/        # Nhóm IV: Dashboard & báo cáo (UC 47-57) — khung sẵn sàng
+│   ├── reporting-service/        # Nhóm IV: Dashboard & báo cáo (UC 47-57) — UC-047 done
 │   ├── api-gateway-service/      # Nhóm V: API & tích hợp (UC 58-68) — khung sẵn sàng
 │   ├── ai-service/                # Nhóm VI: AI & khai thác văn bản (UC 69-89) — khung sẵn sàng
 │   ├── ops-service/               # Nhóm VII: Vận hành hệ thống (UC 90-100) — khung sẵn sàng
@@ -106,4 +106,4 @@ Invoke-RestMethod -Uri "http://localhost:8001/users" -Method Post -ContentType "
 
 - Test: py -m pytest services/ingestion-service -q 
 
-py -m pytest services/data-quality-service -q 
+py -m pytest services/data-quality-service -q

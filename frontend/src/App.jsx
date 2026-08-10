@@ -20,6 +20,7 @@ import {
   KeyRound,
   Landmark,
   Layers,
+  LayoutDashboard,
   MonitorSmartphone,
   Network,
   Package,
@@ -44,6 +45,8 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AiAuditLogPage from "./pages/AiAuditLogPage.jsx";
 import AuditLogsPage from "./pages/AuditLogsPage.jsx";
 import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
+import DashboardsPage from "./pages/DashboardsPage.jsx";
+import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -348,6 +351,13 @@ function HomePage() {
       description:
         "UC-046 — Chọn phạm vi (tập dữ liệu / bản ghi / nguồn), hệ thống hiển thị; sinh báo cáo nguồn gốc dữ liệu, hệ thống kết xuất PDF; kết xuất PDF, hệ thống trả file.",
       icon: FileOutput,
+    },
+    {
+      to: "/dashboards",
+      title: "Bảng điều khiển điều hành",
+      description:
+        "UC-047 — Chọn Bảng điều khiển từ danh mục, xem trực tiếp từ Superset, ghim bảng điều khiển yêu thích vào tùy chọn cá nhân.",
+      icon: LayoutDashboard,
     },
   ];
 
@@ -770,6 +780,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProvenanceReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboards"
+        element={
+          <ProtectedRoute>
+            <DashboardsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboards/:id"
+        element={
+          <ProtectedRoute>
+            <DashboardDetailPage />
           </ProtectedRoute>
         }
       />
