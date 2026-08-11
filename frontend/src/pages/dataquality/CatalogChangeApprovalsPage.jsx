@@ -247,7 +247,7 @@ export default function CatalogChangeApprovalsPage() {
                 {diff.changes.length === 0 ? (
                   <div className="empty-state">Yêu cầu này không đề nghị thay đổi trường nào.</div>
                 ) : (
-                  <table className="table" style={{ marginBottom: 16 }}>
+                  <table className="data-table" style={{ marginBottom: 16 }}>
                     <thead>
                       <tr>
                         <th>Trường</th>

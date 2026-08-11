@@ -359,3 +359,94 @@ class ReportScheduleRunLogResponse(BaseModel):
     run_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+# ---------- UC-052: Đăng ký nhận cảnh báo dashboard ----------
+
+_ALERT_OPERATOR_PATTERN = r"^(>|>=|<|<=)$"
+_ALERT_CHANNEL_TYPE_PATTERN = "^(EMAIL|SLACK|WEBHOOK)$"
+_ALERT_LOG_STATUS_PATTERN = "^(SENT|FAILED)$"
+
+
+class DashboardAlertRuleCreate(BaseModel):
+    """Bước 1 — "Cấu hình ngưỡng cảnh báo trên KPI"."""
+
+    kpi_code: str = Field(..., min_length=1, max_length=50)
+    user_id: int = Field(..., gt=0)
+    operator: str = Field(..., pattern=_ALERT_OPERATOR_PATTERN, description="'>', '>=', '<' hoặc '<='")
+    threshold_value: float = Field(...)
+    year: int = Field(..., ge=1900, le=2100)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class DashboardAlertRuleUpdate(BaseModel):
+    """Sửa cấu hình ngưỡng đã có."""
+
+    operator: str = Field(..., pattern=_ALERT_OPERATOR_PATTERN)
+    threshold_value: float = Field(...)
+    year: int = Field(..., ge=1900, le=2100)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class DashboardAlertRuleResponse(BaseModel):
+    id: int
+    dashboard_id: int
+    kpi_code: str
+    user_id: int
+    operator: str
+    threshold_value: float
+    year: int
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DashboardAlertChannelCreate(BaseModel):
+    """Bước 2 — "Chọn kênh nhận (email / Slack / Webhook)"."""
+
+    channel_type: str = Field(..., pattern=_ALERT_CHANNEL_TYPE_PATTERN)
+    destination: str = Field(..., min_length=3, max_length=500)
+
+
+class DashboardAlertChannelResponse(BaseModel):
+    id: int
+    alert_rule_id: int
+    channel_type: str
+    destination: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DashboardAlertLogResponse(BaseModel):
+    """Bước 3 — nhật ký mỗi lần hệ thống gửi cảnh báo do vượt ngưỡng."""
+
+    id: int
+    alert_rule_id: int
+    channel_id: int
+    channel_type: str
+    kpi_value: Optional[float] = None
+    threshold_value: float
+    operator: str
+    status: str
+    message: str = ""
+    triggered_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DashboardAlertEvaluationResponse(BaseModel):
+    """Kết quả 1 lượt đánh giá ngưỡng (bước 3, "chạy thử ngay" hoặc do
+    tác vụ định kỳ gọi)."""
+
+    rule_id: int
+    evaluated: bool
+    triggered: bool
+    kpi_value: Optional[float] = None
+    reason: str
+    logs: List[DashboardAlertLogResponse] = []

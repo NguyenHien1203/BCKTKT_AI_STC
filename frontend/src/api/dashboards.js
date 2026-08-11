@@ -135,3 +135,114 @@ export async function listKpiAiExplanations(dashboardId, kpiCode) {
   );
   return data;
 }
+
+// ---------- UC-052: Đăng ký nhận cảnh báo dashboard ----------
+
+export async function listDashboardAlertRules(dashboardId, { kpiCode = null } = {}) {
+  const { data } = await reportingClient.get(`/dashboards/${dashboardId}/alert-rules`, {
+    params: kpiCode ? { kpi_code: kpiCode } : {},
+  });
+  return data;
+}
+
+export async function configureDashboardAlertRule(dashboardId, payload) {
+  // Bước 1 — "Cấu hình ngưỡng cảnh báo trên KPI" -> hệ thống lưu.
+  const { data } = await reportingClient.post(`/dashboards/${dashboardId}/alert-rules`, {
+    kpi_code: payload.kpiCode,
+    user_id: payload.userId,
+    operator: payload.operator,
+    threshold_value: payload.thresholdValue,
+    year: payload.year,
+    org_unit_code: payload.orgUnitCode || null,
+    sector: payload.sector || null,
+  });
+  return data;
+}
+
+export async function updateDashboardAlertRule(dashboardId, ruleId, payload) {
+  const { data } = await reportingClient.put(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}`,
+    {
+      operator: payload.operator,
+      threshold_value: payload.thresholdValue,
+      year: payload.year,
+      org_unit_code: payload.orgUnitCode || null,
+      sector: payload.sector || null,
+    }
+  );
+  return data;
+}
+
+export async function activateDashboardAlertRule(dashboardId, ruleId) {
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/activate`
+  );
+  return data;
+}
+
+export async function deactivateDashboardAlertRule(dashboardId, ruleId) {
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/deactivate`
+  );
+  return data;
+}
+
+export async function listDashboardAlertChannels(dashboardId, ruleId, { onlyActive = false } = {}) {
+  const { data } = await reportingClient.get(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/channels`,
+    { params: { only_active: onlyActive } }
+  );
+  return data;
+}
+
+export async function addDashboardAlertChannel(dashboardId, ruleId, { channelType, destination }) {
+  // Bước 2 — "Chọn kênh nhận (email / Slack / Webhook)" -> hệ thống lưu.
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/channels`,
+    { channel_type: channelType, destination }
+  );
+  return data;
+}
+
+export async function deactivateDashboardAlertChannel(dashboardId, ruleId, channelId) {
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/channels/${channelId}/deactivate`
+  );
+  return data;
+}
+
+export async function activateDashboardAlertChannel(dashboardId, ruleId, channelId) {
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/channels/${channelId}/activate`
+  );
+  return data;
+}
+
+export async function deleteDashboardAlertChannel(dashboardId, ruleId, channelId) {
+  await reportingClient.delete(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/channels/${channelId}`
+  );
+}
+
+export async function evaluateDashboardAlertRule(dashboardId, ruleId) {
+  // Bước 3 — "Khi vượt ngưỡng -> Hệ thống gửi cảnh báo qua kênh đã chọn"
+  // (chạy thử ngay, không cần chờ tác vụ định kỳ).
+  const { data } = await reportingClient.post(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/evaluate`
+  );
+  return data;
+}
+
+export async function listDashboardAlertLogs(dashboardId, ruleId) {
+  const { data } = await reportingClient.get(
+    `/dashboards/${dashboardId}/alert-rules/${ruleId}/logs`
+  );
+  return data;
+}
+
+export async function listDashboardAlertRulesForUser(userId) {
+  const { data } = await reportingClient.get("/dashboard-alerts/rules", {
+    params: { user_id: userId },
+  });
+  return data;
+}

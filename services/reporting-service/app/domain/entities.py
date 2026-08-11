@@ -457,3 +457,131 @@ class ReportScheduleRunLog:
             raise ValueError(
                 f"Trạng thái '{self.status}' không hợp lệ, phải là 1 trong {self.STATUSES}"
             )
+
+@dataclass
+class DashboardAlertRule:
+    """UC-052 bước 1: "Cấu hình ngưỡng cảnh báo trên KPI" — hệ thống lưu 1
+    ngưỡng theo dõi cho 1 KPI thuộc 1 Bảng điều khiển (theo bộ lọc năm/đơn
+    vị/lĩnh vực, giống `DashboardFilter` của UC-048). Khi giá trị KPI hiện
+    tại (truy vấn lại qua Superset, tái dùng `SupersetDashboardQueryClient`
+    của UC-048) vi phạm điều kiện `operator`/`threshold_value`, hệ thống
+    coi là "vượt ngưỡng" và gửi cảnh báo qua các kênh đã cấu hình
+    (`DashboardAlertChannel`, bước 2).
+    """
+
+    OPERATORS = (">", ">=", "<", "<=")
+
+    id: Optional[int]
+    dashboard_id: int
+    kpi_code: str
+    user_id: int
+    operator: str
+    threshold_value: float
+    year: int
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if self.operator not in self.OPERATORS:
+            raise ValueError(
+                f"Toán tử ngưỡng '{self.operator}' không hợp lệ, phải là 1 trong {self.OPERATORS}"
+            )
+        if self.threshold_value is None:
+            raise ValueError("Ngưỡng cảnh báo (threshold_value) không được để trống")
+        if self.year < 1900 or self.year > 2100:
+            raise ValueError("Năm áp ngưỡng cảnh báo không hợp lệ")
+
+    def is_breached(self, kpi_value: Optional[float]) -> bool:
+        """Kiểm tra giá trị KPI hiện tại có "vượt ngưỡng" hay không, theo
+        đúng `operator` đã cấu hình. Trả về False nếu không lấy được giá
+        trị KPI (không đủ dữ liệu để kết luận vượt ngưỡng)."""
+        if kpi_value is None:
+            return False
+        if self.operator == ">":
+            return kpi_value > self.threshold_value
+        if self.operator == ">=":
+            return kpi_value >= self.threshold_value
+        if self.operator == "<":
+            return kpi_value < self.threshold_value
+        return kpi_value <= self.threshold_value
+
+    def activate(self) -> None:
+        self.is_active = True
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+
+@dataclass
+class DashboardAlertChannel:
+    """UC-052 bước 2: "Chọn kênh nhận (email / Slack / Webhook)" — hệ
+    thống lưu 1 kênh nhận cảnh báo cho 1 ngưỡng đã cấu hình. `destination`
+    là địa chỉ email (EMAIL) hoặc URL webhook (SLACK dùng Slack Incoming
+    Webhook URL, WEBHOOK dùng URL tuỳ ý nhận POST JSON).
+    """
+
+    CHANNEL_TYPES = ("EMAIL", "SLACK", "WEBHOOK")
+
+    id: Optional[int]
+    alert_rule_id: int
+    channel_type: str
+    destination: str
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if self.channel_type not in self.CHANNEL_TYPES:
+            raise ValueError(
+                f"Loại kênh '{self.channel_type}' không hợp lệ, phải là 1 trong {self.CHANNEL_TYPES}"
+            )
+        self._validate_destination(self.channel_type, self.destination)
+
+    @staticmethod
+    def _validate_destination(channel_type: str, destination: str) -> None:
+        if not destination or not destination.strip():
+            raise ValueError("Địa chỉ nhận cảnh báo (destination) không được để trống")
+        if channel_type == "EMAIL":
+            if "@" not in destination or destination.startswith("@") or destination.endswith("@"):
+                raise ValueError(f"Email nhận cảnh báo '{destination}' không hợp lệ")
+            local, _, domain = destination.partition("@")
+            if not local or "." not in domain or domain.startswith(".") or domain.endswith("."):
+                raise ValueError(f"Email nhận cảnh báo '{destination}' không hợp lệ")
+        else:
+            if not (destination.startswith("http://") or destination.startswith("https://")):
+                raise ValueError(
+                    f"URL webhook '{destination}' không hợp lệ — phải bắt đầu bằng http:// hoặc https://"
+                )
+
+    def activate(self) -> None:
+        self.is_active = True
+
+    def deactivate(self) -> None:
+        self.is_active = False
+
+
+@dataclass
+class DashboardAlertLog:
+    """UC-052 bước 3: nhật ký append-only mỗi lần hệ thống phát hiện "vượt
+    ngưỡng" và gửi cảnh báo qua 1 kênh — dùng để tra cứu lại lịch sử cảnh
+    báo đã gửi (thành công/thất bại) của 1 ngưỡng."""
+
+    STATUSES = ("SENT", "FAILED")
+
+    id: Optional[int]
+    alert_rule_id: int
+    channel_id: int
+    channel_type: str
+    kpi_value: Optional[float]
+    threshold_value: float
+    operator: str
+    status: str
+    message: str = ""
+    triggered_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if self.status not in self.STATUSES:
+            raise ValueError(
+                f"Trạng thái '{self.status}' không hợp lệ, phải là 1 trong {self.STATUSES}"
+            )

@@ -240,3 +240,57 @@ class ReportEmailSendFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class DashboardAlertRuleNotFound(DomainError):
+    """UC-052: không tìm thấy ngưỡng cảnh báo đã cấu hình."""
+
+    code = "DASHBOARD_ALERT_RULE_NOT_FOUND"
+
+    def __init__(self, rule_id: int):
+        super().__init__(f"Không tìm thấy ngưỡng cảnh báo id={rule_id}")
+
+
+class InvalidDashboardAlertRule(DomainError):
+    """UC-052 bước 1: "Cấu hình ngưỡng cảnh báo trên KPI" không hợp lệ."""
+
+    code = "INVALID_DASHBOARD_ALERT_RULE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class DashboardAlertChannelNotFound(DomainError):
+    code = "DASHBOARD_ALERT_CHANNEL_NOT_FOUND"
+
+    def __init__(self, channel_id: int):
+        super().__init__(f"Không tìm thấy kênh nhận cảnh báo id={channel_id}")
+
+
+class InvalidDashboardAlertChannel(DomainError):
+    """UC-052 bước 2: "Chọn kênh nhận (email / Slack / Webhook)" không hợp lệ."""
+
+    code = "INVALID_DASHBOARD_ALERT_CHANNEL"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NoActiveDashboardAlertChannel(DomainError):
+    """UC-052 bước 3: ngưỡng vượt nhưng chưa cấu hình kênh nhận nào đang bật."""
+
+    code = "NO_ACTIVE_DASHBOARD_ALERT_CHANNEL"
+
+    def __init__(self, rule_id: int):
+        super().__init__(
+            f"Ngưỡng cảnh báo id={rule_id} chưa có kênh nhận (email/Slack/Webhook) nào đang bật"
+        )
+
+
+class AlertDispatchFailed(DomainError):
+    """UC-052 bước 3: "Hệ thống gửi cảnh báo qua kênh đã chọn" thất bại
+    (không gửi được email/Slack/Webhook)."""
+
+    code = "ALERT_DISPATCH_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)
