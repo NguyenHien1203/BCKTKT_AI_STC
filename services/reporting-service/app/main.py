@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.infrastructure.db.session import Base, engine
 from app.interfaces.api.dashboard_router import router as dashboard_router
 from app.interfaces.api.kpi_query_router import router as kpi_query_router
+from app.interfaces.api.report_generation_router import router as report_generation_router
 from app.interfaces.api.report_template_router import router as report_template_router
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
@@ -18,6 +19,7 @@ app = FastAPI(
 app.include_router(dashboard_router)
 app.include_router(kpi_query_router)
 app.include_router(report_template_router)
+app.include_router(report_generation_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

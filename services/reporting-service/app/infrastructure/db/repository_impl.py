@@ -9,6 +9,7 @@ from app.domain.entities import (
     Dashboard,
     DashboardFavorite,
     DashboardKpi,
+    GeneratedReportLog,
     KpiExplanation,
     ReportFilterConfig,
     ReportTemplate,
@@ -17,6 +18,7 @@ from app.domain.repositories import (
     DashboardFavoriteRepository,
     DashboardKpiRepository,
     DashboardRepository,
+    GeneratedReportLogRepository,
     KpiExplanationRepository,
     ReportFilterConfigRepository,
     ReportTemplateRepository,
@@ -25,6 +27,7 @@ from app.infrastructure.db.models import (
     DashboardFavoriteModel,
     DashboardKpiModel,
     DashboardModel,
+    GeneratedReportLogModel,
     KpiExplanationModel,
     ReportFilterConfigModel,
     ReportTemplateModel,
@@ -395,3 +398,52 @@ class SqlAlchemyDashboardFavoriteRepository(DashboardFavoriteRepository):
         self._db.delete(model)
         self._db.commit()
         return True
+
+def _generated_report_log_to_entity(m: GeneratedReportLogModel) -> GeneratedReportLog:
+    return GeneratedReportLog(
+        id=m.id,
+        template_id=m.template_id,
+        user_id=m.user_id,
+        format=m.format,
+        year=m.year,
+        period_type=m.period_type,
+        period_value=m.period_value,
+        org_unit_code=m.org_unit_code,
+        sector=m.sector,
+        row_count=m.row_count,
+        generated_at=m.generated_at,
+    )
+
+
+class SqlAlchemyGeneratedReportLogRepository(GeneratedReportLogRepository):
+    """UC-050: nhật ký append-only mỗi lượt kết xuất báo cáo (PDF/Excel)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, log: GeneratedReportLog) -> GeneratedReportLog:
+        model = GeneratedReportLogModel(
+            template_id=log.template_id,
+            user_id=log.user_id,
+            format=log.format,
+            year=log.year,
+            period_type=log.period_type,
+            period_value=log.period_value,
+            org_unit_code=log.org_unit_code,
+            sector=log.sector,
+            row_count=log.row_count,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _generated_report_log_to_entity(model)
+
+    def list_for_user(
+        self, user_id: int, template_id: Optional[int] = None
+    ) -> List[GeneratedReportLog]:
+        stmt = select(GeneratedReportLogModel).where(GeneratedReportLogModel.user_id == user_id)
+        if template_id is not None:
+            stmt = stmt.where(GeneratedReportLogModel.template_id == template_id)
+        stmt = stmt.order_by(GeneratedReportLogModel.generated_at.desc())
+        models = self._db.execute(stmt).scalars().all()
+        return [_generated_report_log_to_entity(m) for m in models]

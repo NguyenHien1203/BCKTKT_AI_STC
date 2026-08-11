@@ -149,6 +149,28 @@ class ReportFilterConfigNotFound(DomainError):
         )
 
 
+class NoReportFilterConfigToGenerate(DomainError):
+    """UC-050 bước 1: chưa cấu hình bộ lọc nào (UC-049 bước 3) cho mẫu báo
+    cáo này và cũng không truyền bộ lọc trực tiếp khi sinh báo cáo."""
+
+    code = "NO_REPORT_FILTER_CONFIG_TO_GENERATE"
+
+    def __init__(self, template_id: int, user_id: int):
+        super().__init__(
+            f"Chưa có bộ lọc để sinh báo cáo cho mẫu id={template_id}, người dùng "
+            f"id={user_id} — vui lòng cấu hình bộ lọc (UC-049) hoặc truyền bộ lọc trực tiếp"
+        )
+
+
+class SemanticLayerQueryFailed(DomainError):
+    """UC-050 bước 1: "Hệ thống truy vấn Lớp ngữ nghĩa + kết xuất" thất bại."""
+
+    code = "SEMANTIC_LAYER_QUERY_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class GuestTokenIssueFailed(DomainError):
     """UC-047 (nâng cấp Embedded SDK): không lấy được guest token từ Superset
     (Superset không phản hồi, sai tài khoản dịch vụ, hoặc dashboard chưa

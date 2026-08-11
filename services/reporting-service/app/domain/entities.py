@@ -266,3 +266,38 @@ class DashboardFavorite:
     user_id: int
     dashboard_id: int
     pinned_at: Optional[datetime] = None
+
+
+@dataclass
+class GeneratedReportLog:
+    """UC-050: Sinh + kết xuất báo cáo — nhật ký append-only mỗi lượt
+    "Kết xuất PDF"/"Kết xuất Excel" (hệ thống trả file). Lưu lại đúng bộ
+    lọc đã dùng (năm/đơn vị/lĩnh vực/kỳ) + số dòng dữ liệu kết xuất được,
+    dùng để tra cứu lại lịch sử sinh báo cáo của người dùng."""
+
+    FORMATS = ("PDF", "EXCEL")
+
+    id: Optional[int]
+    template_id: int
+    user_id: int
+    format: str
+    year: int
+    period_type: str
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    row_count: int = 0
+    generated_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if self.format not in self.FORMATS:
+            raise ValueError(
+                f"Định dạng kết xuất '{self.format}' không hợp lệ, phải là 1 trong {self.FORMATS}"
+            )
+        if self.year < 1900 or self.year > 2100:
+            raise ValueError("Năm không hợp lệ")
+        if self.period_type not in ReportTemplate.PERIOD_TYPES:
+            raise ValueError(
+                f"Loại kỳ '{self.period_type}' không hợp lệ, phải là 1 trong "
+                f"{ReportTemplate.PERIOD_TYPES}"
+            )

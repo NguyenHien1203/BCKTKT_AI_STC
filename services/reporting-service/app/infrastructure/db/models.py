@@ -173,3 +173,29 @@ class DashboardFavoriteModel(Base):
     pinned_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class GeneratedReportLogModel(Base):
+    """UC-050: nhật ký append-only mỗi lượt kết xuất báo cáo (PDF/Excel)."""
+
+    __tablename__ = "generated_report_logs"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    template_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}report_templates.id"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    format: Mapped[str] = mapped_column(String(10), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    period_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    period_value: Mapped[int] = mapped_column(Integer, nullable=True)
+    org_unit_code: Mapped[str] = mapped_column(String(50), nullable=True)
+    sector: Mapped[str] = mapped_column(String(30), nullable=True)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
