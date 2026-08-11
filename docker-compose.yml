@@ -261,6 +261,17 @@ services:
       # muốn ở môi trường dev/test — xem app/infrastructure/scheduler_runner.py.
       REPORT_SCHEDULER_ENABLED: ${REPORT_SCHEDULER_ENABLED:-false}
       REPORT_SCHEDULER_POLL_SECONDS: ${REPORT_SCHEDULER_POLL_SECONDS:-60}
+      # UC-052 — "Đăng ký nhận cảnh báo dashboard": gửi cảnh báo qua email/
+      # Slack/Webhook khi KPI vượt ngưỡng. Mặc định tắt (InMemoryAlertDispatcher,
+      # chỉ ghi log) — xem app/infrastructure/alert_dispatcher.py.
+      ALERT_DISPATCH_ENABLED: ${ALERT_DISPATCH_ENABLED:-false}
+      ALERT_SMTP_HOST: ${ALERT_SMTP_HOST:-}
+      ALERT_SMTP_PORT: ${ALERT_SMTP_PORT:-587}
+      ALERT_SMTP_USERNAME: ${ALERT_SMTP_USERNAME:-}
+      ALERT_SMTP_PASSWORD: ${ALERT_SMTP_PASSWORD:-}
+      ALERT_SMTP_USE_TLS: ${ALERT_SMTP_USE_TLS:-true}
+      ALERT_SMTP_FROM: ${ALERT_SMTP_FROM:-canh-bao@stc.gov.vn}
+      ALERT_WEBHOOK_TIMEOUT_SECONDS: ${ALERT_WEBHOOK_TIMEOUT_SECONDS:-10}
     depends_on:
       postgres:
         condition: service_healthy

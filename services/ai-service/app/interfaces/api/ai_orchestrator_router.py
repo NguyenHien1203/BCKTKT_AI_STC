@@ -7,7 +7,7 @@ from app.domain.exceptions import DomainError, InvalidKpiExplanationRequest
 from app.infrastructure.kpi_explanation_generator import (
     RuleBasedKpiExplanationGenerator,
 )
-from app.interfaces.api.schemas import (
+from app.interfaces.api.schema import (
     ErrorResponse,
     KpiExplanationContext,
     KpiExplanationResponse,

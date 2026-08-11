@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.domain.entities import (
     Dashboard,
+    DashboardAlertChannel,
+    DashboardAlertLog,
+    DashboardAlertRule,
     DashboardFavorite,
     DashboardKpi,
     GeneratedReportLog,
@@ -18,6 +21,9 @@ from app.domain.entities import (
     ReportTemplate,
 )
 from app.domain.repositories import (
+    DashboardAlertChannelRepository,
+    DashboardAlertLogRepository,
+    DashboardAlertRuleRepository,
     DashboardFavoriteRepository,
     DashboardKpiRepository,
     DashboardRepository,
@@ -30,6 +36,9 @@ from app.domain.repositories import (
     ReportTemplateRepository,
 )
 from app.infrastructure.db.models import (
+    DashboardAlertChannelModel,
+    DashboardAlertLogModel,
+    DashboardAlertRuleModel,
     DashboardFavoriteModel,
     DashboardKpiModel,
     DashboardModel,
@@ -644,3 +653,200 @@ class SqlAlchemyReportScheduleRunLogRepository(ReportScheduleRunLogRepository):
         )
         models = self._db.execute(stmt).scalars().all()
         return [_report_schedule_run_log_to_entity(m) for m in models]
+
+def _dashboard_alert_rule_to_entity(m: DashboardAlertRuleModel) -> DashboardAlertRule:
+    return DashboardAlertRule(
+        id=m.id,
+        dashboard_id=m.dashboard_id,
+        kpi_code=m.kpi_code,
+        user_id=m.user_id,
+        operator=m.operator,
+        threshold_value=m.threshold_value,
+        year=m.year,
+        org_unit_code=m.org_unit_code,
+        sector=m.sector,
+        is_active=m.is_active,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyDashboardAlertRuleRepository(DashboardAlertRuleRepository):
+    """UC-052 bước 1: "Cấu hình ngưỡng cảnh báo trên KPI"."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, rule: DashboardAlertRule) -> DashboardAlertRule:
+        model = DashboardAlertRuleModel(
+            dashboard_id=rule.dashboard_id,
+            kpi_code=rule.kpi_code,
+            user_id=rule.user_id,
+            operator=rule.operator,
+            threshold_value=rule.threshold_value,
+            year=rule.year,
+            org_unit_code=rule.org_unit_code,
+            sector=rule.sector,
+            is_active=rule.is_active,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _dashboard_alert_rule_to_entity(model)
+
+    def get_by_id(self, rule_id: int) -> Optional[DashboardAlertRule]:
+        model = self._db.get(DashboardAlertRuleModel, rule_id)
+        return _dashboard_alert_rule_to_entity(model) if model else None
+
+    def list_for_dashboard(
+        self, dashboard_id: int, kpi_code: Optional[str] = None
+    ) -> List[DashboardAlertRule]:
+        stmt = select(DashboardAlertRuleModel).where(
+            DashboardAlertRuleModel.dashboard_id == dashboard_id
+        )
+        if kpi_code is not None:
+            stmt = stmt.where(DashboardAlertRuleModel.kpi_code == kpi_code)
+        stmt = stmt.order_by(DashboardAlertRuleModel.created_at.desc())
+        models = self._db.execute(stmt).scalars().all()
+        return [_dashboard_alert_rule_to_entity(m) for m in models]
+
+    def list_for_user(self, user_id: int) -> List[DashboardAlertRule]:
+        stmt = (
+            select(DashboardAlertRuleModel)
+            .where(DashboardAlertRuleModel.user_id == user_id)
+            .order_by(DashboardAlertRuleModel.created_at.desc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_dashboard_alert_rule_to_entity(m) for m in models]
+
+    def list_active(self) -> List[DashboardAlertRule]:
+        stmt = select(DashboardAlertRuleModel).where(
+            DashboardAlertRuleModel.is_active.is_(True)
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_dashboard_alert_rule_to_entity(m) for m in models]
+
+    def update(self, rule: DashboardAlertRule) -> DashboardAlertRule:
+        model = self._db.get(DashboardAlertRuleModel, rule.id)
+        if model is None:
+            raise ValueError(f"Không tìm thấy ngưỡng cảnh báo id={rule.id}")
+        model.operator = rule.operator
+        model.threshold_value = rule.threshold_value
+        model.year = rule.year
+        model.org_unit_code = rule.org_unit_code
+        model.sector = rule.sector
+        model.is_active = rule.is_active
+        self._db.commit()
+        self._db.refresh(model)
+        return _dashboard_alert_rule_to_entity(model)
+
+
+def _dashboard_alert_channel_to_entity(m: DashboardAlertChannelModel) -> DashboardAlertChannel:
+    return DashboardAlertChannel(
+        id=m.id,
+        alert_rule_id=m.alert_rule_id,
+        channel_type=m.channel_type,
+        destination=m.destination,
+        is_active=m.is_active,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyDashboardAlertChannelRepository(DashboardAlertChannelRepository):
+    """UC-052 bước 2: "Chọn kênh nhận (email / Slack / Webhook)"."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, channel: DashboardAlertChannel) -> DashboardAlertChannel:
+        model = DashboardAlertChannelModel(
+            alert_rule_id=channel.alert_rule_id,
+            channel_type=channel.channel_type,
+            destination=channel.destination,
+            is_active=channel.is_active,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _dashboard_alert_channel_to_entity(model)
+
+    def get_by_id(self, channel_id: int) -> Optional[DashboardAlertChannel]:
+        model = self._db.get(DashboardAlertChannelModel, channel_id)
+        return _dashboard_alert_channel_to_entity(model) if model else None
+
+    def list_for_rule(
+        self, alert_rule_id: int, only_active: bool = False
+    ) -> List[DashboardAlertChannel]:
+        stmt = select(DashboardAlertChannelModel).where(
+            DashboardAlertChannelModel.alert_rule_id == alert_rule_id
+        )
+        if only_active:
+            stmt = stmt.where(DashboardAlertChannelModel.is_active.is_(True))
+        stmt = stmt.order_by(DashboardAlertChannelModel.created_at.asc())
+        models = self._db.execute(stmt).scalars().all()
+        return [_dashboard_alert_channel_to_entity(m) for m in models]
+
+    def update(self, channel: DashboardAlertChannel) -> DashboardAlertChannel:
+        model = self._db.get(DashboardAlertChannelModel, channel.id)
+        if model is None:
+            raise ValueError(f"Không tìm thấy kênh nhận cảnh báo id={channel.id}")
+        model.channel_type = channel.channel_type
+        model.destination = channel.destination
+        model.is_active = channel.is_active
+        self._db.commit()
+        self._db.refresh(model)
+        return _dashboard_alert_channel_to_entity(model)
+
+    def delete(self, channel_id: int) -> bool:
+        model = self._db.get(DashboardAlertChannelModel, channel_id)
+        if model is None:
+            return False
+        self._db.delete(model)
+        self._db.commit()
+        return True
+
+
+def _dashboard_alert_log_to_entity(m: DashboardAlertLogModel) -> DashboardAlertLog:
+    return DashboardAlertLog(
+        id=m.id,
+        alert_rule_id=m.alert_rule_id,
+        channel_id=m.channel_id,
+        channel_type=m.channel_type,
+        kpi_value=m.kpi_value,
+        threshold_value=m.threshold_value,
+        operator=m.operator,
+        status=m.status,
+        message=m.message,
+        triggered_at=m.triggered_at,
+    )
+
+
+class SqlAlchemyDashboardAlertLogRepository(DashboardAlertLogRepository):
+    """UC-052 bước 3: nhật ký append-only mỗi lần gửi cảnh báo."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, log: DashboardAlertLog) -> DashboardAlertLog:
+        model = DashboardAlertLogModel(
+            alert_rule_id=log.alert_rule_id,
+            channel_id=log.channel_id,
+            channel_type=log.channel_type,
+            kpi_value=log.kpi_value,
+            threshold_value=log.threshold_value,
+            operator=log.operator,
+            status=log.status,
+            message=log.message,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _dashboard_alert_log_to_entity(model)
+
+    def list_for_rule(self, alert_rule_id: int) -> List[DashboardAlertLog]:
+        stmt = (
+            select(DashboardAlertLogModel)
+            .where(DashboardAlertLogModel.alert_rule_id == alert_rule_id)
+            .order_by(DashboardAlertLogModel.triggered_at.desc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_dashboard_alert_log_to_entity(m) for m in models]

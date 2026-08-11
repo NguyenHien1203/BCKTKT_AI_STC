@@ -313,7 +313,7 @@ export default function CatalogEntriesPage() {
             ) : entries.length === 0 ? (
               <p style={{ color: "var(--color-text-secondary, #888)" }}>Chưa có mục nào.</p>
             ) : (
-              <table className="table">
+              <table className="data-table">
                 <thead>
                   <tr>
                     <th>Mã</th>
@@ -697,25 +697,31 @@ export default function CatalogEntriesPage() {
                           </div>
                         )}
                         {r.status === "PENDING" && (
-                          <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-                            <input
-                              type="text"
-                              placeholder="Người duyệt"
-                              value={reviewNote.reviewed_by}
-                              onChange={(e) =>
-                                setReviewNote({ ...reviewNote, reviewed_by: e.target.value })
-                              }
-                              style={{ flex: 1 }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Ghi chú duyệt"
-                              value={reviewNote.review_note}
-                              onChange={(e) =>
-                                setReviewNote({ ...reviewNote, review_note: e.target.value })
-                              }
-                              style={{ flex: 1 }}
-                            />
+                          <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                            <div className="field" style={{ flex: "1 1 160px", marginBottom: 0 }}>
+                              <label htmlFor={`reviewed-by-${r.id}`}>Người duyệt</label>
+                              <input
+                                id={`reviewed-by-${r.id}`}
+                                type="text"
+                                placeholder="Người duyệt"
+                                value={reviewNote.reviewed_by}
+                                onChange={(e) =>
+                                  setReviewNote({ ...reviewNote, reviewed_by: e.target.value })
+                                }
+                              />
+                            </div>
+                            <div className="field" style={{ flex: "1 1 160px", marginBottom: 0 }}>
+                              <label htmlFor={`review-note-${r.id}`}>Ghi chú duyệt</label>
+                              <input
+                                id={`review-note-${r.id}`}
+                                type="text"
+                                placeholder="Ghi chú duyệt"
+                                value={reviewNote.review_note}
+                                onChange={(e) =>
+                                  setReviewNote({ ...reviewNote, review_note: e.target.value })
+                                }
+                              />
+                            </div>
                             <button className="btn btn-primary" onClick={() => handleApprove(r.id)}>
                               Duyệt
                             </button>
@@ -735,7 +741,7 @@ export default function CatalogEntriesPage() {
                 {versions.length === 0 ? (
                   <p style={{ color: "var(--color-text-secondary, #888)" }}>Chưa có lịch sử.</p>
                 ) : (
-                  <table className="table">
+                  <table className="data-table">
                     <thead>
                       <tr>
                         <th>Phiên bản</th>

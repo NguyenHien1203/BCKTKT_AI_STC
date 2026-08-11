@@ -590,7 +590,7 @@ export default function ReportTemplatesPage() {
                     <p style={{ color: "#666" }}>Đang tải bản xem trước...</p>
                   ) : preview ? (
                     <div style={{ overflowX: "auto" }}>
-                      <table className="table">
+                      <table className="data-table">
                         <thead>
                           <tr>
                             {preview.columns.map((c) => (
@@ -793,7 +793,7 @@ export default function ReportTemplatesPage() {
                           : ""}
                         {" — "}Tổng số dòng: {generatedReport.row_count}
                       </p>
-                      <table className="table">
+                      <table className="data-table">
                         <thead>
                           <tr>
                             {generatedReport.columns.map((c) => (
@@ -823,7 +823,7 @@ export default function ReportTemplatesPage() {
                     <div className="empty-state">Chưa có lượt kết xuất nào cho mẫu này.</div>
                   ) : (
                     <div style={{ overflowX: "auto" }}>
-                      <table className="table">
+                      <table className="data-table">
                         <thead>
                           <tr>
                             <th>Định dạng</th>
@@ -1047,7 +1047,7 @@ export default function ReportTemplatesPage() {
                     <div className="empty-state">Chưa có lịch báo cáo nào cho mẫu này.</div>
                   ) : (
                     <div style={{ overflowX: "auto", marginBottom: 16 }}>
-                      <table className="table">
+                      <table className="data-table">
                         <thead>
                           <tr>
                             <th>Tần suất</th>
@@ -1131,16 +1131,19 @@ export default function ReportTemplatesPage() {
                       </h4>
                       <form
                         onSubmit={handleAddRecipient}
-                        style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}
+                        style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "flex-end" }}
                       >
-                        <input
-                          type="email"
-                          placeholder="email@stc.gov.vn"
-                          value={newRecipientEmail}
-                          onChange={(e) => setNewRecipientEmail(e.target.value)}
-                          required
-                          style={{ flex: "1 1 240px" }}
-                        />
+                        <div className="field" style={{ flex: "1 1 240px", marginBottom: 0 }}>
+                          <label htmlFor="new-recipient-email">Email người nhận</label>
+                          <input
+                            id="new-recipient-email"
+                            type="email"
+                            placeholder="email@stc.gov.vn"
+                            value={newRecipientEmail}
+                            onChange={(e) => setNewRecipientEmail(e.target.value)}
+                            required
+                          />
+                        </div>
                         <button type="submit" className="btn btn-secondary">
                           <Mail size={14} /> Thêm người nhận
                         </button>
@@ -1153,7 +1156,7 @@ export default function ReportTemplatesPage() {
                         </div>
                       ) : (
                         <div style={{ overflowX: "auto", marginBottom: 16 }}>
-                          <table className="table">
+                          <table className="data-table">
                             <thead>
                               <tr>
                                 <th>Email</th>
@@ -1188,7 +1191,7 @@ export default function ReportTemplatesPage() {
                         <div className="empty-state">Chưa có lần chạy nào.</div>
                       ) : (
                         <div style={{ overflowX: "auto" }}>
-                          <table className="table">
+                          <table className="data-table">
                             <thead>
                               <tr>
                                 <th>Trạng thái</th>

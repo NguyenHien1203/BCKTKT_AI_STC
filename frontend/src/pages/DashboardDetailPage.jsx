@@ -16,6 +16,7 @@ import {
   requestKpiAiExplanation,
   listKpiAiExplanations,
 } from "../api/dashboards.js";
+import DashboardAlertsPanel from "../components/DashboardAlertsPanel.jsx";
 
 const CATEGORY_LABELS = {
   NGAN_SACH: "Ngân sách",
@@ -228,6 +229,10 @@ export default function DashboardDetailPage() {
             />
           </div>
         </div>
+      )}
+
+      {!loading && dashboard && (
+        <DashboardAlertsPanel dashboardId={dashboard.id} userId={userId} />
       )}
     </AppLayout>
   );

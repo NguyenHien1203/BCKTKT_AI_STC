@@ -4,6 +4,9 @@ from typing import Any, Dict, List, Optional
 
 from app.domain.entities import (
     Dashboard,
+    DashboardAlertChannel,
+    DashboardAlertLog,
+    DashboardAlertRule,
     DashboardFavorite,
     DashboardFilter,
     DashboardKpi,
@@ -354,4 +357,92 @@ class ReportEmailSender(ABC):
         """Gửi email đính kèm file báo cáo (PDF/Excel) tới danh sách
         `to_emails`. Raise `ReportEmailSendFailed` (ở lớp gọi) nếu gửi
         thất bại."""
+        ...
+
+class DashboardAlertRuleRepository(ABC):
+    """Repository cho UC-052 bước 1: "Cấu hình ngưỡng cảnh báo trên KPI"."""
+
+    @abstractmethod
+    def add(self, rule: DashboardAlertRule) -> DashboardAlertRule:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, rule_id: int) -> Optional[DashboardAlertRule]:
+        ...
+
+    @abstractmethod
+    def list_for_dashboard(
+        self, dashboard_id: int, kpi_code: Optional[str] = None
+    ) -> List[DashboardAlertRule]:
+        ...
+
+    @abstractmethod
+    def list_for_user(self, user_id: int) -> List[DashboardAlertRule]:
+        ...
+
+    @abstractmethod
+    def list_active(self) -> List[DashboardAlertRule]:
+        """Dùng bởi tác vụ định kỳ (cron) để quét toàn bộ ngưỡng đang bật."""
+        ...
+
+    @abstractmethod
+    def update(self, rule: DashboardAlertRule) -> DashboardAlertRule:
+        ...
+
+
+class DashboardAlertChannelRepository(ABC):
+    """Repository cho UC-052 bước 2: "Chọn kênh nhận (email / Slack / Webhook)"."""
+
+    @abstractmethod
+    def add(self, channel: DashboardAlertChannel) -> DashboardAlertChannel:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, channel_id: int) -> Optional[DashboardAlertChannel]:
+        ...
+
+    @abstractmethod
+    def list_for_rule(
+        self, alert_rule_id: int, only_active: bool = False
+    ) -> List[DashboardAlertChannel]:
+        ...
+
+    @abstractmethod
+    def update(self, channel: DashboardAlertChannel) -> DashboardAlertChannel:
+        ...
+
+    @abstractmethod
+    def delete(self, channel_id: int) -> bool:
+        ...
+
+
+class DashboardAlertLogRepository(ABC):
+    """Repository cho UC-052 bước 3: nhật ký append-only mỗi lần gửi cảnh báo."""
+
+    @abstractmethod
+    def add(self, log: DashboardAlertLog) -> DashboardAlertLog:
+        ...
+
+    @abstractmethod
+    def list_for_rule(self, alert_rule_id: int) -> List[DashboardAlertLog]:
+        ...
+
+
+class AlertDispatcher(ABC):
+    """Cổng (port) UC-052 bước 3: "Khi vượt ngưỡng -> Hệ thống gửi cảnh
+    báo qua kênh đã chọn". Triển khai thật (khi tích hợp) nên gửi qua SMTP
+    (EMAIL), Slack Incoming Webhook (SLACK), hoặc POST JSON tới URL tuỳ ý
+    (WEBHOOK) — xem `infrastructure/alert_dispatcher.py`.
+    """
+
+    @abstractmethod
+    def dispatch(
+        self,
+        channel_type: str,
+        destination: str,
+        subject: str,
+        message: str,
+    ) -> None:
+        """Gửi 1 cảnh báo qua kênh `channel_type` tới `destination`. Raise
+        `AlertDispatchFailed` (ở lớp gọi) nếu gửi thất bại."""
         ...

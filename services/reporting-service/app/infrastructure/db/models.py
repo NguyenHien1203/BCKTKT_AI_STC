@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -275,5 +276,83 @@ class ReportScheduleRunLogModel(Base):
     row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     message: Mapped[str] = mapped_column(Text, nullable=False, default="")
     run_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+class DashboardAlertRuleModel(Base):
+    """UC-052 bước 1: ngưỡng cảnh báo đã cấu hình cho 1 KPI thuộc 1 Bảng
+    điều khiển."""
+
+    __tablename__ = "dashboard_alert_rules"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    dashboard_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboards.id"),
+        nullable=False,
+        index=True,
+    )
+    kpi_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    operator: Mapped[str] = mapped_column(String(2), nullable=False)
+    threshold_value: Mapped[float] = mapped_column(Float, nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    org_unit_code: Mapped[str] = mapped_column(String(50), nullable=True)
+    sector: Mapped[str] = mapped_column(String(30), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class DashboardAlertChannelModel(Base):
+    """UC-052 bước 2: kênh nhận cảnh báo (email/Slack/Webhook) của 1 ngưỡng."""
+
+    __tablename__ = "dashboard_alert_channels"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    alert_rule_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboard_alert_rules.id"),
+        nullable=False,
+        index=True,
+    )
+    channel_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    destination: Mapped[str] = mapped_column(String(500), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class DashboardAlertLogModel(Base):
+    """UC-052 bước 3: nhật ký append-only mỗi lần hệ thống gửi cảnh báo do
+    vượt ngưỡng."""
+
+    __tablename__ = "dashboard_alert_logs"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    alert_rule_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboard_alert_rules.id"),
+        nullable=False,
+        index=True,
+    )
+    channel_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}dashboard_alert_channels.id"),
+        nullable=False,
+        index=True,
+    )
+    channel_type: Mapped[str] = mapped_column(String(10), nullable=False)
+    kpi_value: Mapped[float] = mapped_column(Float, nullable=True)
+    threshold_value: Mapped[float] = mapped_column(Float, nullable=False)
+    operator: Mapped[str] = mapped_column(String(2), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    triggered_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
