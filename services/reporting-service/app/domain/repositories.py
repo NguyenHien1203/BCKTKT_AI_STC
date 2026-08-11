@@ -7,6 +7,7 @@ from app.domain.entities import (
     DashboardFavorite,
     DashboardFilter,
     DashboardKpi,
+    GeneratedReportLog,
     KpiExplanation,
     ReportFilterConfig,
     ReportTemplate,
@@ -237,4 +238,36 @@ class GuestTokenIssuer(ABC):
     ) -> str:
         """Trả về guest token (JWT ngắn hạn do Superset ký) để frontend
         truyền cho `@superset-ui/embedded-sdk`."""
+        ...
+
+
+class SemanticLayerReportQueryClient(ABC):
+    """Cổng (port) UC-050 bước 1: "Sinh báo cáo theo mẫu + bộ lọc ->
+    Hệ thống truy vấn Lớp ngữ nghĩa + kết xuất". Triển khai thật (khi
+    tích hợp) nên gọi Lớp ngữ nghĩa (semantic layer, UC-043
+    `SemanticIndicatorService` ở `data-quality-service`) lấy đúng dữ liệu
+    theo `template.columns` + bộ lọc năm/đơn vị/lĩnh vực/kỳ — xem
+    `infrastructure/semantic_layer_report_client.py`.
+    """
+
+    @abstractmethod
+    def query_report_rows(
+        self, template: ReportTemplate, filters: ReportFilterConfig
+    ) -> List[Dict[str, Any]]:
+        """Trả về toàn bộ dòng dữ liệu báo cáo (mỗi dòng là dict
+        `{field: value}` theo đúng `template.columns`) sau khi áp bộ lọc."""
+        ...
+
+
+class GeneratedReportLogRepository(ABC):
+    """Repository cho UC-050: nhật ký append-only mỗi lượt kết xuất báo cáo."""
+
+    @abstractmethod
+    def add(self, log: GeneratedReportLog) -> GeneratedReportLog:
+        ...
+
+    @abstractmethod
+    def list_for_user(
+        self, user_id: int, template_id: Optional[int] = None
+    ) -> List[GeneratedReportLog]:
         ...

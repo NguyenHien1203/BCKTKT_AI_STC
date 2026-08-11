@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { FileBarChart, RefreshCw, Save, Eye } from "lucide-react";
+import { FileBarChart, RefreshCw, Save, Eye, PlayCircle, FileDown, FileSpreadsheet, History } from "lucide-react";
 import AppLayout from "../components/AppLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
+  exportReportExcel,
+  exportReportPdf,
+  generateReport,
   getReportFilterConfig,
+  listGeneratedReportLogs,
   listReportTemplates,
   previewReportTemplate,
   saveReportFilterConfig,
@@ -49,6 +53,16 @@ export default function ReportTemplatesPage() {
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
 
+  // ---------- UC-050: Sinh + kết xuất báo cáo ----------
+  const [generatedReport, setGeneratedReport] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [reportError, setReportError] = useState(null);
+  const [reportInfo, setReportInfo] = useState(null);
+  const [reportLogs, setReportLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
   const selectedTemplate = templates.find((t) => t.id === selectedId) || null;
 
   // ---------- Bước 1: Xem danh mục mẫu báo cáo -> hệ thống hiển thị ----------
@@ -86,6 +100,10 @@ export default function ReportTemplatesPage() {
     setInfo(null);
     setError(null);
     setLoadingPreview(true);
+    setGeneratedReport(null);
+    setReportError(null);
+    setReportInfo(null);
+    setReportLogs([]);
     try {
       const previewData = await previewReportTemplate(templateId, 5);
       setPreview(previewData);
@@ -164,10 +182,101 @@ export default function ReportTemplatesPage() {
 
   const availablePeriods = selectedTemplate?.available_periods || ["NAM"];
 
+  // ---------- UC-050 bước 1: Sinh báo cáo theo mẫu + bộ lọc ----------
+  // -> Hệ thống truy vấn Lớp ngữ nghĩa + kết xuất.
+  function _currentFilters() {
+    return {
+      userId,
+      year: filterForm.year ? Number(filterForm.year) : null,
+      periodType: filterForm.periodType || null,
+      periodValue:
+        filterForm.periodType === "NAM" || filterForm.periodValue === ""
+          ? null
+          : Number(filterForm.periodValue),
+      orgUnitCode: filterForm.orgUnitCode || null,
+      sector: filterForm.sector || null,
+    };
+  }
+
+  async function loadReportLogs(templateId) {
+    if (!userId) return;
+    setLoadingLogs(true);
+    try {
+      const logs = await listGeneratedReportLogs(templateId, userId);
+      setReportLogs(logs);
+    } catch (e) {
+      // Lịch sử không tải được không phải lỗi chặn — chỉ hiển thị rỗng.
+      setReportLogs([]);
+    } finally {
+      setLoadingLogs(false);
+    }
+  }
+
+  async function handleGenerateReport() {
+    if (!userId || !selectedTemplate) {
+      setReportError("Không xác định được người dùng hiện tại — vui lòng đăng nhập lại.");
+      return;
+    }
+    setGenerating(true);
+    setReportError(null);
+    setReportInfo(null);
+    try {
+      const report = await generateReport(selectedTemplate.id, _currentFilters());
+      setGeneratedReport(report);
+      setReportInfo(`Đã sinh báo cáo với ${report.row_count} dòng dữ liệu.`);
+    } catch (e) {
+      setReportError(e?.response?.data?.detail?.message || e.message);
+      setGeneratedReport(null);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // ---------- UC-050 bước 2: Kết xuất PDF -> Hệ thống trả file ----------
+  async function handleExportPdf() {
+    if (!userId || !selectedTemplate) return;
+    setExportingPdf(true);
+    setReportError(null);
+    setReportInfo(null);
+    try {
+      const filename = await exportReportPdf(selectedTemplate.id, _currentFilters());
+      setReportInfo(`Đã tải xuống file PDF: ${filename}`);
+      await loadReportLogs(selectedTemplate.id);
+    } catch (e) {
+      setReportError(e?.response?.data?.detail?.message || e.message);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  // ---------- UC-050 bước 3: Kết xuất Excel -> Hệ thống trả file ----------
+  async function handleExportExcel() {
+    if (!userId || !selectedTemplate) return;
+    setExportingExcel(true);
+    setReportError(null);
+    setReportInfo(null);
+    try {
+      const filename = await exportReportExcel(selectedTemplate.id, _currentFilters());
+      setReportInfo(`Đã tải xuống file Excel: ${filename}`);
+      await loadReportLogs(selectedTemplate.id);
+    } catch (e) {
+      setReportError(e?.response?.data?.detail?.message || e.message);
+    } finally {
+      setExportingExcel(false);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedId != null && userId) {
+      loadReportLogs(selectedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, userId]);
+
   return (
     <AppLayout
       title="Chọn báo cáo theo mẫu + cấu hình bộ lọc"
-      subtitle="UC-049 — Xem danh mục mẫu báo cáo, chọn 1 mẫu để xem trước, rồi cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ). Hệ thống lưu trạng thái để dùng khi sinh báo cáo (UC-050)."
+      subtitle="UC-049 — Xem danh mục mẫu báo cáo, chọn 1 mẫu để xem trước, rồi cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ). UC-050 — Sinh + kết xuất báo cáo theo đúng bộ lọc đó (PDF/Excel)."
     >
       {error && (
         <div className="alert alert-error" style={{ marginBottom: 12 }}>
@@ -399,6 +508,145 @@ export default function ReportTemplatesPage() {
                       <Save size={14} /> {saving ? "Đang lưu..." : "Lưu cấu hình bộ lọc"}
                     </button>
                   </form>
+                </div>
+              </div>
+
+              {/* UC-050 — Sinh + kết xuất báo cáo */}
+              <div className="card" style={{ margin: 0 }}>
+                <div className="card-header">
+                  <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <PlayCircle size={16} /> Sinh + kết xuất báo cáo
+                  </h3>
+                </div>
+                <div className="card-body">
+                  <p style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>
+                    Dùng đúng bộ lọc ở khung trên (chưa lưu cũng được sinh thử). Nếu để trống toàn
+                    bộ khung bộ lọc, hệ thống dùng lại cấu hình đã lưu (UC-049).
+                  </p>
+
+                  {reportError && (
+                    <div className="alert alert-error" style={{ marginBottom: 10 }}>
+                      {reportError}
+                    </div>
+                  )}
+                  {reportInfo && (
+                    <div className="alert alert-success" style={{ marginBottom: 10 }}>
+                      {reportInfo}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleGenerateReport}
+                      disabled={generating}
+                    >
+                      <PlayCircle size={14} /> {generating ? "Đang sinh..." : "Sinh báo cáo (xem trước)"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleExportPdf}
+                      disabled={exportingPdf}
+                    >
+                      <FileDown size={14} /> {exportingPdf ? "Đang xuất..." : "Kết xuất PDF"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleExportExcel}
+                      disabled={exportingExcel}
+                    >
+                      <FileSpreadsheet size={14} />{" "}
+                      {exportingExcel ? "Đang xuất..." : "Kết xuất Excel"}
+                    </button>
+                  </div>
+
+                  {generatedReport && (
+                    <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                      <p style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>
+                        Bộ lọc đã dùng: Năm {generatedReport.filters.year} —{" "}
+                        {PERIOD_LABELS[generatedReport.filters.period_type] ||
+                          generatedReport.filters.period_type}
+                        {generatedReport.filters.period_value
+                          ? ` ${generatedReport.filters.period_value}`
+                          : ""}
+                        {generatedReport.filters.org_unit_code
+                          ? ` — Đơn vị: ${generatedReport.filters.org_unit_code}`
+                          : ""}
+                        {generatedReport.filters.sector
+                          ? ` — Lĩnh vực: ${CATEGORY_LABELS[generatedReport.filters.sector] || generatedReport.filters.sector}`
+                          : ""}
+                        {" — "}Tổng số dòng: {generatedReport.row_count}
+                      </p>
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            {generatedReport.columns.map((c) => (
+                              <th key={c.field}>{c.label}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {generatedReport.rows.map((row, idx) => (
+                            <tr key={idx}>
+                              {generatedReport.columns.map((c) => (
+                                <td key={c.field}>{String(row[c.field] ?? "")}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <h4 style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <History size={14} /> Lịch sử kết xuất
+                  </h4>
+                  {loadingLogs ? (
+                    <p style={{ color: "#666" }}>Đang tải lịch sử...</p>
+                  ) : reportLogs.length === 0 ? (
+                    <div className="empty-state">Chưa có lượt kết xuất nào cho mẫu này.</div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Định dạng</th>
+                            <th>Năm</th>
+                            <th>Kỳ</th>
+                            <th>Đơn vị</th>
+                            <th>Lĩnh vực</th>
+                            <th>Số dòng</th>
+                            <th>Thời điểm</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportLogs.map((log) => (
+                            <tr key={log.id}>
+                              <td>
+                                <span className="badge">{log.format}</span>
+                              </td>
+                              <td>{log.year}</td>
+                              <td>
+                                {PERIOD_LABELS[log.period_type] || log.period_type}
+                                {log.period_value ? ` ${log.period_value}` : ""}
+                              </td>
+                              <td>{log.org_unit_code || "-"}</td>
+                              <td>{CATEGORY_LABELS[log.sector] || log.sector || "-"}</td>
+                              <td>{log.row_count}</td>
+                              <td>
+                                {log.generated_at
+                                  ? new Date(log.generated_at).toLocaleString("vi-VN")
+                                  : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

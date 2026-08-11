@@ -208,6 +208,57 @@ class ReportFilterConfigResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ---------- UC-050: Sinh + kết xuất báo cáo ----------
+
+
+class ReportGenerationFilterInput(BaseModel):
+    """Bộ lọc dùng để sinh báo cáo — nếu để trống toàn bộ, hệ thống dùng
+    lại cấu hình bộ lọc đã lưu ở UC-049 bước 3."""
+
+    year: Optional[int] = Field(None, ge=1900, le=2100)
+    period_type: Optional[str] = Field(None, pattern=_PERIOD_TYPE_PATTERN)
+    period_value: Optional[int] = Field(None, ge=1, le=12)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class GeneratedReportFiltersResponse(BaseModel):
+    year: int
+    period_type: str
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class GeneratedReportResponse(BaseModel):
+    """Bước 1 — "Sinh báo cáo theo mẫu + bộ lọc": hệ thống truy vấn Lớp
+    ngữ nghĩa + kết xuất (xem trước dạng JSON trước khi kết xuất PDF/Excel)."""
+
+    template: ReportTemplateResponse
+    filters: GeneratedReportFiltersResponse
+    columns: List[ReportTemplateColumn]
+    rows: List[dict]
+    row_count: int
+
+
+class GeneratedReportLogResponse(BaseModel):
+    id: int
+    template_id: int
+    user_id: int
+    format: str
+    year: int
+    period_type: str
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    row_count: int
+    generated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
 class KpiExplanationResponse(BaseModel):
     id: int
     dashboard_id: int
