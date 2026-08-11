@@ -180,3 +180,63 @@ class GuestTokenIssueFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class ReportScheduleNotFound(DomainError):
+    """UC-051: không tìm thấy lịch báo cáo."""
+
+    code = "REPORT_SCHEDULE_NOT_FOUND"
+
+    def __init__(self, schedule_id: int):
+        super().__init__(f"Không tìm thấy lịch báo cáo id={schedule_id}")
+
+
+class InvalidReportSchedule(DomainError):
+    """UC-051 bước "Cấu hình lịch": tần suất/giờ chạy/bộ lọc không hợp lệ."""
+
+    code = "INVALID_REPORT_SCHEDULE"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ReportScheduleRecipientAlreadyExists(DomainError):
+    """UC-051 bước "Cấu hình người nhận": email đã có trong danh sách nhận
+    của lịch này."""
+
+    code = "REPORT_SCHEDULE_RECIPIENT_EXISTS"
+
+    def __init__(self, schedule_id: int, email: str):
+        super().__init__(
+            f"Email '{email}' đã có trong danh sách nhận của lịch id={schedule_id}"
+        )
+
+
+class ReportScheduleRecipientNotFound(DomainError):
+    code = "REPORT_SCHEDULE_RECIPIENT_NOT_FOUND"
+
+    def __init__(self, schedule_id: int, email: str):
+        super().__init__(
+            f"Không tìm thấy email '{email}' trong danh sách nhận của lịch id={schedule_id}"
+        )
+
+
+class NoReportScheduleRecipients(DomainError):
+    """UC-051: chưa cấu hình người nhận (email) nào cho lịch — không thể
+    chạy tác vụ sinh + gửi email báo cáo."""
+
+    code = "NO_REPORT_SCHEDULE_RECIPIENTS"
+
+    def __init__(self, schedule_id: int):
+        super().__init__(
+            f"Lịch báo cáo id={schedule_id} chưa cấu hình người nhận (email) nào"
+        )
+
+
+class ReportEmailSendFailed(DomainError):
+    """UC-051: "Hệ thống tự động sinh + gửi email báo cáo theo lịch" thất
+    bại (không gửi được email)."""
+
+    code = "REPORT_EMAIL_SEND_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)

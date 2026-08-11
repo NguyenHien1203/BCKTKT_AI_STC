@@ -146,3 +146,136 @@ export async function listGeneratedReportLogs(templateId, userId) {
   });
   return data;
 }
+
+// ---------- UC-051: Cấu hình báo cáo theo lịch ----------
+// Flow: Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng) -> hệ thống lưu lịch.
+// Cấu hình người nhận (email) -> hệ thống lưu.
+// Hệ thống tự động sinh + gửi email báo cáo theo lịch (tác vụ định kỳ/cron).
+
+export async function listReportSchedules(templateId, userId) {
+  const { data } = await reportingClient.get(`/report-templates/${templateId}/schedules`, {
+    params: { user_id: userId },
+  });
+  return data;
+}
+
+/** Bước 1 — "Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng)" -> hệ thống lưu lịch. */
+export async function createReportSchedule(
+  templateId,
+  {
+    userId,
+    frequency,
+    timeOfDay,
+    format = "PDF",
+    dayOfWeek = null,
+    dayOfMonth = null,
+    year = null,
+    periodType = null,
+    periodValue = null,
+    orgUnitCode = null,
+    sector = null,
+  }
+) {
+  const { data } = await reportingClient.post(`/report-templates/${templateId}/schedules`, {
+    user_id: userId,
+    frequency,
+    time_of_day: timeOfDay,
+    format,
+    day_of_week: dayOfWeek,
+    day_of_month: dayOfMonth,
+    year,
+    period_type: periodType,
+    period_value: periodValue,
+    org_unit_code: orgUnitCode || null,
+    sector: sector || null,
+  });
+  return data;
+}
+
+export async function updateReportSchedule(
+  templateId,
+  scheduleId,
+  {
+    frequency,
+    timeOfDay,
+    format = "PDF",
+    dayOfWeek = null,
+    dayOfMonth = null,
+    year = null,
+    periodType = null,
+    periodValue = null,
+    orgUnitCode = null,
+    sector = null,
+  }
+) {
+  const { data } = await reportingClient.put(
+    `/report-templates/${templateId}/schedules/${scheduleId}`,
+    {
+      frequency,
+      time_of_day: timeOfDay,
+      format,
+      day_of_week: dayOfWeek,
+      day_of_month: dayOfMonth,
+      year,
+      period_type: periodType,
+      period_value: periodValue,
+      org_unit_code: orgUnitCode || null,
+      sector: sector || null,
+    }
+  );
+  return data;
+}
+
+export async function enableReportSchedule(templateId, scheduleId) {
+  const { data } = await reportingClient.post(
+    `/report-templates/${templateId}/schedules/${scheduleId}/enable`
+  );
+  return data;
+}
+
+export async function disableReportSchedule(templateId, scheduleId) {
+  const { data } = await reportingClient.post(
+    `/report-templates/${templateId}/schedules/${scheduleId}/disable`
+  );
+  return data;
+}
+
+// ---------- UC-051 bước 2: Cấu hình người nhận (email) -> hệ thống lưu ----------
+
+export async function listReportScheduleRecipients(templateId, scheduleId) {
+  const { data } = await reportingClient.get(
+    `/report-templates/${templateId}/schedules/${scheduleId}/recipients`
+  );
+  return data;
+}
+
+export async function addReportScheduleRecipient(templateId, scheduleId, email) {
+  const { data } = await reportingClient.post(
+    `/report-templates/${templateId}/schedules/${scheduleId}/recipients`,
+    { email }
+  );
+  return data;
+}
+
+export async function removeReportScheduleRecipient(templateId, scheduleId, email) {
+  await reportingClient.delete(
+    `/report-templates/${templateId}/schedules/${scheduleId}/recipients/${encodeURIComponent(email)}`
+  );
+}
+
+// ---------- UC-051 bước 3: Hệ thống tự động sinh + gửi email báo cáo theo lịch ----------
+
+/** Chạy thử ngay 1 lịch (mô phỏng đúng hành vi tác vụ định kỳ/cron khi tới hạn). */
+export async function runReportScheduleNow(templateId, scheduleId) {
+  const { data } = await reportingClient.post(
+    `/report-templates/${templateId}/schedules/${scheduleId}/run-now`
+  );
+  return data;
+}
+
+export async function listReportScheduleRunLogs(templateId, scheduleId) {
+  const { data } = await reportingClient.get(
+    `/report-templates/${templateId}/schedules/${scheduleId}/logs`
+  );
+  return data;
+}

@@ -12,6 +12,9 @@ from app.domain.entities import (
     GeneratedReportLog,
     KpiExplanation,
     ReportFilterConfig,
+    ReportSchedule,
+    ReportScheduleRecipient,
+    ReportScheduleRunLog,
     ReportTemplate,
 )
 from app.domain.repositories import (
@@ -21,6 +24,9 @@ from app.domain.repositories import (
     GeneratedReportLogRepository,
     KpiExplanationRepository,
     ReportFilterConfigRepository,
+    ReportScheduleRecipientRepository,
+    ReportScheduleRepository,
+    ReportScheduleRunLogRepository,
     ReportTemplateRepository,
 )
 from app.infrastructure.db.models import (
@@ -30,6 +36,9 @@ from app.infrastructure.db.models import (
     GeneratedReportLogModel,
     KpiExplanationModel,
     ReportFilterConfigModel,
+    ReportScheduleModel,
+    ReportScheduleRecipientModel,
+    ReportScheduleRunLogModel,
     ReportTemplateModel,
 )
 
@@ -447,3 +456,191 @@ class SqlAlchemyGeneratedReportLogRepository(GeneratedReportLogRepository):
         stmt = stmt.order_by(GeneratedReportLogModel.generated_at.desc())
         models = self._db.execute(stmt).scalars().all()
         return [_generated_report_log_to_entity(m) for m in models]
+
+
+def _report_schedule_to_entity(m: ReportScheduleModel) -> ReportSchedule:
+    return ReportSchedule(
+        id=m.id,
+        template_id=m.template_id,
+        user_id=m.user_id,
+        frequency=m.frequency,
+        time_of_day=m.time_of_day,
+        format=m.format,
+        day_of_week=m.day_of_week,
+        day_of_month=m.day_of_month,
+        year=m.year,
+        period_type=m.period_type,
+        period_value=m.period_value,
+        org_unit_code=m.org_unit_code,
+        sector=m.sector,
+        is_active=m.is_active,
+        last_run_at=m.last_run_at,
+        created_at=m.created_at,
+    )
+
+
+class SqlAlchemyReportScheduleRepository(ReportScheduleRepository):
+    """UC-051: lịch cấu hình để tự động sinh + gửi email báo cáo theo lịch."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, schedule: ReportSchedule) -> ReportSchedule:
+        model = ReportScheduleModel(
+            template_id=schedule.template_id,
+            user_id=schedule.user_id,
+            frequency=schedule.frequency,
+            time_of_day=schedule.time_of_day,
+            format=schedule.format,
+            day_of_week=schedule.day_of_week,
+            day_of_month=schedule.day_of_month,
+            year=schedule.year,
+            period_type=schedule.period_type,
+            period_value=schedule.period_value,
+            org_unit_code=schedule.org_unit_code,
+            sector=schedule.sector,
+            is_active=schedule.is_active,
+            last_run_at=schedule.last_run_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_schedule_to_entity(model)
+
+    def get_by_id(self, schedule_id: int) -> Optional[ReportSchedule]:
+        model = self._db.get(ReportScheduleModel, schedule_id)
+        return _report_schedule_to_entity(model) if model else None
+
+    def list_for_user(
+        self, user_id: int, template_id: Optional[int] = None
+    ) -> List[ReportSchedule]:
+        stmt = select(ReportScheduleModel).where(ReportScheduleModel.user_id == user_id)
+        if template_id is not None:
+            stmt = stmt.where(ReportScheduleModel.template_id == template_id)
+        stmt = stmt.order_by(ReportScheduleModel.created_at.desc())
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_schedule_to_entity(m) for m in models]
+
+    def list_active(self) -> List[ReportSchedule]:
+        stmt = select(ReportScheduleModel).where(ReportScheduleModel.is_active.is_(True))
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_schedule_to_entity(m) for m in models]
+
+    def update(self, schedule: ReportSchedule) -> ReportSchedule:
+        model = self._db.get(ReportScheduleModel, schedule.id)
+        if model is None:
+            raise ValueError(f"Không tìm thấy lịch báo cáo id={schedule.id}")
+        model.frequency = schedule.frequency
+        model.time_of_day = schedule.time_of_day
+        model.format = schedule.format
+        model.day_of_week = schedule.day_of_week
+        model.day_of_month = schedule.day_of_month
+        model.year = schedule.year
+        model.period_type = schedule.period_type
+        model.period_value = schedule.period_value
+        model.org_unit_code = schedule.org_unit_code
+        model.sector = schedule.sector
+        model.is_active = schedule.is_active
+        model.last_run_at = schedule.last_run_at
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_schedule_to_entity(model)
+
+
+def _report_schedule_recipient_to_entity(
+    m: ReportScheduleRecipientModel,
+) -> ReportScheduleRecipient:
+    return ReportScheduleRecipient(
+        id=m.id,
+        schedule_id=m.schedule_id,
+        email=m.email,
+        added_at=m.added_at,
+    )
+
+
+class SqlAlchemyReportScheduleRecipientRepository(ReportScheduleRecipientRepository):
+    """UC-051 bước "Cấu hình người nhận (email)"."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, recipient: ReportScheduleRecipient) -> ReportScheduleRecipient:
+        model = ReportScheduleRecipientModel(
+            schedule_id=recipient.schedule_id,
+            email=recipient.email,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_schedule_recipient_to_entity(model)
+
+    def get(self, schedule_id: int, email: str) -> Optional[ReportScheduleRecipient]:
+        stmt = select(ReportScheduleRecipientModel).where(
+            ReportScheduleRecipientModel.schedule_id == schedule_id,
+            ReportScheduleRecipientModel.email == email,
+        )
+        model = self._db.execute(stmt).scalar_one_or_none()
+        return _report_schedule_recipient_to_entity(model) if model else None
+
+    def list_for_schedule(self, schedule_id: int) -> List[ReportScheduleRecipient]:
+        stmt = (
+            select(ReportScheduleRecipientModel)
+            .where(ReportScheduleRecipientModel.schedule_id == schedule_id)
+            .order_by(ReportScheduleRecipientModel.added_at.asc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_schedule_recipient_to_entity(m) for m in models]
+
+    def delete(self, schedule_id: int, email: str) -> bool:
+        stmt = select(ReportScheduleRecipientModel).where(
+            ReportScheduleRecipientModel.schedule_id == schedule_id,
+            ReportScheduleRecipientModel.email == email,
+        )
+        model = self._db.execute(stmt).scalar_one_or_none()
+        if model is None:
+            return False
+        self._db.delete(model)
+        self._db.commit()
+        return True
+
+
+def _report_schedule_run_log_to_entity(m: ReportScheduleRunLogModel) -> ReportScheduleRunLog:
+    return ReportScheduleRunLog(
+        id=m.id,
+        schedule_id=m.schedule_id,
+        status=m.status,
+        recipients_count=m.recipients_count,
+        row_count=m.row_count,
+        message=m.message,
+        run_at=m.run_at,
+    )
+
+
+class SqlAlchemyReportScheduleRunLogRepository(ReportScheduleRunLogRepository):
+    """UC-051: nhật ký append-only mỗi lần tác vụ định kỳ (cron) chạy sinh
+    + gửi email báo cáo theo lịch."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def add(self, log: ReportScheduleRunLog) -> ReportScheduleRunLog:
+        model = ReportScheduleRunLogModel(
+            schedule_id=log.schedule_id,
+            status=log.status,
+            recipients_count=log.recipients_count,
+            row_count=log.row_count,
+            message=log.message,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _report_schedule_run_log_to_entity(model)
+
+    def list_for_schedule(self, schedule_id: int) -> List[ReportScheduleRunLog]:
+        stmt = (
+            select(ReportScheduleRunLogModel)
+            .where(ReportScheduleRunLogModel.schedule_id == schedule_id)
+            .order_by(ReportScheduleRunLogModel.run_at.desc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return [_report_schedule_run_log_to_entity(m) for m in models]

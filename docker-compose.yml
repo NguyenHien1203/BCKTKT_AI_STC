@@ -246,6 +246,21 @@ services:
       # UC-048: reporting-service gọi sang ai-service ("AI Bộ điều phối")
       # để giải thích KPI — POST {AI_SERVICE_URL}/ai-orchestrator/kpi-explanations.
       AI_SERVICE_URL: http://hy-ai-service:8000
+      # UC-051 — "Cấu hình báo cáo theo lịch": máy chủ SMTP dùng để gửi
+      # email báo cáo tự động theo lịch. Để trống REPORT_SMTP_HOST sẽ dùng
+      # InMemoryReportEmailSender (chỉ ghi log, không gửi thật) — xem
+      # app/infrastructure/report_email_sender.py.
+      REPORT_SMTP_HOST: ${REPORT_SMTP_HOST:-}
+      REPORT_SMTP_PORT: ${REPORT_SMTP_PORT:-587}
+      REPORT_SMTP_USERNAME: ${REPORT_SMTP_USERNAME:-}
+      REPORT_SMTP_PASSWORD: ${REPORT_SMTP_PASSWORD:-}
+      REPORT_SMTP_USE_TLS: ${REPORT_SMTP_USE_TLS:-true}
+      REPORT_SMTP_FROM: ${REPORT_SMTP_FROM:-bao-cao@stc.gov.vn}
+      # UC-051 — "Tác vụ định kỳ (cron)": bật cron nội bộ (APScheduler) quét
+      # lịch báo cáo đang tới hạn. Mặc định tắt để không chạy nền ngoài ý
+      # muốn ở môi trường dev/test — xem app/infrastructure/scheduler_runner.py.
+      REPORT_SCHEDULER_ENABLED: ${REPORT_SCHEDULER_ENABLED:-false}
+      REPORT_SCHEDULER_POLL_SECONDS: ${REPORT_SCHEDULER_POLL_SECONDS:-60}
     depends_on:
       postgres:
         condition: service_healthy
