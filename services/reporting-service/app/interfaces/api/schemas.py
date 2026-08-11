@@ -272,3 +272,90 @@ class KpiExplanationResponse(BaseModel):
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+# ---------- UC-051: Cấu hình báo cáo theo lịch ----------
+
+_FREQUENCY_PATTERN = "^(DAILY|WEEKLY|MONTHLY)$"
+_SCHEDULE_FORMAT_PATTERN = "^(PDF|EXCEL)$"
+
+
+class ReportScheduleCreate(BaseModel):
+    """Bước 1 — "Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng)"."""
+
+    user_id: int = Field(..., gt=0)
+    frequency: str = Field(..., pattern=_FREQUENCY_PATTERN)
+    time_of_day: str = Field(..., min_length=5, max_length=5, description="Định dạng 'HH:MM'")
+    format: str = Field("PDF", pattern=_SCHEDULE_FORMAT_PATTERN)
+    day_of_week: Optional[int] = Field(None, ge=0, le=6, description="0=Thứ Hai .. 6=Chủ Nhật")
+    day_of_month: Optional[int] = Field(None, ge=1, le=28)
+    year: Optional[int] = Field(None, ge=1900, le=2100)
+    period_type: Optional[str] = Field(None, pattern=_PERIOD_TYPE_PATTERN)
+    period_value: Optional[int] = Field(None, ge=1, le=12)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class ReportScheduleUpdate(BaseModel):
+    """Sửa cấu hình lịch đã có."""
+
+    frequency: str = Field(..., pattern=_FREQUENCY_PATTERN)
+    time_of_day: str = Field(..., min_length=5, max_length=5)
+    format: str = Field("PDF", pattern=_SCHEDULE_FORMAT_PATTERN)
+    day_of_week: Optional[int] = Field(None, ge=0, le=6)
+    day_of_month: Optional[int] = Field(None, ge=1, le=28)
+    year: Optional[int] = Field(None, ge=1900, le=2100)
+    period_type: Optional[str] = Field(None, pattern=_PERIOD_TYPE_PATTERN)
+    period_value: Optional[int] = Field(None, ge=1, le=12)
+    org_unit_code: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=30)
+
+
+class ReportScheduleResponse(BaseModel):
+    id: int
+    template_id: int
+    user_id: int
+    frequency: str
+    time_of_day: str
+    format: str
+    day_of_week: Optional[int] = None
+    day_of_month: Optional[int] = None
+    year: Optional[int] = None
+    period_type: Optional[str] = None
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    is_active: bool
+    last_run_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ReportScheduleRecipientCreate(BaseModel):
+    """Bước 2 — "Cấu hình người nhận (email)"."""
+
+    email: str = Field(..., min_length=3, max_length=255)
+
+
+class ReportScheduleRecipientResponse(BaseModel):
+    id: int
+    schedule_id: int
+    email: str
+    added_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ReportScheduleRunLogResponse(BaseModel):
+    """Bước 3 — nhật ký mỗi lần "Tác vụ định kỳ (cron)" tự động sinh +
+    gửi email báo cáo theo lịch."""
+
+    id: int
+    schedule_id: int
+    status: str
+    recipients_count: int
+    row_count: int
+    message: str
+    run_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

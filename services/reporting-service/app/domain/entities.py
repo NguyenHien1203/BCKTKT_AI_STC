@@ -301,3 +301,159 @@ class GeneratedReportLog:
                 f"Loại kỳ '{self.period_type}' không hợp lệ, phải là 1 trong "
                 f"{ReportTemplate.PERIOD_TYPES}"
             )
+
+@dataclass
+class ReportSchedule:
+    """UC-051: "Cấu hình báo cáo theo lịch" — hệ thống lưu lịch (hàng
+    ngày/hàng tuần/hàng tháng) để tự động sinh + gửi email báo cáo theo
+    mẫu (UC-049/UC-050) cho danh sách người nhận (UC-051 bước cấu hình
+    người nhận). Tác vụ định kỳ (cron) sẽ quét các lịch đang bật, tới hạn,
+    rồi sinh + gửi email báo cáo — xem `ReportScheduleRunLog`.
+
+    1 người dùng có thể có nhiều lịch cho cùng 1 mẫu báo cáo (khác giờ/tần
+    suất), không giới hạn duy nhất như `ReportFilterConfig`.
+    """
+
+    FREQUENCIES = ("DAILY", "WEEKLY", "MONTHLY")
+    FORMATS = ("PDF", "EXCEL")
+
+    id: Optional[int]
+    template_id: int
+    user_id: int
+    frequency: str
+    time_of_day: str
+    format: str = "PDF"
+    day_of_week: Optional[int] = None
+    day_of_month: Optional[int] = None
+    year: Optional[int] = None
+    period_type: Optional[str] = None
+    period_value: Optional[int] = None
+    org_unit_code: Optional[str] = None
+    sector: Optional[str] = None
+    is_active: bool = True
+    last_run_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate_frequency(self.frequency)
+        self._validate_format(self.format)
+        self._validate_time_of_day(self.time_of_day)
+        self._validate_period(self.year, self.period_type, self.period_value)
+        if self.frequency == "WEEKLY":
+            if self.day_of_week is None or not (0 <= self.day_of_week <= 6):
+                raise ValueError(
+                    "Lịch 'hàng tuần' cần day_of_week từ 0 (Thứ Hai) đến 6 (Chủ Nhật)"
+                )
+        elif self.day_of_week is not None:
+            raise ValueError("Chỉ lịch 'hàng tuần' mới cần day_of_week")
+        if self.frequency == "MONTHLY":
+            if self.day_of_month is None or not (1 <= self.day_of_month <= 28):
+                raise ValueError(
+                    "Lịch 'hàng tháng' cần day_of_month từ 1 đến 28 "
+                    "(giới hạn 28 để chạy đúng ở mọi tháng, kể cả tháng 2)"
+                )
+        elif self.day_of_month is not None:
+            raise ValueError("Chỉ lịch 'hàng tháng' mới cần day_of_month")
+
+    @classmethod
+    def _validate_frequency(cls, frequency: str) -> None:
+        if frequency not in cls.FREQUENCIES:
+            raise ValueError(
+                f"Tần suất lịch '{frequency}' không hợp lệ, phải là 1 trong {cls.FREQUENCIES}"
+            )
+
+    @classmethod
+    def _validate_format(cls, fmt: str) -> None:
+        if fmt not in cls.FORMATS:
+            raise ValueError(
+                f"Định dạng báo cáo '{fmt}' không hợp lệ, phải là 1 trong {cls.FORMATS}"
+            )
+
+    @staticmethod
+    def _validate_time_of_day(time_of_day: str) -> None:
+        if not time_of_day or not isinstance(time_of_day, str):
+            raise ValueError("Giờ chạy (time_of_day) không được để trống")
+        parts = time_of_day.split(":")
+        if len(parts) != 2 or not all(p.isdigit() for p in parts):
+            raise ValueError("Giờ chạy phải theo định dạng 'HH:MM' (vd: '07:30')")
+        hour, minute = int(parts[0]), int(parts[1])
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError("Giờ chạy phải theo định dạng 'HH:MM' hợp lệ (00:00-23:59)")
+
+    @staticmethod
+    def _validate_period(
+        year: Optional[int], period_type: Optional[str], period_value: Optional[int]
+    ) -> None:
+        """Bộ lọc dùng để sinh báo cáo theo lịch là tuỳ chọn — nếu để
+        trống, mỗi lần chạy sẽ dùng lại cấu hình bộ lọc đã lưu ở UC-049
+        (giống UC-050 khi không truyền bộ lọc trực tiếp)."""
+        if year is None and period_type is None:
+            return
+        if year is None or period_type is None:
+            raise ValueError(
+                "Nếu khai báo bộ lọc riêng cho lịch thì phải truyền đủ cả year và period_type"
+            )
+        if year < 1900 or year > 2100:
+            raise ValueError("Năm áp bộ lọc không hợp lệ")
+        if period_type not in ReportTemplate.PERIOD_TYPES:
+            raise ValueError(
+                f"Loại kỳ '{period_type}' không hợp lệ, phải là 1 trong "
+                f"{ReportTemplate.PERIOD_TYPES}"
+            )
+
+    def enable(self) -> None:
+        self.is_active = True
+
+    def disable(self) -> None:
+        self.is_active = False
+
+    def mark_run(self, run_at: datetime) -> None:
+        self.last_run_at = run_at
+
+
+@dataclass
+class ReportScheduleRecipient:
+    """UC-051 bước "Cấu hình người nhận (email)" — hệ thống lưu danh sách
+    email nhận báo cáo cho 1 lịch (1 email không lặp lại trong cùng 1
+    lịch)."""
+
+    id: Optional[int]
+    schedule_id: int
+    email: str
+    added_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate_email(self.email)
+
+    @staticmethod
+    def _validate_email(email: str) -> None:
+        if not email or not email.strip():
+            raise ValueError("Email người nhận không được để trống")
+        if "@" not in email or email.startswith("@") or email.endswith("@"):
+            raise ValueError(f"Email người nhận '{email}' không hợp lệ")
+        local, _, domain = email.partition("@")
+        if not local or "." not in domain or domain.startswith(".") or domain.endswith("."):
+            raise ValueError(f"Email người nhận '{email}' không hợp lệ")
+
+
+@dataclass
+class ReportScheduleRunLog:
+    """UC-051: nhật ký append-only mỗi lần "Tác vụ định kỳ (cron)" chạy —
+    hệ thống tự động sinh + gửi email báo cáo theo lịch. Dùng để tra cứu
+    lại các lần đã chạy (thành công/thất bại) của 1 lịch."""
+
+    STATUSES = ("SUCCESS", "FAILED")
+
+    id: Optional[int]
+    schedule_id: int
+    status: str
+    recipients_count: int = 0
+    row_count: int = 0
+    message: str = ""
+    run_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if self.status not in self.STATUSES:
+            raise ValueError(
+                f"Trạng thái '{self.status}' không hợp lệ, phải là 1 trong {self.STATUSES}"
+            )

@@ -1,15 +1,36 @@
 import { useEffect, useState } from "react";
-import { FileBarChart, RefreshCw, Save, Eye, PlayCircle, FileDown, FileSpreadsheet, History } from "lucide-react";
+import {
+  FileBarChart,
+  RefreshCw,
+  Save,
+  Eye,
+  PlayCircle,
+  FileDown,
+  FileSpreadsheet,
+  History,
+  Calendar,
+  Mail,
+  Trash2,
+} from "lucide-react";
 import AppLayout from "../components/AppLayout.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
+  addReportScheduleRecipient,
+  createReportSchedule,
+  disableReportSchedule,
+  enableReportSchedule,
   exportReportExcel,
   exportReportPdf,
   generateReport,
   getReportFilterConfig,
   listGeneratedReportLogs,
+  listReportSchedules,
+  listReportScheduleRecipients,
+  listReportScheduleRunLogs,
   listReportTemplates,
   previewReportTemplate,
+  removeReportScheduleRecipient,
+  runReportScheduleNow,
   saveReportFilterConfig,
 } from "../api/reportTemplates.js";
 
@@ -26,6 +47,14 @@ const PERIOD_LABELS = {
   QUY: "Theo quý",
   NAM: "Theo năm",
 };
+
+const FREQUENCY_LABELS = {
+  DAILY: "Hàng ngày",
+  WEEKLY: "Hàng tuần",
+  MONTHLY: "Hàng tháng",
+};
+
+const WEEKDAY_LABELS = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"];
 
 const currentYear = new Date().getFullYear();
 
@@ -62,6 +91,29 @@ export default function ReportTemplatesPage() {
   const [reportInfo, setReportInfo] = useState(null);
   const [reportLogs, setReportLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+
+  // ---------- UC-051: Cấu hình báo cáo theo lịch ----------
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [scheduleError, setScheduleError] = useState(null);
+  const [scheduleInfo, setScheduleInfo] = useState(null);
+  const [creatingSchedule, setCreatingSchedule] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    frequency: "DAILY",
+    timeOfDay: "07:00",
+    format: "PDF",
+    dayOfWeek: 0,
+    dayOfMonth: 1,
+    useCustomFilter: false,
+    year: currentYear,
+    periodType: "NAM",
+    periodValue: "",
+  });
+  const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+  const [recipients, setRecipients] = useState([]);
+  const [newRecipientEmail, setNewRecipientEmail] = useState("");
+  const [scheduleRunLogs, setScheduleRunLogs] = useState([]);
+  const [runningScheduleId, setRunningScheduleId] = useState(null);
 
   const selectedTemplate = templates.find((t) => t.id === selectedId) || null;
 
@@ -104,6 +156,12 @@ export default function ReportTemplatesPage() {
     setReportError(null);
     setReportInfo(null);
     setReportLogs([]);
+    setSchedules([]);
+    setSelectedScheduleId(null);
+    setRecipients([]);
+    setScheduleRunLogs([]);
+    setScheduleError(null);
+    setScheduleInfo(null);
     try {
       const previewData = await previewReportTemplate(templateId, 5);
       setPreview(previewData);
@@ -269,14 +327,169 @@ export default function ReportTemplatesPage() {
   useEffect(() => {
     if (selectedId != null && userId) {
       loadReportLogs(selectedId);
+      loadSchedules(selectedId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, userId]);
 
+  // ---------- UC-051 bước 1: Cấu hình lịch -> hệ thống lưu lịch ----------
+  async function loadSchedules(templateId) {
+    if (!userId) return;
+    setLoadingSchedules(true);
+    try {
+      const data = await listReportSchedules(templateId, userId);
+      setSchedules(data);
+      if (data.length > 0 && !data.some((s) => s.id === selectedScheduleId)) {
+        setSelectedScheduleId(data[0].id);
+      }
+      if (data.length === 0) {
+        setSelectedScheduleId(null);
+        setRecipients([]);
+        setScheduleRunLogs([]);
+      }
+    } catch (e) {
+      // Chưa tải được danh sách lịch không chặn màn hình — chỉ hiển thị rỗng.
+      setSchedules([]);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }
+
+  async function handleCreateSchedule(e) {
+    e.preventDefault();
+    if (!userId || !selectedTemplate) {
+      setScheduleError("Không xác định được người dùng hiện tại — vui lòng đăng nhập lại.");
+      return;
+    }
+    setCreatingSchedule(true);
+    setScheduleError(null);
+    setScheduleInfo(null);
+    try {
+      const created = await createReportSchedule(selectedTemplate.id, {
+        userId,
+        frequency: scheduleForm.frequency,
+        timeOfDay: scheduleForm.timeOfDay,
+        format: scheduleForm.format,
+        dayOfWeek: scheduleForm.frequency === "WEEKLY" ? Number(scheduleForm.dayOfWeek) : null,
+        dayOfMonth: scheduleForm.frequency === "MONTHLY" ? Number(scheduleForm.dayOfMonth) : null,
+        year: scheduleForm.useCustomFilter ? Number(scheduleForm.year) : null,
+        periodType: scheduleForm.useCustomFilter ? scheduleForm.periodType : null,
+        periodValue:
+          !scheduleForm.useCustomFilter ||
+          scheduleForm.periodType === "NAM" ||
+          scheduleForm.periodValue === ""
+            ? null
+            : Number(scheduleForm.periodValue),
+      });
+      setSchedules((prev) => [created, ...prev]);
+      setSelectedScheduleId(created.id);
+      setScheduleInfo("Đã lưu lịch báo cáo mới. Tiếp theo hãy cấu hình người nhận (email).");
+    } catch (e) {
+      setScheduleError(e?.response?.data?.detail?.message || e.message);
+    } finally {
+      setCreatingSchedule(false);
+    }
+  }
+
+  async function handleToggleSchedule(schedule) {
+    setScheduleError(null);
+    try {
+      const updated = schedule.is_active
+        ? await disableReportSchedule(selectedTemplate.id, schedule.id)
+        : await enableReportSchedule(selectedTemplate.id, schedule.id);
+      setSchedules((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    } catch (e) {
+      setScheduleError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  // ---------- UC-051 bước 2: Cấu hình người nhận (email) -> hệ thống lưu ----------
+  async function loadRecipients(scheduleId) {
+    try {
+      const data = await listReportScheduleRecipients(selectedTemplate.id, scheduleId);
+      setRecipients(data);
+    } catch (e) {
+      setRecipients([]);
+    }
+  }
+
+  async function loadScheduleRunLogs(scheduleId) {
+    try {
+      const data = await listReportScheduleRunLogs(selectedTemplate.id, scheduleId);
+      setScheduleRunLogs(data);
+    } catch (e) {
+      setScheduleRunLogs([]);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedScheduleId != null && selectedTemplate) {
+      loadRecipients(selectedScheduleId);
+      loadScheduleRunLogs(selectedScheduleId);
+    } else {
+      setRecipients([]);
+      setScheduleRunLogs([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedScheduleId]);
+
+  async function handleAddRecipient(e) {
+    e.preventDefault();
+    if (!selectedScheduleId || !newRecipientEmail.trim()) return;
+    setScheduleError(null);
+    try {
+      await addReportScheduleRecipient(
+        selectedTemplate.id,
+        selectedScheduleId,
+        newRecipientEmail.trim()
+      );
+      setNewRecipientEmail("");
+      await loadRecipients(selectedScheduleId);
+    } catch (e) {
+      setScheduleError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  async function handleRemoveRecipient(email) {
+    if (!selectedScheduleId) return;
+    setScheduleError(null);
+    try {
+      await removeReportScheduleRecipient(selectedTemplate.id, selectedScheduleId, email);
+      await loadRecipients(selectedScheduleId);
+    } catch (e) {
+      setScheduleError(e?.response?.data?.detail?.message || e.message);
+    }
+  }
+
+  // ---------- UC-051 bước 3: Hệ thống tự động sinh + gửi email báo cáo theo lịch ----------
+  async function handleRunScheduleNow(scheduleId) {
+    setRunningScheduleId(scheduleId);
+    setScheduleError(null);
+    setScheduleInfo(null);
+    try {
+      const log = await runReportScheduleNow(selectedTemplate.id, scheduleId);
+      if (log.status === "SUCCESS") {
+        setScheduleInfo(
+          `Đã sinh + gửi email báo cáo thành công tới ${log.recipients_count} người nhận (${log.row_count} dòng dữ liệu).`
+        );
+      } else {
+        setScheduleError(`Chạy thử thất bại: ${log.message}`);
+      }
+      await loadScheduleRunLogs(scheduleId);
+      await loadSchedules(selectedTemplate.id);
+    } catch (e) {
+      setScheduleError(e?.response?.data?.detail?.message || e.message);
+    } finally {
+      setRunningScheduleId(null);
+    }
+  }
+
+  const selectedSchedule = schedules.find((s) => s.id === selectedScheduleId) || null;
+
   return (
     <AppLayout
       title="Chọn báo cáo theo mẫu + cấu hình bộ lọc"
-      subtitle="UC-049 — Xem danh mục mẫu báo cáo, chọn 1 mẫu để xem trước, rồi cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ). UC-050 — Sinh + kết xuất báo cáo theo đúng bộ lọc đó (PDF/Excel)."
+      subtitle="UC-049 — Xem danh mục mẫu báo cáo, chọn 1 mẫu để xem trước, rồi cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ). UC-050 — Sinh + kết xuất báo cáo theo đúng bộ lọc đó (PDF/Excel). UC-051 — Cấu hình báo cáo theo lịch (hàng ngày/hàng tuần/hàng tháng) + người nhận, hệ thống tự động sinh + gửi email theo lịch."
     >
       {error && (
         <div className="alert alert-error" style={{ marginBottom: 12 }}>
@@ -646,6 +859,366 @@ export default function ReportTemplatesPage() {
                         </tbody>
                       </table>
                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* UC-051 — Cấu hình báo cáo theo lịch */}
+              <div className="card" style={{ margin: 0 }}>
+                <div className="card-header">
+                  <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Calendar size={16} /> Cấu hình báo cáo theo lịch
+                  </h3>
+                </div>
+                <div className="card-body">
+                  <p style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>
+                    Cấu hình lịch (hàng ngày/hàng tuần/hàng tháng), sau đó thêm danh sách người
+                    nhận (email) — hệ thống sẽ tự động sinh + gửi email báo cáo theo lịch (tác vụ
+                    định kỳ). Nếu không chọn "Dùng bộ lọc riêng", mỗi lần chạy sẽ dùng lại cấu
+                    hình bộ lọc đã lưu ở khung trên (UC-049).
+                  </p>
+
+                  {scheduleError && (
+                    <div className="alert alert-error" style={{ marginBottom: 10 }}>
+                      {scheduleError}
+                    </div>
+                  )}
+                  {scheduleInfo && (
+                    <div className="alert alert-success" style={{ marginBottom: 10 }}>
+                      {scheduleInfo}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateSchedule} style={{ marginBottom: 18 }}>
+                    <div className="form-grid">
+                      <div className="field">
+                        <label>Tần suất</label>
+                        <select
+                          value={scheduleForm.frequency}
+                          onChange={(e) =>
+                            setScheduleForm((f) => ({ ...f, frequency: e.target.value }))
+                          }
+                        >
+                          {Object.entries(FREQUENCY_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Giờ chạy (HH:MM)</label>
+                        <input
+                          type="time"
+                          value={scheduleForm.timeOfDay}
+                          onChange={(e) =>
+                            setScheduleForm((f) => ({ ...f, timeOfDay: e.target.value }))
+                          }
+                          required
+                        />
+                      </div>
+                      {scheduleForm.frequency === "WEEKLY" && (
+                        <div className="field">
+                          <label>Thứ trong tuần</label>
+                          <select
+                            value={scheduleForm.dayOfWeek}
+                            onChange={(e) =>
+                              setScheduleForm((f) => ({ ...f, dayOfWeek: e.target.value }))
+                            }
+                          >
+                            {WEEKDAY_LABELS.map((label, idx) => (
+                              <option key={idx} value={idx}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {scheduleForm.frequency === "MONTHLY" && (
+                        <div className="field">
+                          <label>Ngày trong tháng (1-28)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={28}
+                            value={scheduleForm.dayOfMonth}
+                            onChange={(e) =>
+                              setScheduleForm((f) => ({ ...f, dayOfMonth: e.target.value }))
+                            }
+                            required
+                          />
+                        </div>
+                      )}
+                      <div className="field">
+                        <label>Định dạng gửi</label>
+                        <select
+                          value={scheduleForm.format}
+                          onChange={(e) =>
+                            setScheduleForm((f) => ({ ...f, format: e.target.value }))
+                          }
+                        >
+                          <option value="PDF">PDF</option>
+                          <option value="EXCEL">Excel</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="field" style={{ marginTop: 10 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input
+                          type="checkbox"
+                          checked={scheduleForm.useCustomFilter}
+                          onChange={(e) =>
+                            setScheduleForm((f) => ({ ...f, useCustomFilter: e.target.checked }))
+                          }
+                        />
+                        Dùng bộ lọc riêng cho lịch này (khác cấu hình đã lưu ở UC-049)
+                      </label>
+                    </div>
+
+                    {scheduleForm.useCustomFilter && (
+                      <div className="form-grid" style={{ marginTop: 6 }}>
+                        <div className="field">
+                          <label>Năm</label>
+                          <input
+                            type="number"
+                            min={1900}
+                            max={2100}
+                            value={scheduleForm.year}
+                            onChange={(e) =>
+                              setScheduleForm((f) => ({ ...f, year: e.target.value }))
+                            }
+                            required
+                          />
+                        </div>
+                        <div className="field">
+                          <label>Kỳ</label>
+                          <select
+                            value={scheduleForm.periodType}
+                            onChange={(e) =>
+                              setScheduleForm((f) => ({
+                                ...f,
+                                periodType: e.target.value,
+                                periodValue: "",
+                              }))
+                            }
+                          >
+                            {availablePeriods.map((p) => (
+                              <option key={p} value={p}>
+                                {PERIOD_LABELS[p] || p}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {scheduleForm.periodType !== "NAM" && (
+                          <div className="field">
+                            <label>
+                              {scheduleForm.periodType === "THANG" ? "Tháng (1-12)" : "Quý (1-4)"}
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={scheduleForm.periodType === "THANG" ? 12 : 4}
+                              value={scheduleForm.periodValue}
+                              onChange={(e) =>
+                                setScheduleForm((f) => ({ ...f, periodValue: e.target.value }))
+                              }
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={creatingSchedule}
+                      style={{ marginTop: 12 }}
+                    >
+                      <Save size={14} /> {creatingSchedule ? "Đang lưu..." : "Lưu lịch báo cáo"}
+                    </button>
+                  </form>
+
+                  <h4 style={{ marginBottom: 8 }}>Danh sách lịch đã cấu hình</h4>
+                  {loadingSchedules ? (
+                    <p style={{ color: "#666" }}>Đang tải...</p>
+                  ) : schedules.length === 0 ? (
+                    <div className="empty-state">Chưa có lịch báo cáo nào cho mẫu này.</div>
+                  ) : (
+                    <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Tần suất</th>
+                            <th>Giờ chạy</th>
+                            <th>Định dạng</th>
+                            <th>Trạng thái</th>
+                            <th>Lần chạy gần nhất</th>
+                            <th>Hành động</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {schedules.map((s) => (
+                            <tr
+                              key={s.id}
+                              style={{
+                                background:
+                                  selectedScheduleId === s.id
+                                    ? "var(--color-primary-soft)"
+                                    : undefined,
+                                cursor: "pointer",
+                              }}
+                              onClick={() => setSelectedScheduleId(s.id)}
+                            >
+                              <td>
+                                {FREQUENCY_LABELS[s.frequency] || s.frequency}
+                                {s.frequency === "WEEKLY" && s.day_of_week != null
+                                  ? ` — ${WEEKDAY_LABELS[s.day_of_week]}`
+                                  : ""}
+                                {s.frequency === "MONTHLY" && s.day_of_month != null
+                                  ? ` — ngày ${s.day_of_month}`
+                                  : ""}
+                              </td>
+                              <td>{s.time_of_day}</td>
+                              <td>
+                                <span className="badge">{s.format}</span>
+                              </td>
+                              <td>{s.is_active ? "Đang bật" : "Đã tắt"}</td>
+                              <td>
+                                {s.last_run_at
+                                  ? new Date(s.last_run_at).toLocaleString("vi-VN")
+                                  : "Chưa chạy lần nào"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleSchedule(s);
+                                    }}
+                                  >
+                                    {s.is_active ? "Tắt" : "Bật"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    disabled={runningScheduleId === s.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRunScheduleNow(s.id);
+                                    }}
+                                  >
+                                    <PlayCircle size={12} />{" "}
+                                    {runningScheduleId === s.id ? "Đang chạy..." : "Chạy thử ngay"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {selectedSchedule && (
+                    <>
+                      {/* UC-051 bước 2 — Cấu hình người nhận (email) */}
+                      <h4 style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <Mail size={14} /> Người nhận — lịch #{selectedSchedule.id}
+                      </h4>
+                      <form
+                        onSubmit={handleAddRecipient}
+                        style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}
+                      >
+                        <input
+                          type="email"
+                          placeholder="email@stc.gov.vn"
+                          value={newRecipientEmail}
+                          onChange={(e) => setNewRecipientEmail(e.target.value)}
+                          required
+                          style={{ flex: "1 1 240px" }}
+                        />
+                        <button type="submit" className="btn btn-secondary">
+                          <Mail size={14} /> Thêm người nhận
+                        </button>
+                      </form>
+
+                      {recipients.length === 0 ? (
+                        <div className="empty-state" style={{ marginBottom: 16 }}>
+                          Chưa có người nhận nào — hệ thống chỉ gửi được email khi có ít nhất 1
+                          người nhận.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Email</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {recipients.map((r) => (
+                                <tr key={r.id}>
+                                  <td>{r.email}</td>
+                                  <td>
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary"
+                                      onClick={() => handleRemoveRecipient(r.email)}
+                                    >
+                                      <Trash2 size={12} /> Xoá
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* UC-051 bước 3 — Lịch sử tác vụ định kỳ (cron) đã chạy */}
+                      <h4 style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                        <History size={14} /> Lịch sử chạy — lịch #{selectedSchedule.id}
+                      </h4>
+                      {scheduleRunLogs.length === 0 ? (
+                        <div className="empty-state">Chưa có lần chạy nào.</div>
+                      ) : (
+                        <div style={{ overflowX: "auto" }}>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Trạng thái</th>
+                                <th>Số người nhận</th>
+                                <th>Số dòng</th>
+                                <th>Thời điểm</th>
+                                <th>Ghi chú</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {scheduleRunLogs.map((log) => (
+                                <tr key={log.id}>
+                                  <td>
+                                    <span className="badge">{log.status}</span>
+                                  </td>
+                                  <td>{log.recipients_count}</td>
+                                  <td>{log.row_count}</td>
+                                  <td>
+                                    {log.run_at
+                                      ? new Date(log.run_at).toLocaleString("vi-VN")
+                                      : "-"}
+                                  </td>
+                                  <td>{log.message}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

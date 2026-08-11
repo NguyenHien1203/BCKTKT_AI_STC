@@ -10,6 +10,9 @@ from app.domain.entities import (
     GeneratedReportLog,
     KpiExplanation,
     ReportFilterConfig,
+    ReportSchedule,
+    ReportScheduleRecipient,
+    ReportScheduleRunLog,
     ReportTemplate,
 )
 
@@ -270,4 +273,85 @@ class GeneratedReportLogRepository(ABC):
     def list_for_user(
         self, user_id: int, template_id: Optional[int] = None
     ) -> List[GeneratedReportLog]:
+        ...
+
+class ReportScheduleRepository(ABC):
+    """Repository cho UC-051 bước "Cấu hình lịch" — hệ thống lưu lịch."""
+
+    @abstractmethod
+    def add(self, schedule: ReportSchedule) -> ReportSchedule:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, schedule_id: int) -> Optional[ReportSchedule]:
+        ...
+
+    @abstractmethod
+    def list_for_user(
+        self, user_id: int, template_id: Optional[int] = None
+    ) -> List[ReportSchedule]:
+        ...
+
+    @abstractmethod
+    def list_active(self) -> List[ReportSchedule]:
+        """Dùng bởi tác vụ định kỳ (cron) để quét toàn bộ lịch đang bật."""
+        ...
+
+    @abstractmethod
+    def update(self, schedule: ReportSchedule) -> ReportSchedule:
+        ...
+
+
+class ReportScheduleRecipientRepository(ABC):
+    """Repository cho UC-051 bước "Cấu hình người nhận (email)"."""
+
+    @abstractmethod
+    def add(self, recipient: ReportScheduleRecipient) -> ReportScheduleRecipient:
+        ...
+
+    @abstractmethod
+    def get(self, schedule_id: int, email: str) -> Optional[ReportScheduleRecipient]:
+        ...
+
+    @abstractmethod
+    def list_for_schedule(self, schedule_id: int) -> List[ReportScheduleRecipient]:
+        ...
+
+    @abstractmethod
+    def delete(self, schedule_id: int, email: str) -> bool:
+        ...
+
+
+class ReportScheduleRunLogRepository(ABC):
+    """Repository cho UC-051: nhật ký append-only mỗi lần tác vụ định kỳ
+    (cron) chạy sinh + gửi email báo cáo theo lịch."""
+
+    @abstractmethod
+    def add(self, log: ReportScheduleRunLog) -> ReportScheduleRunLog:
+        ...
+
+    @abstractmethod
+    def list_for_schedule(self, schedule_id: int) -> List[ReportScheduleRunLog]:
+        ...
+
+
+class ReportEmailSender(ABC):
+    """Cổng (port) UC-051 bước cuối: "Hệ thống tự động sinh + gửi email
+    báo cáo theo lịch". Triển khai thật (khi tích hợp) nên gửi qua máy chủ
+    SMTP cấu hình sẵn — xem `infrastructure/report_email_sender.py`.
+    """
+
+    @abstractmethod
+    def send_report_email(
+        self,
+        to_emails: List[str],
+        subject: str,
+        body_text: str,
+        attachment_filename: str,
+        attachment_bytes: bytes,
+        attachment_mime_type: str,
+    ) -> None:
+        """Gửi email đính kèm file báo cáo (PDF/Excel) tới danh sách
+        `to_emails`. Raise `ReportEmailSendFailed` (ở lớp gọi) nếu gửi
+        thất bại."""
         ...

@@ -199,3 +199,81 @@ class GeneratedReportLogModel(Base):
     generated_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+class ReportScheduleModel(Base):
+    """UC-051: lịch cấu hình để tự động sinh + gửi email báo cáo theo
+    lịch (hàng ngày/hàng tuần/hàng tháng)."""
+
+    __tablename__ = "report_schedules"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    template_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}report_templates.id"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    frequency: Mapped[str] = mapped_column(String(10), nullable=False)
+    time_of_day: Mapped[str] = mapped_column(String(5), nullable=False)
+    format: Mapped[str] = mapped_column(String(10), nullable=False, default="PDF")
+    day_of_week: Mapped[int] = mapped_column(Integer, nullable=True)
+    day_of_month: Mapped[int] = mapped_column(Integer, nullable=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=True)
+    period_type: Mapped[str] = mapped_column(String(10), nullable=True)
+    period_value: Mapped[int] = mapped_column(Integer, nullable=True)
+    org_unit_code: Mapped[str] = mapped_column(String(50), nullable=True)
+    sector: Mapped[str] = mapped_column(String(30), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_run_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class ReportScheduleRecipientModel(Base):
+    """UC-051 bước "Cấu hình người nhận (email)"."""
+
+    __tablename__ = "report_schedule_recipients"
+    __table_args__ = (
+        UniqueConstraint(
+            "schedule_id", "email", name="uq_reporting_schedule_recipients_schedule_email"
+        ),
+        {"schema": _SCHEMA} if _SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    schedule_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}report_schedules.id"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class ReportScheduleRunLogModel(Base):
+    """UC-051: nhật ký append-only mỗi lần tác vụ định kỳ (cron) chạy sinh
+    + gửi email báo cáo theo lịch."""
+
+    __tablename__ = "report_schedule_run_logs"
+    __table_args__ = ({"schema": _SCHEMA} if _SCHEMA else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    schedule_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{_SCHEMA + '.' if _SCHEMA else ''}report_schedules.id"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(String(10), nullable=False)
+    recipients_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    run_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
