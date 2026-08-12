@@ -272,12 +272,29 @@ services:
       ALERT_SMTP_USE_TLS: ${ALERT_SMTP_USE_TLS:-true}
       ALERT_SMTP_FROM: ${ALERT_SMTP_FROM:-canh-bao@stc.gov.vn}
       ALERT_WEBHOOK_TIMEOUT_SECONDS: ${ALERT_WEBHOOK_TIMEOUT_SECONDS:-10}
+      # UC-053 — "Tra cứu dữ liệu văn bản": để trống OPENSEARCH_HOST sẽ
+      # dùng InMemoryDocumentSearchClient (chỉ trong tiến trình, không cần
+      # OpenSearch chạy thật) — xem app/infrastructure/document_search_client.py.
+      OPENSEARCH_HOST: ${OPENSEARCH_HOST:-}
+      OPENSEARCH_PORT: ${OPENSEARCH_PORT:-9200}
+      OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-123@123aA}
+      OPENSEARCH_USE_SSL: ${OPENSEARCH_USE_SSL:-false}
+      # UC-053 — đọc tệp PDF/bản quét từ CÙNG bucket MinIO "raw-documents"
+      # mà ingestion-service (UC-024) đã lưu. Để trống MINIO_ENDPOINT sẽ
+      # dùng đĩa cục bộ (dev/test) — xem app/infrastructure/document_file_storage.py.
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_RAW_DOCUMENTS: ${MINIO_BUCKET_RAW_DOCUMENTS:-raw-documents}
     depends_on:
       postgres:
         condition: service_healthy
       superset:
         condition: service_started
       ai-service:
+        condition: service_started
+      opensearch:
         condition: service_started
     ports:
       - "8004:8000"

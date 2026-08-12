@@ -28,6 +28,7 @@ import {
   Wrench,
   Users,
   FileBarChart,
+  FileSearch,
   FileText,
   FileUp,
   FileScan,
@@ -118,6 +119,7 @@ export const NAV_SECTIONS = [
         label: "Chọn báo cáo theo mẫu + cấu hình bộ lọc",
         icon: FileBarChart,
       },
+      { to: "/documents", label: "Tra cứu dữ liệu văn bản", icon: FileSearch },
     ],
   },
   {
