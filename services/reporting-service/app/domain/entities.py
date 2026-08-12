@@ -585,3 +585,118 @@ class DashboardAlertLog:
             raise ValueError(
                 f"Trạng thái '{self.status}' không hợp lệ, phải là 1 trong {self.STATUSES}"
             )
+
+# ---------- UC-053: Tra cứu dữ liệu văn bản ----------
+
+
+@dataclass
+class DocumentMetadata:
+    """1 văn bản đã được lập chỉ mục vào OpenSearch để tra cứu (UC-053).
+
+    Nguồn gốc dữ liệu: văn bản được tiếp nhận qua `ingestion-service`
+    (UC-024 `VanBanIntake`, lưu tệp PDF/bản quét vào MinIO bucket
+    `raw-documents`) — CÙNG tên trường `so_ky_hieu`/`loai_van_ban`/
+    `trich_yeu`/`ngay_ban_hanh`/`don_vi_ban_hanh`/`raw_object_key` để lập
+    chỉ mục nhất quán. `sensitivity_level` + `don_vi_ban_hanh_unit_id` dùng
+    để "lọc theo quyền" ở bước tra cứu, đối chiếu với
+    `UserPermissionContext` (UC-04, `auth-identity-service`).
+    """
+
+    SENSITIVITY_LEVELS = ("PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET")
+
+    id: str
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str  # "YYYY-MM-DD"
+    don_vi_ban_hanh: str
+    raw_object_key: str
+    don_vi_ban_hanh_unit_id: Optional[int] = None
+    sensitivity_level: str = "INTERNAL"
+    file_content_type: str = "application/pdf"
+    indexed_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if not self.id or not str(self.id).strip():
+            raise ValueError("Mã định danh văn bản (id) không được để trống")
+        if not self.so_ky_hieu or not self.so_ky_hieu.strip():
+            raise ValueError("Số ký hiệu văn bản không được để trống")
+        if not self.loai_van_ban or not self.loai_van_ban.strip():
+            raise ValueError("Loại văn bản không được để trống")
+        if not self.don_vi_ban_hanh or not self.don_vi_ban_hanh.strip():
+            raise ValueError("Đơn vị ban hành không được để trống")
+        if not self.raw_object_key or not self.raw_object_key.strip():
+            raise ValueError("Đường dẫn tệp (raw_object_key) không được để trống")
+        self._validate_date(self.ngay_ban_hanh, "Ngày ban hành")
+        if self.sensitivity_level not in self.SENSITIVITY_LEVELS:
+            raise ValueError(
+                f"Mức nhạy cảm '{self.sensitivity_level}' không hợp lệ, "
+                f"phải là 1 trong {self.SENSITIVITY_LEVELS}"
+            )
+
+    @staticmethod
+    def _validate_date(value: str, field_label: str) -> None:
+        if not value:
+            raise ValueError(f"{field_label} không được để trống")
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"{field_label} '{value}' phải theo định dạng YYYY-MM-DD")
+
+
+@dataclass
+class DocumentSearchQuery:
+    """Bước 1 UC-053: "Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản)"."""
+
+    keyword: Optional[str] = None
+    co_quan: Optional[str] = None
+    loai_van_ban: Optional[str] = None
+    ngay_from: Optional[str] = None
+    ngay_to: Optional[str] = None
+    page: int = 1
+    page_size: int = 20
+
+    def __post_init__(self) -> None:
+        if self.page < 1:
+            raise ValueError("Số trang (page) phải >= 1")
+        if self.page_size < 1 or self.page_size > 100:
+            raise ValueError("Kích thước trang (page_size) phải trong khoảng 1-100")
+        if self.ngay_from:
+            DocumentMetadata._validate_date(self.ngay_from, "Ngày ban hành từ")
+        if self.ngay_to:
+            DocumentMetadata._validate_date(self.ngay_to, "Ngày ban hành đến")
+        if self.ngay_from and self.ngay_to and self.ngay_from > self.ngay_to:
+            raise ValueError("Ngày ban hành từ phải trước hoặc bằng ngày ban hành đến")
+
+
+@dataclass
+class DocumentSearchResultItem:
+    """1 dòng kết quả tra cứu (bước 2: "Hệ thống hiển thị")."""
+
+    id: str
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str
+    don_vi_ban_hanh: str
+    sensitivity_level: str
+    score: float = 0.0
+
+
+@dataclass
+class DocumentSearchPage:
+    items: List[DocumentSearchResultItem]
+    total: int
+    page: int
+    page_size: int
+
+
+@dataclass
+class DocumentAccessContext:
+    """Ngữ cảnh quyền của người dùng dùng để "lọc theo quyền" ở UC-053 —
+    ánh xạ trực tiếp từ `UserPermissionContext` (UC-04, `auth-identity-service`).
+    """
+
+    permitted_domains: List[str]
+    permitted_unit_id: Optional[int] = None
+    sensitivity_level: str = "INTERNAL"

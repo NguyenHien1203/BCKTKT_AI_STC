@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Database,
   FileBarChart,
+  FileSearch,
   FileScan,
   FileStack,
   FlaskConical,
@@ -49,6 +50,8 @@ import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 import DashboardsPage from "./pages/DashboardsPage.jsx";
 import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
 import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
+import DocumentSearchPage from "./pages/DocumentSearchPage.jsx";
+import DocumentDetailPage from "./pages/DocumentDetailPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -367,6 +370,13 @@ function HomePage() {
       description:
         "UC-049 — Xem danh mục mẫu báo cáo, hệ thống hiển thị; chọn mẫu báo cáo, hệ thống hiển thị xem trước; cấu hình bộ lọc (năm, đơn vị, lĩnh vực, kỳ), hệ thống lưu trạng thái.",
       icon: FileBarChart,
+    },
+    {
+      to: "/documents",
+      title: "Tra cứu dữ liệu văn bản",
+      description:
+        "UC-053 — Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản), hệ thống truy vấn OpenSearch + lọc theo quyền, hiển thị kết quả; xem chi tiết văn bản hiển thị metadata + file PDF.",
+      icon: FileSearch,
     },
   ];
 
@@ -813,6 +823,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ReportTemplatesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents"
+        element={
+          <ProtectedRoute>
+            <DocumentSearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents/:id"
+        element={
+          <ProtectedRoute>
+            <DocumentDetailPage />
           </ProtectedRoute>
         }
       />

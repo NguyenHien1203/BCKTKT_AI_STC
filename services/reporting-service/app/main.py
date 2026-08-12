@@ -4,6 +4,7 @@ from app.infrastructure.db.session import Base, engine
 from app.interfaces.api.dashboard_alert_router import router as dashboard_alert_router
 from app.interfaces.api.dashboard_alert_router import user_router as dashboard_alert_user_router
 from app.interfaces.api.dashboard_router import router as dashboard_router
+from app.interfaces.api.document_search_router import router as document_search_router
 from app.interfaces.api.kpi_query_router import router as kpi_query_router
 from app.interfaces.api.report_generation_router import router as report_generation_router
 from app.interfaces.api.report_schedule_router import router as report_schedule_router
@@ -27,6 +28,7 @@ app.include_router(report_generation_router)
 app.include_router(report_schedule_router)
 app.include_router(dashboard_alert_router)
 app.include_router(dashboard_alert_user_router)
+app.include_router(document_search_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

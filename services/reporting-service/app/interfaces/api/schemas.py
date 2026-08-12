@@ -450,3 +450,57 @@ class DashboardAlertEvaluationResponse(BaseModel):
     kpi_value: Optional[float] = None
     reason: str
     logs: List[DashboardAlertLogResponse] = []
+
+# ---------- UC-053: Tra cứu dữ liệu văn bản ----------
+
+_SENSITIVITY_PATTERN = "^(PUBLIC|INTERNAL|CONFIDENTIAL|SECRET)$"
+
+
+class DocumentSearchItemResponse(BaseModel):
+    id: str
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str
+    don_vi_ban_hanh: str
+    sensitivity_level: str
+    score: float
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentSearchPageResponse(BaseModel):
+    items: List[DocumentSearchItemResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class DocumentDetailResponse(BaseModel):
+    id: str
+    so_ky_hieu: str
+    loai_van_ban: str
+    trich_yeu: str
+    ngay_ban_hanh: str
+    don_vi_ban_hanh: str
+    don_vi_ban_hanh_unit_id: Optional[int] = None
+    sensitivity_level: str
+    file_content_type: str
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentIndexRequest(BaseModel):
+    """Hạ tầng hỗ trợ lập chỉ mục (KHÔNG phải bước nghiệp vụ của UC-053) —
+    dùng để nạp dữ liệu văn bản vào OpenSearch phục vụ tra cứu."""
+
+    id: str = Field(..., min_length=1, max_length=100)
+    so_ky_hieu: str = Field(..., min_length=1, max_length=255)
+    loai_van_ban: str = Field(..., min_length=1, max_length=100)
+    trich_yeu: str = Field("", max_length=4000)
+    ngay_ban_hanh: str = Field(..., description="YYYY-MM-DD")
+    don_vi_ban_hanh: str = Field(..., min_length=1, max_length=255)
+    raw_object_key: str = Field(..., min_length=1, max_length=500)
+    don_vi_ban_hanh_unit_id: Optional[int] = None
+    sensitivity_level: str = Field("INTERNAL", pattern=_SENSITIVITY_PATTERN)
+    file_content_type: str = Field("application/pdf", max_length=100)

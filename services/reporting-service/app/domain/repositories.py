@@ -10,6 +10,10 @@ from app.domain.entities import (
     DashboardFavorite,
     DashboardFilter,
     DashboardKpi,
+    DocumentAccessContext,
+    DocumentMetadata,
+    DocumentSearchPage,
+    DocumentSearchQuery,
     GeneratedReportLog,
     KpiExplanation,
     ReportFilterConfig,
@@ -445,4 +449,50 @@ class AlertDispatcher(ABC):
     ) -> None:
         """Gửi 1 cảnh báo qua kênh `channel_type` tới `destination`. Raise
         `AlertDispatchFailed` (ở lớp gọi) nếu gửi thất bại."""
+        ...
+
+class DocumentSearchClient(ABC):
+    """Cổng (port) UC-053 bước 1: "Hệ thống truy vấn OpenSearch". Triển khai
+    thật (khi tích hợp) nên gọi OpenSearch (`opensearchpy`) trên index các
+    văn bản đã tiếp nhận (UC-024) — xem
+    `infrastructure/document_search_client.py`.
+    """
+
+    @abstractmethod
+    def search(
+        self,
+        query: DocumentSearchQuery,
+        allowed_sensitivity_levels: List[str],
+        permitted_unit_id: Optional[int],
+    ) -> DocumentSearchPage:
+        """Bước 1-2: truy vấn OpenSearch theo từ khoá + bộ lọc, ĐÃ áp sẵn
+        điều kiện "lọc theo quyền" (`allowed_sensitivity_levels`,
+        `permitted_unit_id`) ngay trong truy vấn."""
+        ...
+
+    @abstractmethod
+    def get_by_id(self, document_id: str) -> Optional[DocumentMetadata]:
+        """Bước "Xem chi tiết văn bản": lấy đầy đủ metadata 1 văn bản theo id."""
+        ...
+
+    @abstractmethod
+    def index_document(self, document: DocumentMetadata) -> DocumentMetadata:
+        """Lập chỉ mục (thêm/cập nhật) 1 văn bản vào OpenSearch — hạ tầng hỗ
+        trợ để có dữ liệu tra cứu (KHÔNG phải 1 bước nghiệp vụ của UC-053,
+        tương tự cách UC-024/030 nạp dữ liệu nguồn cho UC-029+)."""
+        ...
+
+
+class DocumentAccessContextProvider(ABC):
+    """Cổng (port) tra cứu ngữ cảnh quyền của người dùng để "lọc theo
+    quyền" khi tra cứu văn bản (UC-053).
+
+    Triển khai thật (khi tích hợp) nên gọi sang `auth-identity-service`
+    UC-04 (`GET /permissions/{user_id}`, trả `UserPermissionContext`:
+    `permitted_domains` + `permitted_unit_id` + `sensitivity_level`) — xem
+    `infrastructure/user_access_context.py`.
+    """
+
+    @abstractmethod
+    def get_document_access_context(self, user_id: int) -> DocumentAccessContext:
         ...

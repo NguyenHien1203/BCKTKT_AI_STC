@@ -294,3 +294,50 @@ class AlertDispatchFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+class InvalidDocumentSearchQuery(DomainError):
+    """UC-053 bước 1: từ khoá/bộ lọc (cơ quan, ngày, loại văn bản) không hợp lệ."""
+
+    code = "INVALID_DOCUMENT_SEARCH_QUERY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidDocumentMetadata(DomainError):
+    """Siêu dữ liệu văn bản dùng để lập chỉ mục không hợp lệ."""
+
+    code = "INVALID_DOCUMENT_METADATA"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class DocumentNotFound(DomainError):
+    """UC-053 bước "Xem chi tiết văn bản": không tìm thấy văn bản."""
+
+    code = "DOCUMENT_NOT_FOUND"
+
+    def __init__(self, document_id: str):
+        super().__init__(f"Không tìm thấy văn bản id={document_id}")
+
+
+class DocumentAccessDenied(DomainError):
+    """UC-053: văn bản nằm ngoài phạm vi quyền (miền dữ liệu/đơn vị/mức
+    nhạy cảm) của người dùng hiện tại."""
+
+    code = "DOCUMENT_ACCESS_DENIED"
+
+    def __init__(self, document_id: str):
+        super().__init__(
+            f"Không có quyền truy cập văn bản id={document_id} (ngoài phạm vi quyền)"
+        )
+
+
+class DocumentSearchFailed(DomainError):
+    """UC-053 bước 1: "Hệ thống truy vấn OpenSearch" thất bại (lỗi hạ tầng)."""
+
+    code = "DOCUMENT_SEARCH_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)
