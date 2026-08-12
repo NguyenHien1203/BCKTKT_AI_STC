@@ -19,6 +19,9 @@ from app.domain.entities import (
     ReportScheduleRecipient,
     ReportScheduleRunLog,
     ReportTemplate,
+    TaiSan,
+    TaiSanFilter,
+    TaiSanSearchPage,
 )
 from app.domain.repositories import (
     DashboardAlertChannelRepository,
@@ -34,6 +37,7 @@ from app.domain.repositories import (
     ReportScheduleRepository,
     ReportScheduleRunLogRepository,
     ReportTemplateRepository,
+    TaiSanRepository,
 )
 from app.infrastructure.db.models import (
     DashboardAlertChannelModel,
@@ -49,6 +53,7 @@ from app.infrastructure.db.models import (
     ReportScheduleRecipientModel,
     ReportScheduleRunLogModel,
     ReportTemplateModel,
+    TaiSanModel,
 )
 
 
@@ -850,3 +855,87 @@ class SqlAlchemyDashboardAlertLogRepository(DashboardAlertLogRepository):
         )
         models = self._db.execute(stmt).scalars().all()
         return [_dashboard_alert_log_to_entity(m) for m in models]
+
+def _tai_san_to_entity(m: TaiSanModel) -> TaiSan:
+    return TaiSan(
+        id=m.id,
+        ma_tai_san=m.ma_tai_san,
+        ten_tai_san=m.ten_tai_san,
+        don_vi_code=m.don_vi_code,
+        don_vi_ten=m.don_vi_ten,
+        nhom_tai_san_code=m.nhom_tai_san_code,
+        nhom_tai_san_ten=m.nhom_tai_san_ten,
+        trang_thai=m.trang_thai,
+        nguyen_gia=m.nguyen_gia,
+        gia_tri_con_lai=m.gia_tri_con_lai,
+        ngay_dua_vao_su_dung=m.ngay_dua_vao_su_dung,
+        nam_tai_chinh=m.nam_tai_chinh,
+        ghi_chu=m.ghi_chu,
+        published_at=m.published_at,
+    )
+
+
+class SqlAlchemyTaiSanRepository(TaiSanRepository):
+    """UC-054: đọc trực tiếp bảng `curated.dm_tai_san` (kho dữ liệu chuẩn
+    hoá — CÙNG 1 CSDL Postgres dùng chung với data-quality-service, khác
+    schema, xem ARCHITECTURE.md mục 2)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def search(self, filters: TaiSanFilter) -> TaiSanSearchPage:
+        # Bước 1-2 — "Nhập bộ lọc (đơn vị, nhóm, trạng thái) -> Hệ thống
+        # truy vấn curated.dm_tai_san".
+        stmt = select(TaiSanModel)
+        if filters.don_vi_code:
+            stmt = stmt.where(TaiSanModel.don_vi_code == filters.don_vi_code)
+        if filters.nhom_tai_san_code:
+            stmt = stmt.where(TaiSanModel.nhom_tai_san_code == filters.nhom_tai_san_code)
+        if filters.trang_thai:
+            stmt = stmt.where(TaiSanModel.trang_thai == filters.trang_thai)
+
+        total = len(self._db.execute(stmt).scalars().all())
+
+        stmt = (
+            stmt.order_by(TaiSanModel.ma_tai_san.asc())
+            .offset((filters.page - 1) * filters.page_size)
+            .limit(filters.page_size)
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return TaiSanSearchPage(
+            items=[_tai_san_to_entity(m) for m in models],
+            total=total,
+            page=filters.page,
+            page_size=filters.page_size,
+        )
+
+    def get_by_id(self, tai_san_id: int) -> Optional[TaiSan]:
+        model = self._db.get(TaiSanModel, tai_san_id)
+        return _tai_san_to_entity(model) if model else None
+
+    def upsert(self, tai_san: TaiSan) -> TaiSan:
+        # [Hạ tầng hỗ trợ] Nạp/cập nhật 1 bản ghi vào curated.dm_tai_san
+        # theo khoá tự nhiên `ma_tai_san` — dùng để seed dữ liệu demo khi
+        # chưa có pipeline công bố dữ liệu tự động nối vào bảng này.
+        stmt = select(TaiSanModel).where(TaiSanModel.ma_tai_san == tai_san.ma_tai_san)
+        model = self._db.execute(stmt).scalars().first()
+        if model is None:
+            model = TaiSanModel(ma_tai_san=tai_san.ma_tai_san)
+            self._db.add(model)
+
+        model.ten_tai_san = tai_san.ten_tai_san
+        model.don_vi_code = tai_san.don_vi_code
+        model.don_vi_ten = tai_san.don_vi_ten
+        model.nhom_tai_san_code = tai_san.nhom_tai_san_code
+        model.nhom_tai_san_ten = tai_san.nhom_tai_san_ten
+        model.trang_thai = tai_san.trang_thai
+        model.nguyen_gia = tai_san.nguyen_gia
+        model.gia_tri_con_lai = tai_san.gia_tri_con_lai
+        model.ngay_dua_vao_su_dung = tai_san.ngay_dua_vao_su_dung
+        model.nam_tai_chinh = tai_san.nam_tai_chinh
+        model.ghi_chu = tai_san.ghi_chu
+        model.published_at = datetime.now(timezone.utc)
+
+        self._db.commit()
+        self._db.refresh(model)
+        return _tai_san_to_entity(model)

@@ -700,3 +700,93 @@ class DocumentAccessContext:
     permitted_domains: List[str]
     permitted_unit_id: Optional[int] = None
     sensitivity_level: str = "INTERNAL"
+
+
+# ==================== UC-054: Tra cứu dữ liệu tài sản ====================
+
+
+@dataclass
+class TaiSan:
+    """1 bản ghi tài sản trong kho dữ liệu chuẩn hoá `curated.dm_tai_san`
+    (UC-054).
+
+    Nguồn gốc dữ liệu: bảng chiều (dimension) tài sản công được nạp vào kho
+    chuẩn hoá qua tiến trình công bố dữ liệu (tương tự UC-041
+    `curated.dm_records`), tổng hợp từ dữ liệu nguồn (TABMIS/nguồn vốn) đã
+    qua kiểm tra chất lượng (UC-038/039), ánh xạ theo danh mục nhóm tài sản
+    (UC-035 `AssetGroupCatalog`) và danh mục đơn vị (UC-033
+    `OrgUnitCatalog`). UC-054 chỉ ĐỌC bảng này (không có bước ghi/sửa).
+    """
+
+    TRANG_THAI_VALUES = (
+        "DANG_SU_DUNG",
+        "CHO_THANH_LY",
+        "DA_THANH_LY",
+        "TAM_DUNG_SU_DUNG",
+    )
+
+    id: Optional[int]
+    ma_tai_san: str
+    ten_tai_san: str
+    don_vi_code: str
+    don_vi_ten: str
+    nhom_tai_san_code: str
+    nhom_tai_san_ten: str
+    trang_thai: str
+    nguyen_gia: float = 0.0
+    gia_tri_con_lai: float = 0.0
+    ngay_dua_vao_su_dung: Optional[str] = None
+    nam_tai_chinh: Optional[int] = None
+    ghi_chu: str = ""
+    published_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        if not self.ma_tai_san or not self.ma_tai_san.strip():
+            raise ValueError("Mã tài sản (ma_tai_san) không được để trống")
+        if not self.ten_tai_san or not self.ten_tai_san.strip():
+            raise ValueError("Tên tài sản (ten_tai_san) không được để trống")
+        if not self.don_vi_code or not self.don_vi_code.strip():
+            raise ValueError("Mã đơn vị (don_vi_code) không được để trống")
+        if not self.nhom_tai_san_code or not self.nhom_tai_san_code.strip():
+            raise ValueError("Mã nhóm tài sản (nhom_tai_san_code) không được để trống")
+        if self.trang_thai not in self.TRANG_THAI_VALUES:
+            raise ValueError(
+                f"Trạng thái '{self.trang_thai}' không hợp lệ, phải thuộc "
+                f"{self.TRANG_THAI_VALUES}"
+            )
+        if self.nguyen_gia < 0:
+            raise ValueError("Nguyên giá (nguyen_gia) không được âm")
+        if self.gia_tri_con_lai < 0:
+            raise ValueError("Giá trị còn lại (gia_tri_con_lai) không được âm")
+
+
+@dataclass
+class TaiSanFilter:
+    """Bước 1 UC-054: "Nhập bộ lọc (đơn vị, nhóm, trạng thái)"."""
+
+    don_vi_code: Optional[str] = None
+    nhom_tai_san_code: Optional[str] = None
+    trang_thai: Optional[str] = None
+    page: int = 1
+    page_size: int = 20
+
+    def __post_init__(self) -> None:
+        if self.page < 1:
+            raise ValueError("Số trang (page) phải >= 1")
+        if self.page_size < 1 or self.page_size > 100:
+            raise ValueError("Kích thước trang (page_size) phải trong khoảng 1-100")
+        if self.trang_thai is not None and self.trang_thai not in TaiSan.TRANG_THAI_VALUES:
+            raise ValueError(
+                f"Trạng thái '{self.trang_thai}' không hợp lệ, phải thuộc "
+                f"{TaiSan.TRANG_THAI_VALUES}"
+            )
+
+
+@dataclass
+class TaiSanSearchPage:
+    """Bước "Hiển thị danh sách tài sản" của UC-054."""
+
+    items: List[TaiSan]
+    total: int
+    page: int
+    page_size: int

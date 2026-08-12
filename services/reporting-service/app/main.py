@@ -9,6 +9,7 @@ from app.interfaces.api.kpi_query_router import router as kpi_query_router
 from app.interfaces.api.report_generation_router import router as report_generation_router
 from app.interfaces.api.report_schedule_router import router as report_schedule_router
 from app.interfaces.api.report_template_router import router as report_template_router
+from app.interfaces.api.tai_san_router import router as tai_san_router
 from app.infrastructure.scheduler_runner import start_background_scheduler, stop_background_scheduler
 
 # Import models để Base.metadata biết bảng khi create_all (chỉ dùng cho dev/test
@@ -29,6 +30,7 @@ app.include_router(report_schedule_router)
 app.include_router(dashboard_alert_router)
 app.include_router(dashboard_alert_user_router)
 app.include_router(document_search_router)
+app.include_router(tai_san_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:

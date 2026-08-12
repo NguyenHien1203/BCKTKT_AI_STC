@@ -504,3 +504,51 @@ class DocumentIndexRequest(BaseModel):
     don_vi_ban_hanh_unit_id: Optional[int] = None
     sensitivity_level: str = Field("INTERNAL", pattern=_SENSITIVITY_PATTERN)
     file_content_type: str = Field("application/pdf", max_length=100)
+
+# ---------- UC-054: Tra cứu dữ liệu tài sản ----------
+
+_TAI_SAN_TRANG_THAI_PATTERN = "^(DANG_SU_DUNG|CHO_THANH_LY|DA_THANH_LY|TAM_DUNG_SU_DUNG)$"
+
+
+class TaiSanResponse(BaseModel):
+    id: int
+    ma_tai_san: str
+    ten_tai_san: str
+    don_vi_code: str
+    don_vi_ten: str
+    nhom_tai_san_code: str
+    nhom_tai_san_ten: str
+    trang_thai: str
+    nguyen_gia: float
+    gia_tri_con_lai: float
+    ngay_dua_vao_su_dung: Optional[str] = None
+    nam_tai_chinh: Optional[int] = None
+    ghi_chu: str = ""
+    published_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class TaiSanSearchPageResponse(BaseModel):
+    items: List[TaiSanResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class TaiSanUpsertRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-054] Nạp/cập
+    nhật 1 bản ghi tài sản vào curated.dm_tai_san."""
+
+    ma_tai_san: str = Field(..., min_length=1, max_length=50)
+    ten_tai_san: str = Field(..., min_length=1, max_length=255)
+    don_vi_code: str = Field(..., min_length=1, max_length=50)
+    don_vi_ten: str = Field(..., min_length=1, max_length=255)
+    nhom_tai_san_code: str = Field(..., min_length=1, max_length=50)
+    nhom_tai_san_ten: str = Field(..., min_length=1, max_length=255)
+    trang_thai: str = Field(..., pattern=_TAI_SAN_TRANG_THAI_PATTERN)
+    nguyen_gia: float = Field(0.0, ge=0)
+    gia_tri_con_lai: float = Field(0.0, ge=0)
+    ngay_dua_vao_su_dung: Optional[str] = Field(None, description="YYYY-MM-DD")
+    nam_tai_chinh: Optional[int] = None
+    ghi_chu: str = Field("", max_length=2000)

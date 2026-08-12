@@ -21,6 +21,9 @@ from app.domain.entities import (
     ReportScheduleRecipient,
     ReportScheduleRunLog,
     ReportTemplate,
+    TaiSan,
+    TaiSanFilter,
+    TaiSanSearchPage,
 )
 
 
@@ -495,4 +498,33 @@ class DocumentAccessContextProvider(ABC):
 
     @abstractmethod
     def get_document_access_context(self, user_id: int) -> DocumentAccessContext:
+        ...
+
+
+class TaiSanRepository(ABC):
+    """Cổng (port) UC-054: "Hệ thống truy vấn curated.dm_tai_san". Triển
+    khai thật (`SqlAlchemyTaiSanRepository`) đọc trực tiếp bảng
+    `curated.dm_tai_san` — CÙNG 1 CSDL Postgres (`financial_dw`) với
+    data-quality-service (mỗi service 1 schema riêng, xem
+    ARCHITECTURE.md mục 2), reporting-service chỉ ĐỌC (không sở hữu) dữ
+    liệu ở schema này.
+    """
+
+    @abstractmethod
+    def search(self, filters: TaiSanFilter) -> TaiSanSearchPage:
+        """Bước 1-2: "Nhập bộ lọc (đơn vị, nhóm, trạng thái) -> Hệ thống
+        truy vấn curated.dm_tai_san -> Hiển thị danh sách tài sản"."""
+        ...
+
+    @abstractmethod
+    def get_by_id(self, tai_san_id: int) -> Optional[TaiSan]:
+        """Bước "Xem chi tiết tài sản"."""
+        ...
+
+    @abstractmethod
+    def upsert(self, tai_san: TaiSan) -> TaiSan:
+        """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-054] Nạp/cập
+        nhật 1 bản ghi vào `curated.dm_tai_san`, dùng để mô phỏng/khởi tạo
+        dữ liệu tra cứu khi chưa có pipeline công bố dữ liệu tự động
+        (giống UC-041 `publish_to_curated_store`) nối vào bảng này."""
         ...

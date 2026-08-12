@@ -40,6 +40,7 @@ import {
   UploadCloud,
   UserCog,
   Users,
+  Boxes,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
@@ -52,6 +53,8 @@ import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
 import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
 import DocumentSearchPage from "./pages/DocumentSearchPage.jsx";
 import DocumentDetailPage from "./pages/DocumentDetailPage.jsx";
+import TaiSanSearchPage from "./pages/TaiSanSearchPage.jsx";
+import TaiSanDetailPage from "./pages/TaiSanDetailPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -377,6 +380,13 @@ function HomePage() {
       description:
         "UC-053 — Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản), hệ thống truy vấn OpenSearch + lọc theo quyền, hiển thị kết quả; xem chi tiết văn bản hiển thị metadata + file PDF.",
       icon: FileSearch,
+    },
+    {
+      to: "/tai-san",
+      title: "Tra cứu dữ liệu tài sản",
+      description:
+        "UC-054 — Nhập bộ lọc (đơn vị, nhóm, trạng thái), hệ thống truy vấn curated.dm_tai_san, hiển thị danh sách tài sản; xem chi tiết tài sản.",
+      icon: Boxes,
     },
   ];
 
@@ -839,6 +849,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DocumentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tai-san"
+        element={
+          <ProtectedRoute>
+            <TaiSanSearchPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tai-san/:id"
+        element={
+          <ProtectedRoute>
+            <TaiSanDetailPage />
           </ProtectedRoute>
         }
       />
