@@ -23,6 +23,7 @@ import {
   Landmark,
   Layers,
   LayoutDashboard,
+  LineChart,
   MonitorSmartphone,
   Network,
   Package,
@@ -52,6 +53,7 @@ import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
 import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
 import DocumentSearchPage from "./pages/DocumentSearchPage.jsx";
 import DocumentDetailPage from "./pages/DocumentDetailPage.jsx";
+import PriceDataPage from "./pages/PriceDataPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -377,6 +379,13 @@ function HomePage() {
       description:
         "UC-053 — Nhập từ khoá + bộ lọc (cơ quan, ngày, loại văn bản), hệ thống truy vấn OpenSearch + lọc theo quyền, hiển thị kết quả; xem chi tiết văn bản hiển thị metadata + file PDF.",
       icon: FileSearch,
+    },
+    {
+      to: "/price-data",
+      title: "Tra cứu dữ liệu giá",
+      description:
+        "UC-055 — Nhập bộ lọc (mặt hàng, địa bàn, kỳ), hệ thống truy vấn curated.dm_gia, hiển thị giá theo bảng; hiển thị biểu đồ xu hướng giá theo thời gian (line chart).",
+      icon: LineChart,
     },
   ];
 
@@ -839,6 +848,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DocumentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/price-data"
+        element={
+          <ProtectedRoute>
+            <PriceDataPage />
           </ProtectedRoute>
         }
       />

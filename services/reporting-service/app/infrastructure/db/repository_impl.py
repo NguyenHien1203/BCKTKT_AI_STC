@@ -14,6 +14,10 @@ from app.domain.entities import (
     DashboardKpi,
     GeneratedReportLog,
     KpiExplanation,
+    PriceRecord,
+    PriceSearchPage,
+    PriceSearchQuery,
+    PriceTrendPoint,
     ReportFilterConfig,
     ReportSchedule,
     ReportScheduleRecipient,
@@ -29,6 +33,7 @@ from app.domain.repositories import (
     DashboardRepository,
     GeneratedReportLogRepository,
     KpiExplanationRepository,
+    PriceDataRepository,
     ReportFilterConfigRepository,
     ReportScheduleRecipientRepository,
     ReportScheduleRepository,
@@ -42,6 +47,7 @@ from app.infrastructure.db.models import (
     DashboardFavoriteModel,
     DashboardKpiModel,
     DashboardModel,
+    DmGiaModel,
     GeneratedReportLogModel,
     KpiExplanationModel,
     ReportFilterConfigModel,
@@ -850,3 +856,104 @@ class SqlAlchemyDashboardAlertLogRepository(DashboardAlertLogRepository):
         )
         models = self._db.execute(stmt).scalars().all()
         return [_dashboard_alert_log_to_entity(m) for m in models]
+
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
+
+
+def _dm_gia_to_entity(m: DmGiaModel) -> PriceRecord:
+    return PriceRecord(
+        id=m.id,
+        mat_hang_code=m.mat_hang_code,
+        mat_hang_name=m.mat_hang_name,
+        dia_ban_code=m.dia_ban_code,
+        dia_ban_name=m.dia_ban_name,
+        ky=m.ky,
+        gia=m.gia,
+        don_vi_tinh=m.don_vi_tinh,
+        nguon=m.nguon,
+        published_at=m.published_at.isoformat() if m.published_at else None,
+    )
+
+
+class SqlAlchemyPriceDataRepository(PriceDataRepository):
+    """UC-055: đọc/ghi bảng `curated.dm_gia` qua SQLAlchemy (bảng Postgres
+    thật, cùng instance database, khác schema `reporting`)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def _filtered_stmt(self, query: PriceSearchQuery):
+        stmt = select(DmGiaModel)
+        if query.mat_hang:
+            like = f"%{query.mat_hang.strip().lower()}%"
+            stmt = stmt.where(
+                (DmGiaModel.mat_hang_code.ilike(like)) | (DmGiaModel.mat_hang_name.ilike(like))
+            )
+        if query.dia_ban:
+            like = f"%{query.dia_ban.strip().lower()}%"
+            stmt = stmt.where(
+                (DmGiaModel.dia_ban_code.ilike(like)) | (DmGiaModel.dia_ban_name.ilike(like))
+            )
+        if query.ky_from:
+            stmt = stmt.where(DmGiaModel.ky >= query.ky_from)
+        if query.ky_to:
+            stmt = stmt.where(DmGiaModel.ky <= query.ky_to)
+        return stmt
+
+    def search(self, query: PriceSearchQuery) -> PriceSearchPage:
+        base_stmt = self._filtered_stmt(query)
+        total = len(self._db.execute(base_stmt).scalars().all())
+        stmt = (
+            base_stmt.order_by(DmGiaModel.ky.desc(), DmGiaModel.mat_hang_code.asc())
+            .offset((query.page - 1) * query.page_size)
+            .limit(query.page_size)
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return PriceSearchPage(
+            items=[_dm_gia_to_entity(m) for m in models],
+            total=total,
+            page=query.page,
+            page_size=query.page_size,
+        )
+
+    def get_trend(
+        self,
+        mat_hang: Optional[str],
+        dia_ban: Optional[str],
+        ky_from: Optional[str],
+        ky_to: Optional[str],
+    ) -> List[PriceTrendPoint]:
+        stmt = self._filtered_stmt(
+            PriceSearchQuery(mat_hang=mat_hang, dia_ban=dia_ban, ky_from=ky_from, ky_to=ky_to)
+        )
+        models = self._db.execute(stmt).scalars().all()
+        by_ky = {}
+        for m in models:
+            bucket = by_ky.setdefault(m.ky, [])
+            bucket.append(m.gia)
+        points = [
+            PriceTrendPoint(
+                ky=ky,
+                gia_trung_binh=round(sum(values) / len(values), 2),
+                so_ban_ghi=len(values),
+            )
+            for ky, values in by_ky.items()
+        ]
+        points.sort(key=lambda p: p.ky)
+        return points
+
+    def add(self, record: PriceRecord) -> PriceRecord:
+        model = DmGiaModel(
+            mat_hang_code=record.mat_hang_code,
+            mat_hang_name=record.mat_hang_name,
+            dia_ban_code=record.dia_ban_code,
+            dia_ban_name=record.dia_ban_name,
+            ky=record.ky,
+            gia=record.gia,
+            don_vi_tinh=record.don_vi_tinh,
+            nguon=record.nguon,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _dm_gia_to_entity(model)

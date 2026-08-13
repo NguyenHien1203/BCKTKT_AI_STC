@@ -356,3 +356,73 @@ class DashboardAlertLogModel(Base):
     triggered_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+# ==================== UC-054: Tra cứu dữ liệu tài sản ====================
+
+# Schema "curated" — bảng chiều (dimension) tài sản `dm_tai_san` KHÔNG
+# thuộc sở hữu của reporting-service (được nạp bởi tiến trình công bố dữ
+# liệu chuẩn hoá, tương tự curated.dm_records của data-quality-service UC-041),
+# nhưng reporting-service ĐỌC trực tiếp qua CÙNG 1 CSDL Postgres dùng chung
+# ("financial_dw", xem ARCHITECTURE.md mục 2 + docker-compose.yml). Model
+# này khai báo migration riêng (0007_uc054_create_dm_tai_san.py) để service
+# có thể khởi tạo/seed bảng khi chưa có pipeline công bố dữ liệu thật nối
+# vào.
+_CURATED_SCHEMA = "curated" if not _DATABASE_URL.startswith("sqlite") else None
+
+
+class TaiSanModel(Base):
+    """UC-054: bảng chiều tài sản công trong kho dữ liệu chuẩn hoá
+    `curated.dm_tai_san`."""
+
+    __tablename__ = "dm_tai_san"
+    __table_args__ = (
+        UniqueConstraint("ma_tai_san", name="uq_curated_dm_tai_san_ma_tai_san"),
+        {"schema": _CURATED_SCHEMA} if _CURATED_SCHEMA else {},
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ma_tai_san: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    ten_tai_san: Mapped[str] = mapped_column(String(255), nullable=False)
+    don_vi_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    don_vi_ten: Mapped[str] = mapped_column(String(255), nullable=False)
+    nhom_tai_san_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    nhom_tai_san_ten: Mapped[str] = mapped_column(String(255), nullable=False)
+    trang_thai: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    nguyen_gia: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    gia_tri_con_lai: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ngay_dua_vao_su_dung: Mapped[str] = mapped_column(String(10), nullable=True)
+    nam_tai_chinh: Mapped[int] = mapped_column(Integer, nullable=True)
+    ghi_chu: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
+
+# Bảng `dm_gia` sống trong schema `curated` (khác schema `reporting` của
+# các bảng trên) vì đây là dữ liệu data mart giá đã chuẩn hoá — đúng tên
+# nghiệp vụ "curated.dm_gia" ghi trong flow UC-055 (docs/use_cases.json id
+# 55). Cùng 1 instance Postgres (ADR-001) với data-quality-service, khác
+# schema. SQLite dev/test không hỗ trợ schema nên bỏ qua (giống `_SCHEMA`).
+_SCHEMA_CURATED = "curated" if not _DATABASE_URL.startswith("sqlite") else None
+
+
+class DmGiaModel(Base):
+    """UC-055: 1 dòng dữ liệu giá mặt hàng theo địa bàn + kỳ trong kho
+    chuẩn hoá `curated.dm_gia`."""
+
+    __tablename__ = "dm_gia"
+    __table_args__ = ({"schema": _SCHEMA_CURATED} if _SCHEMA_CURATED else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    mat_hang_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    mat_hang_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    dia_ban_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    dia_ban_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    ky: Mapped[str] = mapped_column(String(7), nullable=False, index=True)  # "YYYY-MM"
+    gia: Mapped[float] = mapped_column(Float, nullable=False)
+    don_vi_tinh: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    nguon: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

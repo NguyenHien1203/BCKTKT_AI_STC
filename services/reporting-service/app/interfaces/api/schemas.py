@@ -504,3 +504,101 @@ class DocumentIndexRequest(BaseModel):
     don_vi_ban_hanh_unit_id: Optional[int] = None
     sensitivity_level: str = Field("INTERNAL", pattern=_SENSITIVITY_PATTERN)
     file_content_type: str = Field("application/pdf", max_length=100)
+
+# ---------- UC-054: Tra cứu dữ liệu tài sản ----------
+
+_TAI_SAN_TRANG_THAI_PATTERN = "^(DANG_SU_DUNG|CHO_THANH_LY|DA_THANH_LY|TAM_DUNG_SU_DUNG)$"
+
+
+class TaiSanResponse(BaseModel):
+    id: int
+    ma_tai_san: str
+    ten_tai_san: str
+    don_vi_code: str
+    don_vi_ten: str
+    nhom_tai_san_code: str
+    nhom_tai_san_ten: str
+    trang_thai: str
+    nguyen_gia: float
+    gia_tri_con_lai: float
+    ngay_dua_vao_su_dung: Optional[str] = None
+    nam_tai_chinh: Optional[int] = None
+    ghi_chu: str = ""
+    published_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class TaiSanSearchPageResponse(BaseModel):
+    items: List[TaiSanResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class TaiSanUpsertRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-054] Nạp/cập
+    nhật 1 bản ghi tài sản vào curated.dm_tai_san."""
+
+    ma_tai_san: str = Field(..., min_length=1, max_length=50)
+    ten_tai_san: str = Field(..., min_length=1, max_length=255)
+    don_vi_code: str = Field(..., min_length=1, max_length=50)
+    don_vi_ten: str = Field(..., min_length=1, max_length=255)
+    nhom_tai_san_code: str = Field(..., min_length=1, max_length=50)
+    nhom_tai_san_ten: str = Field(..., min_length=1, max_length=255)
+    trang_thai: str = Field(..., pattern=_TAI_SAN_TRANG_THAI_PATTERN)
+    nguyen_gia: float = Field(0.0, ge=0)
+    gia_tri_con_lai: float = Field(0.0, ge=0)
+    ngay_dua_vao_su_dung: Optional[str] = Field(None, description="YYYY-MM-DD")
+    nam_tai_chinh: Optional[int] = None
+    ghi_chu: str = Field("", max_length=2000)
+
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
+
+
+class PriceRecordResponse(BaseModel):
+    id: int
+    mat_hang_code: str
+    mat_hang_name: str
+    dia_ban_code: str
+    dia_ban_name: str
+    ky: str
+    gia: float
+    don_vi_tinh: str
+    nguon: str
+    published_at: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PriceSearchPageResponse(BaseModel):
+    items: List[PriceRecordResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class PriceTrendPointResponse(BaseModel):
+    ky: str
+    gia_trung_binh: float
+    so_ban_ghi: int
+
+
+class PriceTrendResponse(BaseModel):
+    mat_hang: Optional[str] = None
+    dia_ban: Optional[str] = None
+    points: List[PriceTrendPointResponse]
+
+
+class PriceRecordIndexRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-055] Nạp 1 dòng
+    dữ liệu giá vào `curated.dm_gia` phục vụ tra cứu."""
+
+    mat_hang_code: str = Field(..., min_length=1, max_length=50)
+    mat_hang_name: str = Field(..., min_length=1, max_length=255)
+    dia_ban_code: str = Field(..., min_length=1, max_length=50)
+    dia_ban_name: str = Field(..., min_length=1, max_length=255)
+    ky: str = Field(..., description="YYYY-MM")
+    gia: float = Field(..., ge=0)
+    don_vi_tinh: str = Field("", max_length=50)
+    nguon: str = Field("", max_length=100)

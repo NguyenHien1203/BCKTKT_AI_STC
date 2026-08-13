@@ -11,6 +11,7 @@ import {
   Inbox,
   LayoutDashboard,
   Layers,
+  LineChart,
   MonitorSmartphone,
   Network,
   Plug,
@@ -120,6 +121,7 @@ export const NAV_SECTIONS = [
         icon: FileBarChart,
       },
       { to: "/documents", label: "Tra cứu dữ liệu văn bản", icon: FileSearch },
+      { to: "/price-data", label: "Tra cứu dữ liệu giá", icon: LineChart },
     ],
   },
   {

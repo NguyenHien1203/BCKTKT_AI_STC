@@ -16,6 +16,10 @@ from app.domain.entities import (
     DocumentSearchQuery,
     GeneratedReportLog,
     KpiExplanation,
+    PriceRecord,
+    PriceSearchPage,
+    PriceSearchQuery,
+    PriceTrendPoint,
     ReportFilterConfig,
     ReportSchedule,
     ReportScheduleRecipient,
@@ -495,4 +499,36 @@ class DocumentAccessContextProvider(ABC):
 
     @abstractmethod
     def get_document_access_context(self, user_id: int) -> DocumentAccessContext:
+        ...
+
+
+class PriceDataRepository(ABC):
+    """Cổng (port) UC-055: đọc/ghi dữ liệu giá trong kho chuẩn hoá
+    `curated.dm_gia` (bảng Postgres thật, cùng instance database, khác
+    schema `reporting` — xem `infrastructure/db/models.py::DmGiaModel`).
+    """
+
+    @abstractmethod
+    def search(self, query: PriceSearchQuery) -> PriceSearchPage:
+        """Bước 1-2: "Nhập bộ lọc (mặt hàng, địa bàn, kỳ) -> Hệ thống truy
+        vấn curated.dm_gia -> Hiển thị giá theo bảng"."""
+        ...
+
+    @abstractmethod
+    def get_trend(
+        self,
+        mat_hang: Optional[str],
+        dia_ban: Optional[str],
+        ky_from: Optional[str],
+        ky_to: Optional[str],
+    ) -> List[PriceTrendPoint]:
+        """Bước 3-4: "Hiển thị biểu đồ xu hướng giá theo thời gian" — giá
+        trung bình theo từng kỳ, sắp xếp theo kỳ tăng dần."""
+        ...
+
+    @abstractmethod
+    def add(self, record: PriceRecord) -> PriceRecord:
+        """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-055] Nạp 1
+        dòng dữ liệu giá vào `curated.dm_gia`, dùng khi chưa có pipeline
+        UC-041 tự động công bố dữ liệu giá thật."""
         ...

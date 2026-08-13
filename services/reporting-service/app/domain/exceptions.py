@@ -341,3 +341,31 @@ class DocumentSearchFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class InvalidPriceSearchQuery(DomainError):
+    """UC-055 bước 1: bộ lọc (mặt hàng, địa bàn, kỳ) không hợp lệ."""
+
+    code = "INVALID_PRICE_SEARCH_QUERY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidPriceRecord(DomainError):
+    """Dữ liệu giá dùng để nạp vào `curated.dm_gia` không hợp lệ."""
+
+    code = "INVALID_PRICE_RECORD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class PriceDataQueryFailed(DomainError):
+    """UC-055 bước 1-2/3-4: "Hệ thống truy vấn curated.dm_gia" thất bại
+    (lỗi hạ tầng)."""
+
+    code = "PRICE_DATA_QUERY_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)
