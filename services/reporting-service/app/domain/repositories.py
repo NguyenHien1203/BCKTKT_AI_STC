@@ -16,14 +16,15 @@ from app.domain.entities import (
     DocumentSearchQuery,
     GeneratedReportLog,
     KpiExplanation,
+    PriceRecord,
+    PriceSearchPage,
+    PriceSearchQuery,
+    PriceTrendPoint,
     ReportFilterConfig,
     ReportSchedule,
     ReportScheduleRecipient,
     ReportScheduleRunLog,
     ReportTemplate,
-    TaiSan,
-    TaiSanFilter,
-    TaiSanSearchPage,
 )
 
 
@@ -501,30 +502,33 @@ class DocumentAccessContextProvider(ABC):
         ...
 
 
-class TaiSanRepository(ABC):
-    """Cổng (port) UC-054: "Hệ thống truy vấn curated.dm_tai_san". Triển
-    khai thật (`SqlAlchemyTaiSanRepository`) đọc trực tiếp bảng
-    `curated.dm_tai_san` — CÙNG 1 CSDL Postgres (`financial_dw`) với
-    data-quality-service (mỗi service 1 schema riêng, xem
-    ARCHITECTURE.md mục 2), reporting-service chỉ ĐỌC (không sở hữu) dữ
-    liệu ở schema này.
+class PriceDataRepository(ABC):
+    """Cổng (port) UC-055: đọc/ghi dữ liệu giá trong kho chuẩn hoá
+    `curated.dm_gia` (bảng Postgres thật, cùng instance database, khác
+    schema `reporting` — xem `infrastructure/db/models.py::DmGiaModel`).
     """
 
     @abstractmethod
-    def search(self, filters: TaiSanFilter) -> TaiSanSearchPage:
-        """Bước 1-2: "Nhập bộ lọc (đơn vị, nhóm, trạng thái) -> Hệ thống
-        truy vấn curated.dm_tai_san -> Hiển thị danh sách tài sản"."""
+    def search(self, query: PriceSearchQuery) -> PriceSearchPage:
+        """Bước 1-2: "Nhập bộ lọc (mặt hàng, địa bàn, kỳ) -> Hệ thống truy
+        vấn curated.dm_gia -> Hiển thị giá theo bảng"."""
         ...
 
     @abstractmethod
-    def get_by_id(self, tai_san_id: int) -> Optional[TaiSan]:
-        """Bước "Xem chi tiết tài sản"."""
+    def get_trend(
+        self,
+        mat_hang: Optional[str],
+        dia_ban: Optional[str],
+        ky_from: Optional[str],
+        ky_to: Optional[str],
+    ) -> List[PriceTrendPoint]:
+        """Bước 3-4: "Hiển thị biểu đồ xu hướng giá theo thời gian" — giá
+        trung bình theo từng kỳ, sắp xếp theo kỳ tăng dần."""
         ...
 
     @abstractmethod
-    def upsert(self, tai_san: TaiSan) -> TaiSan:
-        """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-054] Nạp/cập
-        nhật 1 bản ghi vào `curated.dm_tai_san`, dùng để mô phỏng/khởi tạo
-        dữ liệu tra cứu khi chưa có pipeline công bố dữ liệu tự động
-        (giống UC-041 `publish_to_curated_store`) nối vào bảng này."""
+    def add(self, record: PriceRecord) -> PriceRecord:
+        """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-055] Nạp 1
+        dòng dữ liệu giá vào `curated.dm_gia`, dùng khi chưa có pipeline
+        UC-041 tự động công bố dữ liệu giá thật."""
         ...

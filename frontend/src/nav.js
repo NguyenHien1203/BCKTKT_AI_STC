@@ -11,6 +11,7 @@ import {
   Inbox,
   LayoutDashboard,
   Layers,
+  LineChart,
   MonitorSmartphone,
   Network,
   Plug,
@@ -40,8 +41,7 @@ import {
   FlaskConical,
   CheckCheck,
   GitBranch,
-  FileOutput,
-  Boxes
+  FileOutput
 } from "lucide-react";
 
 // Mỗi mục tương ứng 1 UC/nhóm UC đã có giao diện. Khi thêm UC mới có màn hình,
@@ -121,7 +121,7 @@ export const NAV_SECTIONS = [
         icon: FileBarChart,
       },
       { to: "/documents", label: "Tra cứu dữ liệu văn bản", icon: FileSearch },
-      { to: "/tai-san", label: "Tra cứu dữ liệu tài sản", icon: Boxes },
+      { to: "/price-data", label: "Tra cứu dữ liệu giá", icon: LineChart },
     ],
   },
   {

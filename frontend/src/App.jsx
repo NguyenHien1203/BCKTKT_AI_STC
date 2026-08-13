@@ -23,6 +23,7 @@ import {
   Landmark,
   Layers,
   LayoutDashboard,
+  LineChart,
   MonitorSmartphone,
   Network,
   Package,
@@ -40,7 +41,6 @@ import {
   UploadCloud,
   UserCog,
   Users,
-  Boxes,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
@@ -53,8 +53,7 @@ import DashboardDetailPage from "./pages/DashboardDetailPage.jsx";
 import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
 import DocumentSearchPage from "./pages/DocumentSearchPage.jsx";
 import DocumentDetailPage from "./pages/DocumentDetailPage.jsx";
-import TaiSanSearchPage from "./pages/TaiSanSearchPage.jsx";
-import TaiSanDetailPage from "./pages/TaiSanDetailPage.jsx";
+import PriceDataPage from "./pages/PriceDataPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -382,11 +381,11 @@ function HomePage() {
       icon: FileSearch,
     },
     {
-      to: "/tai-san",
-      title: "Tra cứu dữ liệu tài sản",
+      to: "/price-data",
+      title: "Tra cứu dữ liệu giá",
       description:
-        "UC-054 — Nhập bộ lọc (đơn vị, nhóm, trạng thái), hệ thống truy vấn curated.dm_tai_san, hiển thị danh sách tài sản; xem chi tiết tài sản.",
-      icon: Boxes,
+        "UC-055 — Nhập bộ lọc (mặt hàng, địa bàn, kỳ), hệ thống truy vấn curated.dm_gia, hiển thị giá theo bảng; hiển thị biểu đồ xu hướng giá theo thời gian (line chart).",
+      icon: LineChart,
     },
   ];
 
@@ -853,18 +852,10 @@ export default function App() {
         }
       />
       <Route
-        path="/tai-san"
+        path="/price-data"
         element={
           <ProtectedRoute>
-            <TaiSanSearchPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tai-san/:id"
-        element={
-          <ProtectedRoute>
-            <TaiSanDetailPage />
+            <PriceDataPage />
           </ProtectedRoute>
         }
       />

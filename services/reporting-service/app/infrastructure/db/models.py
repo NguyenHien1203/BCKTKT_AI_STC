@@ -396,3 +396,33 @@ class TaiSanModel(Base):
     published_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
+
+# Bảng `dm_gia` sống trong schema `curated` (khác schema `reporting` của
+# các bảng trên) vì đây là dữ liệu data mart giá đã chuẩn hoá — đúng tên
+# nghiệp vụ "curated.dm_gia" ghi trong flow UC-055 (docs/use_cases.json id
+# 55). Cùng 1 instance Postgres (ADR-001) với data-quality-service, khác
+# schema. SQLite dev/test không hỗ trợ schema nên bỏ qua (giống `_SCHEMA`).
+_SCHEMA_CURATED = "curated" if not _DATABASE_URL.startswith("sqlite") else None
+
+
+class DmGiaModel(Base):
+    """UC-055: 1 dòng dữ liệu giá mặt hàng theo địa bàn + kỳ trong kho
+    chuẩn hoá `curated.dm_gia`."""
+
+    __tablename__ = "dm_gia"
+    __table_args__ = ({"schema": _SCHEMA_CURATED} if _SCHEMA_CURATED else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    mat_hang_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    mat_hang_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    dia_ban_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    dia_ban_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    ky: Mapped[str] = mapped_column(String(7), nullable=False, index=True)  # "YYYY-MM"
+    gia: Mapped[float] = mapped_column(Float, nullable=False)
+    don_vi_tinh: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    nguon: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

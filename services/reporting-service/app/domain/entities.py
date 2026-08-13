@@ -702,91 +702,95 @@ class DocumentAccessContext:
     sensitivity_level: str = "INTERNAL"
 
 
-# ==================== UC-054: Tra cứu dữ liệu tài sản ====================
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
 
 
 @dataclass
-class TaiSan:
-    """1 bản ghi tài sản trong kho dữ liệu chuẩn hoá `curated.dm_tai_san`
-    (UC-054).
-
-    Nguồn gốc dữ liệu: bảng chiều (dimension) tài sản công được nạp vào kho
-    chuẩn hoá qua tiến trình công bố dữ liệu (tương tự UC-041
-    `curated.dm_records`), tổng hợp từ dữ liệu nguồn (TABMIS/nguồn vốn) đã
-    qua kiểm tra chất lượng (UC-038/039), ánh xạ theo danh mục nhóm tài sản
-    (UC-035 `AssetGroupCatalog`) và danh mục đơn vị (UC-033
-    `OrgUnitCatalog`). UC-054 chỉ ĐỌC bảng này (không có bước ghi/sửa).
-    """
-
-    TRANG_THAI_VALUES = (
-        "DANG_SU_DUNG",
-        "CHO_THANH_LY",
-        "DA_THANH_LY",
-        "TAM_DUNG_SU_DUNG",
-    )
+class PriceRecord:
+    """1 dòng dữ liệu giá trong kho chuẩn hoá `curated.dm_gia` (giá mặt
+    hàng theo địa bàn + kỳ — nguồn từ hệ thống Quản lý giá QL_GIA/khảo sát
+    thị trường, đã qua UC-029..041)."""
 
     id: Optional[int]
-    ma_tai_san: str
-    ten_tai_san: str
-    don_vi_code: str
-    don_vi_ten: str
-    nhom_tai_san_code: str
-    nhom_tai_san_ten: str
-    trang_thai: str
-    nguyen_gia: float = 0.0
-    gia_tri_con_lai: float = 0.0
-    ngay_dua_vao_su_dung: Optional[str] = None
-    nam_tai_chinh: Optional[int] = None
-    ghi_chu: str = ""
-    published_at: Optional[datetime] = None
+    mat_hang_code: str
+    mat_hang_name: str
+    dia_ban_code: str
+    dia_ban_name: str
+    ky: str  # kỳ báo cáo, định dạng "YYYY-MM"
+    gia: float
+    don_vi_tinh: str = ""
+    nguon: str = ""
+    published_at: Optional[str] = None
+
+    _KY_LEN = 7  # "YYYY-MM"
 
     def __post_init__(self) -> None:
-        if not self.ma_tai_san or not self.ma_tai_san.strip():
-            raise ValueError("Mã tài sản (ma_tai_san) không được để trống")
-        if not self.ten_tai_san or not self.ten_tai_san.strip():
-            raise ValueError("Tên tài sản (ten_tai_san) không được để trống")
-        if not self.don_vi_code or not self.don_vi_code.strip():
-            raise ValueError("Mã đơn vị (don_vi_code) không được để trống")
-        if not self.nhom_tai_san_code or not self.nhom_tai_san_code.strip():
-            raise ValueError("Mã nhóm tài sản (nhom_tai_san_code) không được để trống")
-        if self.trang_thai not in self.TRANG_THAI_VALUES:
-            raise ValueError(
-                f"Trạng thái '{self.trang_thai}' không hợp lệ, phải thuộc "
-                f"{self.TRANG_THAI_VALUES}"
-            )
-        if self.nguyen_gia < 0:
-            raise ValueError("Nguyên giá (nguyen_gia) không được âm")
-        if self.gia_tri_con_lai < 0:
-            raise ValueError("Giá trị còn lại (gia_tri_con_lai) không được âm")
+        if not self.mat_hang_code or not self.mat_hang_code.strip():
+            raise ValueError("Mã mặt hàng (mat_hang_code) không được để trống")
+        if not self.dia_ban_code or not self.dia_ban_code.strip():
+            raise ValueError("Mã địa bàn (dia_ban_code) không được để trống")
+        self._validate_ky(self.ky)
+        if self.gia < 0:
+            raise ValueError("Giá (gia) không được âm")
+
+    @staticmethod
+    def _validate_ky(value: str) -> None:
+        if not value or len(value) != 7 or value[4] != "-":
+            raise ValueError(f"Kỳ '{value}' phải theo định dạng YYYY-MM")
+        try:
+            year, month = int(value[:4]), int(value[5:7])
+        except ValueError:
+            raise ValueError(f"Kỳ '{value}' phải theo định dạng YYYY-MM")
+        if month < 1 or month > 12:
+            raise ValueError(f"Kỳ '{value}' có tháng không hợp lệ (01-12)")
 
 
 @dataclass
-class TaiSanFilter:
-    """Bước 1 UC-054: "Nhập bộ lọc (đơn vị, nhóm, trạng thái)"."""
+class PriceSearchQuery:
+    """Bước 1 UC-055: "Nhập bộ lọc (mặt hàng, địa bàn, kỳ)"."""
 
-    don_vi_code: Optional[str] = None
-    nhom_tai_san_code: Optional[str] = None
-    trang_thai: Optional[str] = None
+    mat_hang: Optional[str] = None
+    dia_ban: Optional[str] = None
+    ky_from: Optional[str] = None
+    ky_to: Optional[str] = None
     page: int = 1
     page_size: int = 20
 
     def __post_init__(self) -> None:
         if self.page < 1:
             raise ValueError("Số trang (page) phải >= 1")
-        if self.page_size < 1 or self.page_size > 100:
-            raise ValueError("Kích thước trang (page_size) phải trong khoảng 1-100")
-        if self.trang_thai is not None and self.trang_thai not in TaiSan.TRANG_THAI_VALUES:
-            raise ValueError(
-                f"Trạng thái '{self.trang_thai}' không hợp lệ, phải thuộc "
-                f"{TaiSan.TRANG_THAI_VALUES}"
-            )
+        if self.page_size < 1 or self.page_size > 200:
+            raise ValueError("Kích thước trang (page_size) phải trong khoảng 1-200")
+        if self.ky_from:
+            PriceRecord._validate_ky(self.ky_from)
+        if self.ky_to:
+            PriceRecord._validate_ky(self.ky_to)
+        if self.ky_from and self.ky_to and self.ky_from > self.ky_to:
+            raise ValueError("Kỳ bắt đầu (ky_from) phải trước hoặc bằng kỳ kết thúc (ky_to)")
 
 
 @dataclass
-class TaiSanSearchPage:
-    """Bước "Hiển thị danh sách tài sản" của UC-054."""
+class PriceSearchPage:
+    """Bước 2: "Hiển thị giá theo bảng"."""
 
-    items: List[TaiSan]
+    items: List[PriceRecord]
     total: int
     page: int
     page_size: int
+
+
+@dataclass
+class PriceTrendPoint:
+    """1 điểm trên biểu đồ xu hướng giá (bước 3-4: "Hiển thị biểu đồ xu
+    hướng giá theo thời gian -> Hệ thống hiển thị line chart")."""
+
+    ky: str
+    gia_trung_binh: float
+    so_ban_ghi: int
+
+
+@dataclass
+class PriceTrend:
+    mat_hang: Optional[str]
+    dia_ban: Optional[str]
+    points: List[PriceTrendPoint]

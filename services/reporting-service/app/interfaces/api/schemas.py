@@ -552,3 +552,53 @@ class TaiSanUpsertRequest(BaseModel):
     ngay_dua_vao_su_dung: Optional[str] = Field(None, description="YYYY-MM-DD")
     nam_tai_chinh: Optional[int] = None
     ghi_chu: str = Field("", max_length=2000)
+
+# ---------- UC-055: Tra cứu dữ liệu giá ----------
+
+
+class PriceRecordResponse(BaseModel):
+    id: int
+    mat_hang_code: str
+    mat_hang_name: str
+    dia_ban_code: str
+    dia_ban_name: str
+    ky: str
+    gia: float
+    don_vi_tinh: str
+    nguon: str
+    published_at: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PriceSearchPageResponse(BaseModel):
+    items: List[PriceRecordResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class PriceTrendPointResponse(BaseModel):
+    ky: str
+    gia_trung_binh: float
+    so_ban_ghi: int
+
+
+class PriceTrendResponse(BaseModel):
+    mat_hang: Optional[str] = None
+    dia_ban: Optional[str] = None
+    points: List[PriceTrendPointResponse]
+
+
+class PriceRecordIndexRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-055] Nạp 1 dòng
+    dữ liệu giá vào `curated.dm_gia` phục vụ tra cứu."""
+
+    mat_hang_code: str = Field(..., min_length=1, max_length=50)
+    mat_hang_name: str = Field(..., min_length=1, max_length=255)
+    dia_ban_code: str = Field(..., min_length=1, max_length=50)
+    dia_ban_name: str = Field(..., min_length=1, max_length=255)
+    ky: str = Field(..., description="YYYY-MM")
+    gia: float = Field(..., ge=0)
+    don_vi_tinh: str = Field("", max_length=50)
+    nguon: str = Field("", max_length=100)

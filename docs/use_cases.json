@@ -375,7 +375,7 @@
     "group": "KHAI THÁC: BẢNG ĐIỀU KHIỂN VÀ BÁO CÁO",
     "name": "Tra cứu dữ liệu tài sản",
     "actor": "Cán bộ chuyên môn ngành Tài chính (Sở/Phòng/xã)",
-    "flow": "Nhập bộ lọc (đơn vị, nhóm, trạng thái).\nHệ thống truy vấn curated.dm_tai_san\nHiển thị danh sách tài sản.\nHệ thống hiển thị\nXem chi tiết tài"
+    "flow": "Nhập bộ lọc (đơn vị, nhóm, trạng thái).\nHệ thống truy vấn curated.dm_tai_san\nHiển thị danh sách tài sản.\nHệ thống hiển thị\nXem chi tiết tài sản"
   },
   {
     "id": 55,

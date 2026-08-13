@@ -343,37 +343,29 @@ class DocumentSearchFailed(DomainError):
         super().__init__(message)
 
 
-class InvalidTaiSanFilter(DomainError):
-    """UC-054 bước 1: bộ lọc (đơn vị, nhóm, trạng thái) không hợp lệ."""
+class InvalidPriceSearchQuery(DomainError):
+    """UC-055 bước 1: bộ lọc (mặt hàng, địa bàn, kỳ) không hợp lệ."""
 
-    code = "INVALID_TAI_SAN_FILTER"
-
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
-class TaiSanNotFound(DomainError):
-    """UC-054 bước "Xem chi tiết tài sản": không tìm thấy tài sản."""
-
-    code = "TAI_SAN_NOT_FOUND"
-
-    def __init__(self, tai_san_id):
-        super().__init__(f"Không tìm thấy tài sản id={tai_san_id} trong curated.dm_tai_san")
-
-
-class InvalidTaiSan(DomainError):
-    """Dữ liệu tài sản dùng để nạp/seed vào curated.dm_tai_san không hợp lệ."""
-
-    code = "INVALID_TAI_SAN"
+    code = "INVALID_PRICE_SEARCH_QUERY"
 
     def __init__(self, message: str):
         super().__init__(message)
 
 
-class TaiSanQueryFailed(DomainError):
-    """UC-054 bước 2: "Hệ thống truy vấn curated.dm_tai_san" thất bại (lỗi hạ tầng)."""
+class InvalidPriceRecord(DomainError):
+    """Dữ liệu giá dùng để nạp vào `curated.dm_gia` không hợp lệ."""
 
-    code = "TAI_SAN_QUERY_FAILED"
+    code = "INVALID_PRICE_RECORD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class PriceDataQueryFailed(DomainError):
+    """UC-055 bước 1-2/3-4: "Hệ thống truy vấn curated.dm_gia" thất bại
+    (lỗi hạ tầng)."""
+
+    code = "PRICE_DATA_QUERY_FAILED"
 
     def __init__(self, message: str):
         super().__init__(message)
