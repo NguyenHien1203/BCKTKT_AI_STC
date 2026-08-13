@@ -40,7 +40,7 @@ project/
 │   ├── auth-identity-service/    # Nhóm I: Quản trị hệ thống (UC 1-14) — ✅ UC-01 đã code+test
 │   ├── ingestion-service/        # Nhóm II: Tiếp nhận & đồng bộ dữ liệu (UC 15-28) — khung sẵn sàng
 │   ├── data-quality-service/     # Nhóm III: Chuẩn hóa & quản trị dữ liệu (UC 29-46) — khung sẵn sàng
-│   ├── reporting-service/        # Nhóm IV: Dashboard & báo cáo (UC 47-57) — UC-047, UC-048, UC-049, UC-050, UC-051, UC-052, UC-053, UC-055 done
+│   ├── reporting-service/        # Nhóm IV: Dashboard & báo cáo (UC 47-57) — UC-047, UC-048, UC-049, UC-050, UC-051, UC-052, UC-053, UC-055, UC-056 done
 │   ├── api-gateway-service/      # Nhóm V: API & tích hợp (UC 58-68) — khung sẵn sàng
 │   ├── ai-service/                # Nhóm VI: AI & khai thác văn bản (UC 69-89) — UC-048 dùng điểm vào tối thiểu "AI Bộ điều phối" (POST /ai-orchestrator/kpi-explanations); các UC riêng (69-89) vẫn khung sẵn sàng
 │   ├── ops-service/               # Nhóm VII: Vận hành hệ thống (UC 90-100) — khung sẵn sàng

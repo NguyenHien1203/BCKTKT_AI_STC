@@ -14,6 +14,11 @@ from app.domain.entities import (
     DashboardKpi,
     GeneratedReportLog,
     KpiExplanation,
+    NganSachDetail,
+    NganSachDetailQuery,
+    NganSachRecord,
+    NganSachSearchPage,
+    NganSachSearchQuery,
     PriceRecord,
     PriceSearchPage,
     PriceSearchQuery,
@@ -33,6 +38,7 @@ from app.domain.repositories import (
     DashboardRepository,
     GeneratedReportLogRepository,
     KpiExplanationRepository,
+    NganSachRepository,
     PriceDataRepository,
     ReportFilterConfigRepository,
     ReportScheduleRecipientRepository,
@@ -48,6 +54,7 @@ from app.infrastructure.db.models import (
     DashboardKpiModel,
     DashboardModel,
     DmGiaModel,
+    DmNganSachModel,
     GeneratedReportLogModel,
     KpiExplanationModel,
     ReportFilterConfigModel,
@@ -957,3 +964,106 @@ class SqlAlchemyPriceDataRepository(PriceDataRepository):
         self._db.commit()
         self._db.refresh(model)
         return _dm_gia_to_entity(model)
+
+# ---------- UC-056: Tra cứu dữ liệu ngân sách ----------
+
+
+def _dm_ngan_sach_to_entity(m: DmNganSachModel) -> NganSachRecord:
+    return NganSachRecord(
+        id=m.id,
+        don_vi_code=m.don_vi_code,
+        don_vi_ten=m.don_vi_ten,
+        khoan_muc_code=m.khoan_muc_code,
+        khoan_muc_ten=m.khoan_muc_ten,
+        ky=m.ky,
+        thu=m.thu,
+        chi=m.chi,
+        tam_ung=m.tam_ung,
+        don_vi_tinh=m.don_vi_tinh,
+        nguon=m.nguon,
+        published_at=m.published_at.isoformat() if m.published_at else None,
+    )
+
+
+class SqlAlchemyNganSachRepository(NganSachRepository):
+    """UC-056: đọc/ghi bảng `curated.dm_ngan_sach` qua SQLAlchemy (bảng
+    Postgres thật, cùng instance database, khác schema `reporting`)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def _filtered_stmt(self, query: NganSachSearchQuery):
+        stmt = select(DmNganSachModel)
+        if query.don_vi:
+            like = f"%{query.don_vi.strip().lower()}%"
+            stmt = stmt.where(
+                (DmNganSachModel.don_vi_code.ilike(like))
+                | (DmNganSachModel.don_vi_ten.ilike(like))
+            )
+        if query.khoan_muc:
+            like = f"%{query.khoan_muc.strip().lower()}%"
+            stmt = stmt.where(
+                (DmNganSachModel.khoan_muc_code.ilike(like))
+                | (DmNganSachModel.khoan_muc_ten.ilike(like))
+            )
+        if query.ky_from:
+            stmt = stmt.where(DmNganSachModel.ky >= query.ky_from)
+        if query.ky_to:
+            stmt = stmt.where(DmNganSachModel.ky <= query.ky_to)
+        return stmt
+
+    def search(self, query: NganSachSearchQuery) -> NganSachSearchPage:
+        base_stmt = self._filtered_stmt(query)
+        total = len(self._db.execute(base_stmt).scalars().all())
+        stmt = (
+            base_stmt.order_by(
+                DmNganSachModel.ky.desc(),
+                DmNganSachModel.don_vi_code.asc(),
+                DmNganSachModel.khoan_muc_code.asc(),
+            )
+            .offset((query.page - 1) * query.page_size)
+            .limit(query.page_size)
+        )
+        models = self._db.execute(stmt).scalars().all()
+        return NganSachSearchPage(
+            items=[_dm_ngan_sach_to_entity(m) for m in models],
+            total=total,
+            page=query.page,
+            page_size=query.page_size,
+        )
+
+    def get_detail(self, query: NganSachDetailQuery) -> NganSachDetail:
+        stmt = (
+            select(DmNganSachModel)
+            .where(DmNganSachModel.don_vi_code == query.don_vi_code)
+            .where(DmNganSachModel.khoan_muc_code == query.khoan_muc_code)
+            .order_by(DmNganSachModel.ky.asc())
+        )
+        models = self._db.execute(stmt).scalars().all()
+        items = [_dm_ngan_sach_to_entity(m) for m in models]
+        return NganSachDetail(
+            don_vi_code=query.don_vi_code,
+            khoan_muc_code=query.khoan_muc_code,
+            items=items,
+            tong_thu=round(sum(i.thu for i in items), 2),
+            tong_chi=round(sum(i.chi for i in items), 2),
+            tong_tam_ung=round(sum(i.tam_ung for i in items), 2),
+        )
+
+    def add(self, record: NganSachRecord) -> NganSachRecord:
+        model = DmNganSachModel(
+            don_vi_code=record.don_vi_code,
+            don_vi_ten=record.don_vi_ten,
+            khoan_muc_code=record.khoan_muc_code,
+            khoan_muc_ten=record.khoan_muc_ten,
+            ky=record.ky,
+            thu=record.thu,
+            chi=record.chi,
+            tam_ung=record.tam_ung,
+            don_vi_tinh=record.don_vi_tinh,
+            nguon=record.nguon,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _dm_ngan_sach_to_entity(model)

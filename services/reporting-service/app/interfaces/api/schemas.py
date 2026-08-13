@@ -602,3 +602,55 @@ class PriceRecordIndexRequest(BaseModel):
     gia: float = Field(..., ge=0)
     don_vi_tinh: str = Field("", max_length=50)
     nguon: str = Field("", max_length=100)
+
+
+# ---------- UC-056: Tra cứu dữ liệu ngân sách ----------
+
+
+class NganSachRecordResponse(BaseModel):
+    id: int
+    don_vi_code: str
+    don_vi_ten: str
+    khoan_muc_code: str
+    khoan_muc_ten: str
+    ky: str
+    thu: float
+    chi: float
+    tam_ung: float
+    don_vi_tinh: str
+    nguon: str
+    published_at: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class NganSachSearchPageResponse(BaseModel):
+    items: List[NganSachRecordResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class NganSachDetailResponse(BaseModel):
+    don_vi_code: str
+    khoan_muc_code: str
+    items: List[NganSachRecordResponse]
+    tong_thu: float
+    tong_chi: float
+    tong_tam_ung: float
+
+
+class NganSachRecordIndexRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-056] Nạp 1 dòng
+    số liệu ngân sách vào `curated.dm_ngan_sach` phục vụ tra cứu."""
+
+    don_vi_code: str = Field(..., min_length=1, max_length=50)
+    don_vi_ten: str = Field(..., min_length=1, max_length=255)
+    khoan_muc_code: str = Field(..., min_length=1, max_length=50)
+    khoan_muc_ten: str = Field(..., min_length=1, max_length=255)
+    ky: str = Field(..., description="YYYY")
+    thu: float = Field(0.0, ge=0)
+    chi: float = Field(0.0, ge=0)
+    tam_ung: float = Field(0.0, ge=0)
+    don_vi_tinh: str = Field("", max_length=50)
+    nguon: str = Field("", max_length=100)

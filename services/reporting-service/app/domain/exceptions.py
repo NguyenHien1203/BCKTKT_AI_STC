@@ -369,3 +369,40 @@ class PriceDataQueryFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class InvalidNganSachSearchQuery(DomainError):
+    """UC-056 bước 1: bộ lọc (đơn vị, khoản mục, kỳ) không hợp lệ."""
+
+    code = "INVALID_NGAN_SACH_SEARCH_QUERY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidNganSachRecord(DomainError):
+    """Dữ liệu ngân sách dùng để nạp vào `curated.dm_ngan_sach` không hợp lệ."""
+
+    code = "INVALID_NGAN_SACH_RECORD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class InvalidNganSachDetailQuery(DomainError):
+    """UC-056 bước 4: bộ lọc xem chi tiết (đơn vị + khoản mục) không hợp lệ."""
+
+    code = "INVALID_NGAN_SACH_DETAIL_QUERY"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class NganSachQueryFailed(DomainError):
+    """UC-056 bước 2/5: "Hệ thống truy vấn curated.dm_ngan_sach" (hoặc
+    re-query chi tiết) thất bại (lỗi hạ tầng)."""
+
+    code = "NGAN_SACH_QUERY_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)

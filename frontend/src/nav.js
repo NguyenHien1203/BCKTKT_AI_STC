@@ -27,6 +27,7 @@ import {
   UploadCloud,
   CloudUpload,
   Wrench,
+  Wallet,
   Users,
   FileBarChart,
   FileSearch,
@@ -122,6 +123,7 @@ export const NAV_SECTIONS = [
       },
       { to: "/documents", label: "Tra cứu dữ liệu văn bản", icon: FileSearch },
       { to: "/price-data", label: "Tra cứu dữ liệu giá", icon: LineChart },
+      { to: "/ngan-sach", label: "Tra cứu dữ liệu ngân sách", icon: Wallet },
     ],
   },
   {

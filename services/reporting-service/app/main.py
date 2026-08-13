@@ -6,6 +6,7 @@ from app.interfaces.api.dashboard_alert_router import user_router as dashboard_a
 from app.interfaces.api.dashboard_router import router as dashboard_router
 from app.interfaces.api.document_search_router import router as document_search_router
 from app.interfaces.api.kpi_query_router import router as kpi_query_router
+from app.interfaces.api.ngan_sach_router import router as ngan_sach_router
 from app.interfaces.api.price_data_router import router as price_data_router
 from app.interfaces.api.report_generation_router import router as report_generation_router
 from app.interfaces.api.report_schedule_router import router as report_schedule_router
@@ -31,6 +32,7 @@ app.include_router(dashboard_alert_router)
 app.include_router(dashboard_alert_user_router)
 app.include_router(document_search_router)
 app.include_router(price_data_router)
+app.include_router(ngan_sach_router)
 
 
 def _create_sqlite_tables_if_needed() -> None:
