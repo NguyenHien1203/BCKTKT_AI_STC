@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { LayoutDashboard, Pin, PinOff, RefreshCw, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "../components/AppLayout.jsx";
+import DataFreshnessPanel from "../components/DataFreshnessPanel.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import {
   listDashboards,
@@ -90,7 +91,7 @@ export default function DashboardsPage() {
   return (
     <AppLayout
       title="Bảng điều khiển"
-      subtitle="UC-047 — Xem Bảng điều khiển điều hành. Chọn 1 bảng điều khiển từ danh mục để xem trực tiếp từ Superset, hoặc ghim bảng điều khiển yêu thích vào tùy chọn cá nhân."
+      subtitle="UC-047 — Xem Bảng điều khiển điều hành. Chọn 1 bảng điều khiển từ danh mục để xem trực tiếp từ Superset, hoặc ghim bảng điều khiển yêu thích vào tùy chọn cá nhân. UC-057 — Xem ô thông tin độ mới dữ liệu + bảng chi tiết last_sync/độ đầy đủ theo nguồn."
     >
       {error && (
         <div className="alert alert-error" style={{ marginBottom: 12 }}>
@@ -102,6 +103,9 @@ export default function DashboardsPage() {
           {info}
         </div>
       )}
+
+      {/* UC-057 — Hiển thị độ mới dữ liệu (ô tổng quan + bảng chi tiết theo nguồn) */}
+      <DataFreshnessPanel />
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-header">

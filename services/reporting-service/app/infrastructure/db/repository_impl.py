@@ -12,6 +12,8 @@ from app.domain.entities import (
     DashboardAlertRule,
     DashboardFavorite,
     DashboardKpi,
+    DataFreshnessRecord,
+    DataFreshnessSummary,
     GeneratedReportLog,
     KpiExplanation,
     NganSachDetail,
@@ -36,6 +38,7 @@ from app.domain.repositories import (
     DashboardFavoriteRepository,
     DashboardKpiRepository,
     DashboardRepository,
+    DataFreshnessRepository,
     GeneratedReportLogRepository,
     KpiExplanationRepository,
     NganSachRepository,
@@ -53,6 +56,7 @@ from app.infrastructure.db.models import (
     DashboardFavoriteModel,
     DashboardKpiModel,
     DashboardModel,
+    DataFreshnessModel,
     DmGiaModel,
     DmNganSachModel,
     GeneratedReportLogModel,
@@ -1067,3 +1071,81 @@ class SqlAlchemyNganSachRepository(NganSachRepository):
         self._db.commit()
         self._db.refresh(model)
         return _dm_ngan_sach_to_entity(model)
+# ---------- UC-057: Hiển thị độ mới dữ liệu ----------
+
+
+def _data_freshness_to_entity(m: DataFreshnessModel) -> DataFreshnessRecord:
+    return DataFreshnessRecord(
+        id=m.id,
+        nguon_code=m.nguon_code,
+        nguon_ten=m.nguon_ten,
+        last_sync=m.last_sync.isoformat() if m.last_sync else None,
+        expected_record_count=m.expected_record_count,
+        actual_record_count=m.actual_record_count,
+        updated_at=m.updated_at.isoformat() if m.updated_at else None,
+    )
+
+
+class SqlAlchemyDataFreshnessRepository(DataFreshnessRepository):
+    """UC-057: đọc/ghi view `curated.data_freshness` qua SQLAlchemy (bảng
+    Postgres thật, cùng instance database, khác schema `reporting`)."""
+
+    def __init__(self, db: Session):
+        self._db = db
+
+    def list_all(self) -> List[DataFreshnessRecord]:
+        stmt = select(DataFreshnessModel).order_by(DataFreshnessModel.nguon_ten.asc())
+        models = self._db.execute(stmt).scalars().all()
+        return [_data_freshness_to_entity(m) for m in models]
+
+    def get_by_source(self, nguon_code: str) -> Optional[DataFreshnessRecord]:
+        stmt = select(DataFreshnessModel).where(DataFreshnessModel.nguon_code == nguon_code)
+        model = self._db.execute(stmt).scalars().first()
+        return _data_freshness_to_entity(model) if model else None
+
+    def get_summary(self) -> DataFreshnessSummary:
+        records = self.list_all()
+        now = datetime.now(timezone.utc)
+        total_sources = len(records)
+        if total_sources == 0:
+            return DataFreshnessSummary(
+                total_sources=0,
+                stale_sources=0,
+                average_completeness_percent=0.0,
+                latest_last_sync=None,
+            )
+        stale_sources = sum(1 for r in records if r.is_stale(now))
+        average_completeness_percent = round(
+            sum(r.completeness_percent for r in records) / total_sources, 2
+        )
+        latest_last_sync = max(r.last_sync for r in records)
+        return DataFreshnessSummary(
+            total_sources=total_sources,
+            stale_sources=stale_sources,
+            average_completeness_percent=average_completeness_percent,
+            latest_last_sync=latest_last_sync,
+        )
+
+    def upsert(self, record: DataFreshnessRecord) -> DataFreshnessRecord:
+        stmt = select(DataFreshnessModel).where(DataFreshnessModel.nguon_code == record.nguon_code)
+        model = self._db.execute(stmt).scalars().first()
+        last_sync_dt = datetime.fromisoformat(record.last_sync.replace("Z", "+00:00"))
+        if model is None:
+            model = DataFreshnessModel(
+                nguon_code=record.nguon_code,
+                nguon_ten=record.nguon_ten,
+                last_sync=last_sync_dt,
+                expected_record_count=record.expected_record_count,
+                actual_record_count=record.actual_record_count,
+                updated_at=datetime.now(timezone.utc),
+            )
+            self._db.add(model)
+        else:
+            model.nguon_ten = record.nguon_ten
+            model.last_sync = last_sync_dt
+            model.expected_record_count = record.expected_record_count
+            model.actual_record_count = record.actual_record_count
+            model.updated_at = datetime.now(timezone.utc)
+        self._db.commit()
+        self._db.refresh(model)
+        return _data_freshness_to_entity(model)

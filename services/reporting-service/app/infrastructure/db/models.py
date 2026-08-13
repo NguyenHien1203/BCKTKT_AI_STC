@@ -457,3 +457,36 @@ class DmNganSachModel(Base):
     published_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+# ---------- UC-057: Hiển thị độ mới dữ liệu ----------
+
+# Bảng `data_freshness` cũng sống trong schema `curated` (đúng tên nghiệp
+# vụ "curated.data_freshness" ghi trong flow UC-057, docs/use_cases.json
+# id 57), cùng 1 instance Postgres (ADR-001), cùng tinh thần với
+# `DmGiaModel`/`DmNganSachModel` (UC-055/056) — SQLite dev/test không hỗ
+# trợ schema nên bỏ qua. Khác với `curated_dataset_freshness` của
+# `data-quality-service` (UC-041, độ mới THEO TỪNG dataset_id nội bộ),
+# bảng này độ mới THEO TỪNG NGUỒN dữ liệu (nguon_code, vd TABMIS/QL_GIA)
+# — đúng nghĩa "last_sync + độ đầy đủ theo nguồn" của UC-057.
+_SCHEMA_CURATED_DATA_FRESHNESS = "curated" if not _DATABASE_URL.startswith("sqlite") else None
+
+
+class DataFreshnessModel(Base):
+    """UC-057: 1 dòng độ mới dữ liệu của 1 nguồn (`nguon_code` duy nhất)
+    trong view `curated.data_freshness`."""
+
+    __tablename__ = "data_freshness"
+    __table_args__ = (
+        UniqueConstraint("nguon_code", name="uq_curated_data_freshness_nguon_code"),
+        ({"schema": _SCHEMA_CURATED_DATA_FRESHNESS} if _SCHEMA_CURATED_DATA_FRESHNESS else {}),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nguon_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    nguon_ten: Mapped[str] = mapped_column(String(255), nullable=False)
+    last_sync: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expected_record_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    actual_record_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

@@ -654,3 +654,41 @@ class NganSachRecordIndexRequest(BaseModel):
     tam_ung: float = Field(0.0, ge=0)
     don_vi_tinh: str = Field("", max_length=50)
     nguon: str = Field("", max_length=100)
+
+# ---------- UC-057: Hiển thị độ mới dữ liệu ----------
+
+
+class DataFreshnessRecordResponse(BaseModel):
+    """Bước 3-4 UC-057: 1 dòng bảng chi tiết last_sync + độ đầy đủ theo nguồn."""
+
+    id: int
+    nguon_code: str
+    nguon_ten: str
+    last_sync: str
+    expected_record_count: int
+    actual_record_count: int
+    completeness_percent: float
+    is_stale: bool
+    updated_at: Optional[str] = None
+
+
+class DataFreshnessSummaryResponse(BaseModel):
+    """Bước 1-2 UC-057: ô thông tin độ mới dữ liệu trên Bảng điều khiển."""
+
+    total_sources: int
+    stale_sources: int
+    average_completeness_percent: float
+    latest_last_sync: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DataFreshnessRecordIndexRequest(BaseModel):
+    """[Hạ tầng hỗ trợ — KHÔNG phải bước nghiệp vụ của UC-057] Ghi
+    nhận/cập nhật độ mới của 1 nguồn vào `curated.data_freshness`."""
+
+    nguon_code: str = Field(..., min_length=1, max_length=50)
+    nguon_ten: str = Field(..., min_length=1, max_length=255)
+    last_sync: Optional[str] = Field(None, description="ISO-8601, mặc định thời điểm hiện tại")
+    expected_record_count: int = Field(0, ge=0)
+    actual_record_count: int = Field(0, ge=0)

@@ -9,7 +9,7 @@ bộ lọc (năm/đơn vị/lĩnh vực/kỳ) người dùng đã cấu hình ch
 làm đầu vào cho UC-050 "Sinh + kết xuất báo cáo".
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 
@@ -900,3 +900,75 @@ class NganSachDetail:
     tong_thu: float
     tong_chi: float
     tong_tam_ung: float
+
+
+# ==================== UC-057: Hiển thị độ mới dữ liệu ====================
+
+# Ngưỡng (giờ) để coi 1 nguồn là "chậm trễ" nếu last_sync quá cũ — dùng để
+# suy ra trạng thái hiển thị (bước 1 "ô thông tin độ mới dữ liệu"/bước 2
+# "bảng chi tiết"), KHÔNG lưu vào DB (suy ra tại thời điểm đọc).
+DATA_FRESHNESS_STALE_THRESHOLD_HOURS = 24
+
+
+@dataclass
+class DataFreshnessRecord:
+    """1 dòng độ mới dữ liệu theo nguồn trong view `curated.data_freshness`
+    (docs/use_cases.json id 57) — `last_sync` (lần đồng bộ gần nhất) + độ
+    đầy đủ (tỉ lệ số bản ghi đã nhận được / số bản ghi kỳ vọng) của 1
+    nguồn dữ liệu (vd TABMIS, QL_GIA, QL_TAI_SAN...)."""
+
+    id: Optional[int]
+    nguon_code: str
+    nguon_ten: str
+    last_sync: str  # ISO-8601 datetime UTC
+    expected_record_count: int = 0
+    actual_record_count: int = 0
+    updated_at: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.nguon_code or not self.nguon_code.strip():
+            raise ValueError("Mã nguồn (nguon_code) không được để trống")
+        if not self.nguon_ten or not self.nguon_ten.strip():
+            raise ValueError("Tên nguồn (nguon_ten) không được để trống")
+        if not self.last_sync or not self.last_sync.strip():
+            raise ValueError("Thời điểm đồng bộ gần nhất (last_sync) không được để trống")
+        if self.expected_record_count < 0:
+            raise ValueError("Số bản ghi kỳ vọng (expected_record_count) không được âm")
+        if self.actual_record_count < 0:
+            raise ValueError("Số bản ghi thực nhận (actual_record_count) không được âm")
+
+    @property
+    def completeness_percent(self) -> float:
+        """Độ đầy đủ (%) = số bản ghi thực nhận / số bản ghi kỳ vọng.
+
+        Không kỳ vọng bản ghi nào (`expected_record_count == 0`) thì coi
+        như đầy đủ 100% nếu có ít nhất 1 bản ghi thực nhận, ngược lại 0%.
+        """
+        if self.expected_record_count <= 0:
+            return 100.0 if self.actual_record_count > 0 else 0.0
+        pct = (self.actual_record_count / self.expected_record_count) * 100
+        return round(min(pct, 100.0), 2)
+
+    def is_stale(self, now: datetime, threshold_hours: int = DATA_FRESHNESS_STALE_THRESHOLD_HOURS) -> bool:
+        """Nguồn được coi là "chậm trễ" nếu `last_sync` quá `threshold_hours`
+        giờ so với `now`."""
+        try:
+            last_sync_dt = datetime.fromisoformat(self.last_sync.replace("Z", "+00:00"))
+        except ValueError:
+            return True
+        if last_sync_dt.tzinfo is None:
+            last_sync_dt = last_sync_dt.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return (now - last_sync_dt) > timedelta(hours=threshold_hours)
+
+
+@dataclass
+class DataFreshnessSummary:
+    """Bước 1 UC-057: \"Xem ô thông tin độ mới dữ liệu trên Bảng điều
+    khiển\" — tổng quan toàn hệ thống suy ra từ `curated.data_freshness`."""
+
+    total_sources: int
+    stale_sources: int
+    average_completeness_percent: float
+    latest_last_sync: Optional[str]

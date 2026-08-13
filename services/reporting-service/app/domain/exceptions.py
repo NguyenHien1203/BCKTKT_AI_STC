@@ -406,3 +406,35 @@ class NganSachQueryFailed(DomainError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+# ---------- UC-057: Hiển thị độ mới dữ liệu ----------
+
+
+class InvalidDataFreshnessRecord(DomainError):
+    """Dữ liệu độ mới dùng để nạp vào `curated.data_freshness` không hợp lệ."""
+
+    code = "INVALID_DATA_FRESHNESS_RECORD"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class DataFreshnessNotFound(DomainError):
+    """UC-057 bước 2: xem chi tiết độ mới của 1 nguồn nhưng nguồn đó chưa
+    từng được ghi nhận trong `curated.data_freshness`."""
+
+    code = "DATA_FRESHNESS_NOT_FOUND"
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class DataFreshnessQueryFailed(DomainError):
+    """UC-057 bước 1-2: "Hệ thống truy vấn view curated.data_freshness"
+    thất bại (lỗi hạ tầng)."""
+
+    code = "DATA_FRESHNESS_QUERY_FAILED"
+
+    def __init__(self, message: str):
+        super().__init__(message)
