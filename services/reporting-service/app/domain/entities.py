@@ -794,3 +794,109 @@ class PriceTrend:
     mat_hang: Optional[str]
     dia_ban: Optional[str]
     points: List[PriceTrendPoint]
+
+
+# ==================== UC-056: Tra cứu dữ liệu ngân sách ====================
+
+
+@dataclass
+class NganSachRecord:
+    """1 dòng số liệu ngân sách trong kho chuẩn hoá `curated.dm_ngan_sach`
+    (thu/chi/tạm ứng theo đơn vị + khoản mục + kỳ — kỳ ngân sách theo năm,
+    định dạng \"YYYY\")."""
+
+    id: Optional[int]
+    don_vi_code: str
+    don_vi_ten: str
+    khoan_muc_code: str
+    khoan_muc_ten: str
+    ky: str  # kỳ ngân sách, định dạng năm "YYYY"
+    thu: float = 0.0
+    chi: float = 0.0
+    tam_ung: float = 0.0
+    don_vi_tinh: str = ""
+    nguon: str = ""
+    published_at: Optional[str] = None
+
+    _KY_LEN = 4  # "YYYY"
+
+    def __post_init__(self) -> None:
+        if not self.don_vi_code or not self.don_vi_code.strip():
+            raise ValueError("Mã đơn vị (don_vi_code) không được để trống")
+        if not self.khoan_muc_code or not self.khoan_muc_code.strip():
+            raise ValueError("Mã khoản mục (khoan_muc_code) không được để trống")
+        self._validate_ky(self.ky)
+        if self.thu < 0:
+            raise ValueError("Số thu (thu) không được âm")
+        if self.chi < 0:
+            raise ValueError("Số chi (chi) không được âm")
+        if self.tam_ung < 0:
+            raise ValueError("Số tạm ứng (tam_ung) không được âm")
+
+    @staticmethod
+    def _validate_ky(value: str) -> None:
+        if not value or len(value) != 4 or not value.isdigit():
+            raise ValueError(f"Kỳ '{value}' phải theo định dạng năm YYYY")
+
+
+@dataclass
+class NganSachSearchQuery:
+    """Bước 1 UC-056: \"Nhập bộ lọc (đơn vị, khoản mục, kỳ)\"."""
+
+    don_vi: Optional[str] = None
+    khoan_muc: Optional[str] = None
+    ky_from: Optional[str] = None
+    ky_to: Optional[str] = None
+    page: int = 1
+    page_size: int = 20
+
+    def __post_init__(self) -> None:
+        if self.page < 1:
+            raise ValueError("Số trang (page) phải >= 1")
+        if self.page_size < 1 or self.page_size > 200:
+            raise ValueError("Kích thước trang (page_size) phải trong khoảng 1-200")
+        if self.ky_from:
+            NganSachRecord._validate_ky(self.ky_from)
+        if self.ky_to:
+            NganSachRecord._validate_ky(self.ky_to)
+        if self.ky_from and self.ky_to and self.ky_from > self.ky_to:
+            raise ValueError("Kỳ bắt đầu (ky_from) phải trước hoặc bằng kỳ kết thúc (ky_to)")
+
+
+@dataclass
+class NganSachSearchPage:
+    """Bước 2-3: \"Hệ thống truy vấn curated.dm_ngan_sach -> Hiển thị số
+    liệu thu/chi/tạm ứng\"."""
+
+    items: List[NganSachRecord]
+    total: int
+    page: int
+    page_size: int
+
+
+@dataclass
+class NganSachDetailQuery:
+    """Bước 4 UC-056: \"Xem chi tiết theo đơn vị/khoản mục\" — bắt buộc
+    chọn đúng 1 đơn vị + 1 khoản mục để hệ thống re-query."""
+
+    don_vi_code: str
+    khoan_muc_code: str
+
+    def __post_init__(self) -> None:
+        if not self.don_vi_code or not self.don_vi_code.strip():
+            raise ValueError("Đơn vị (don_vi_code) không được để trống")
+        if not self.khoan_muc_code or not self.khoan_muc_code.strip():
+            raise ValueError("Khoản mục (khoan_muc_code) không được để trống")
+
+
+@dataclass
+class NganSachDetail:
+    """Bước 5: \"Hệ thống re-query\" -> kết quả chi tiết theo đơn vị/khoản
+    mục — toàn bộ các kỳ + tổng hợp thu/chi/tạm ứng."""
+
+    don_vi_code: str
+    khoan_muc_code: str
+    items: List[NganSachRecord]
+    tong_thu: float
+    tong_chi: float
+    tong_tam_ung: float

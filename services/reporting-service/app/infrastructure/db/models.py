@@ -426,3 +426,34 @@ class DmGiaModel(Base):
     published_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+# ---------- UC-056: Tra cứu dữ liệu ngân sách ----------
+
+# Bảng `dm_ngan_sach` cũng sống trong schema `curated` (đúng tên nghiệp vụ
+# "curated.dm_ngan_sach" ghi trong flow UC-056, docs/use_cases.json id 56),
+# cùng 1 instance Postgres (ADR-001), cùng tinh thần với `DmGiaModel`
+# (UC-055) — SQLite dev/test không hỗ trợ schema nên bỏ qua.
+_SCHEMA_CURATED_NGAN_SACH = "curated" if not _DATABASE_URL.startswith("sqlite") else None
+
+
+class DmNganSachModel(Base):
+    """UC-056: 1 dòng số liệu ngân sách (thu/chi/tạm ứng) theo đơn vị +
+    khoản mục + kỳ trong kho chuẩn hoá `curated.dm_ngan_sach`."""
+
+    __tablename__ = "dm_ngan_sach"
+    __table_args__ = ({"schema": _SCHEMA_CURATED_NGAN_SACH} if _SCHEMA_CURATED_NGAN_SACH else {},)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    don_vi_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    don_vi_ten: Mapped[str] = mapped_column(String(255), nullable=False)
+    khoan_muc_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    khoan_muc_ten: Mapped[str] = mapped_column(String(255), nullable=False)
+    ky: Mapped[str] = mapped_column(String(4), nullable=False, index=True)  # "YYYY"
+    thu: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    chi: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    tam_ung: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    don_vi_tinh: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    nguon: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

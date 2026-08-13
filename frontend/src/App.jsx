@@ -41,6 +41,7 @@ import {
   UploadCloud,
   UserCog,
   Users,
+  Wallet,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppLayout from "./components/AppLayout.jsx";
@@ -54,6 +55,7 @@ import ReportTemplatesPage from "./pages/ReportTemplatesPage.jsx";
 import DocumentSearchPage from "./pages/DocumentSearchPage.jsx";
 import DocumentDetailPage from "./pages/DocumentDetailPage.jsx";
 import PriceDataPage from "./pages/PriceDataPage.jsx";
+import NganSachPage from "./pages/NganSachPage.jsx";
 import ConnectorsPage from "./pages/ingestion/ConnectorsPage.jsx";
 import DataSourcesPage from "./pages/ingestion/DataSourcesPage.jsx";
 import DatasetsPage from "./pages/ingestion/DatasetsPage.jsx";
@@ -386,6 +388,13 @@ function HomePage() {
       description:
         "UC-055 — Nhập bộ lọc (mặt hàng, địa bàn, kỳ), hệ thống truy vấn curated.dm_gia, hiển thị giá theo bảng; hiển thị biểu đồ xu hướng giá theo thời gian (line chart).",
       icon: LineChart,
+    },
+    {
+      to: "/ngan-sach",
+      title: "Tra cứu dữ liệu ngân sách",
+      description:
+        "UC-056 — Nhập bộ lọc (đơn vị, khoản mục, kỳ), hệ thống truy vấn curated.dm_ngan_sach, hiển thị số liệu thu/chi/tạm ứng; xem chi tiết theo đơn vị/khoản mục, hệ thống re-query.",
+      icon: Wallet,
     },
   ];
 
@@ -856,6 +865,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <PriceDataPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/ngan-sach"
+        element={
+          <ProtectedRoute>
+            <NganSachPage />
           </ProtectedRoute>
         }
       />

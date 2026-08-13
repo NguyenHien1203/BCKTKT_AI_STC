@@ -16,6 +16,11 @@ from app.domain.entities import (
     DocumentSearchQuery,
     GeneratedReportLog,
     KpiExplanation,
+    NganSachDetail,
+    NganSachDetailQuery,
+    NganSachRecord,
+    NganSachSearchPage,
+    NganSachSearchQuery,
     PriceRecord,
     PriceSearchPage,
     PriceSearchQuery,
@@ -531,4 +536,31 @@ class PriceDataRepository(ABC):
         """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-055] Nạp 1
         dòng dữ liệu giá vào `curated.dm_gia`, dùng khi chưa có pipeline
         UC-041 tự động công bố dữ liệu giá thật."""
+        ...
+
+
+class NganSachRepository(ABC):
+    """Cổng (port) UC-056: đọc/ghi số liệu ngân sách trong kho chuẩn hoá
+    `curated.dm_ngan_sach` (bảng Postgres thật, cùng instance database,
+    khác schema `reporting` — xem
+    `infrastructure/db/models.py::DmNganSachModel`)."""
+
+    @abstractmethod
+    def search(self, query: NganSachSearchQuery) -> NganSachSearchPage:
+        """Bước 1-3: "Nhập bộ lọc (đơn vị, khoản mục, kỳ) -> Hệ thống truy
+        vấn curated.dm_ngan_sach -> Hiển thị số liệu thu/chi/tạm ứng"."""
+        ...
+
+    @abstractmethod
+    def get_detail(self, query: NganSachDetailQuery) -> NganSachDetail:
+        """Bước 4-5: "Xem chi tiết theo đơn vị/khoản mục -> Hệ thống
+        re-query" — toàn bộ các kỳ + tổng hợp thu/chi/tạm ứng theo đúng 1
+        đơn vị + 1 khoản mục."""
+        ...
+
+    @abstractmethod
+    def add(self, record: NganSachRecord) -> NganSachRecord:
+        """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-056] Nạp 1
+        dòng số liệu ngân sách vào `curated.dm_ngan_sach`, dùng khi chưa
+        có pipeline UC-041 tự động công bố dữ liệu ngân sách thật."""
         ...
