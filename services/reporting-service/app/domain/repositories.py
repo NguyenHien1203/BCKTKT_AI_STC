@@ -10,6 +10,8 @@ from app.domain.entities import (
     DashboardFavorite,
     DashboardFilter,
     DashboardKpi,
+    DataFreshnessRecord,
+    DataFreshnessSummary,
     DocumentAccessContext,
     DocumentMetadata,
     DocumentSearchPage,
@@ -563,4 +565,39 @@ class NganSachRepository(ABC):
         """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-056] Nạp 1
         dòng số liệu ngân sách vào `curated.dm_ngan_sach`, dùng khi chưa
         có pipeline UC-041 tự động công bố dữ liệu ngân sách thật."""
+        ...
+
+
+class DataFreshnessRepository(ABC):
+    """Cổng (port) UC-057: đọc/ghi độ mới dữ liệu theo nguồn trong view
+    `curated.data_freshness` (bảng Postgres thật, cùng instance database,
+    khác schema `reporting` — xem
+    `infrastructure/db/models.py::DataFreshnessModel`)."""
+
+    @abstractmethod
+    def list_all(self) -> List[DataFreshnessRecord]:
+        """Bước 2: "Xem chi tiết last_sync + độ đầy đủ theo nguồn -> Hệ
+        thống hiển thị bảng" — toàn bộ nguồn, sắp xếp theo tên nguồn."""
+        ...
+
+    @abstractmethod
+    def get_by_source(self, nguon_code: str) -> Optional[DataFreshnessRecord]:
+        """Độ mới của đúng 1 nguồn (dùng cho endpoint chi tiết 1 nguồn)."""
+        ...
+
+    @abstractmethod
+    def get_summary(self) -> DataFreshnessSummary:
+        """Bước 1: "Xem ô thông tin độ mới dữ liệu trên Bảng điều khiển
+        -> Hệ thống truy vấn view curated.data_freshness" — tổng quan
+        toàn hệ thống (số nguồn, số nguồn chậm trễ, độ đầy đủ trung
+        bình, lần đồng bộ gần nhất toàn hệ thống)."""
+        ...
+
+    @abstractmethod
+    def upsert(self, record: DataFreshnessRecord) -> DataFreshnessRecord:
+        """[Hạ tầng hỗ trợ, KHÔNG phải bước nghiệp vụ của UC-057] Ghi
+        nhận/cập nhật độ mới của 1 nguồn (`nguon_code` duy nhất — mỗi
+        lượt đồng bộ/công bố dữ liệu mới cập nhật đè lên dòng cũ cùng
+        nguồn), dùng khi chưa có pipeline tự động (UC-025 đồng bộ tăng
+        dần, UC-041 công bố kho chuẩn hoá) tự cập nhật bảng này."""
         ...
