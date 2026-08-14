@@ -100,6 +100,7 @@ import RolesPage from "./pages/RolesPage.jsx";
 import SessionsPage from "./pages/SessionsPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
+import ApiCatalogPage from "./pages/gateway/ApiCatalogPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -395,6 +396,13 @@ function HomePage() {
       description:
         "UC-056 — Nhập bộ lọc (đơn vị, khoản mục, kỳ), hệ thống truy vấn curated.dm_ngan_sach, hiển thị số liệu thu/chi/tạm ứng; xem chi tiết theo đơn vị/khoản mục, hệ thống re-query.",
       icon: Wallet,
+    },
+    {
+      to: "/api-catalog",
+      title: "Quản lý danh mục API",
+      description:
+        "UC-058 — Publish API mới (Search/QA/Data/Metadata) cập nhật danh mục; gỡ công bố API vô hiệu hoá điểm cuối; cấu hình quản lý phiên bản + ngày ngừng hỗ trợ.",
+      icon: Plug,
     },
   ];
 
@@ -873,6 +881,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <NganSachPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/api-catalog"
+        element={
+          <ProtectedRoute>
+            <ApiCatalogPage />
           </ProtectedRoute>
         }
       />
