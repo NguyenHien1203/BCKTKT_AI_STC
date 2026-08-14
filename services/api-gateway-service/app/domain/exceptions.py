@@ -72,3 +72,49 @@ class ApiKeyNotActive(DomainError):
 
 class InvalidApiKeyRotation(DomainError):
     code = "INVALID_API_KEY_ROTATION"
+
+# ---------------------------------------------------------------------------
+# UC-060 — Quản lý giới hạn tần suất + gói dịch vụ.
+# ---------------------------------------------------------------------------
+class ServiceTierCodeAlreadyExists(DomainError):
+    code = "SERVICE_TIER_CODE_ALREADY_EXISTS"
+
+    def __init__(self, code_value: str):
+        super().__init__(f"Gói dịch vụ có mã '{code_value}' đã tồn tại")
+
+
+class ServiceTierNotFound(DomainError):
+    code = "SERVICE_TIER_NOT_FOUND"
+
+    def __init__(self, tier_id: int):
+        super().__init__(f"Không tìm thấy gói dịch vụ #{tier_id}")
+
+
+class InvalidServiceTier(DomainError):
+    code = "INVALID_SERVICE_TIER"
+
+
+class RateLimitPolicyNotFound(DomainError):
+    code = "RATE_LIMIT_POLICY_NOT_FOUND"
+
+    def __init__(self, tier_id: int):
+        super().__init__(
+            f"Gói dịch vụ #{tier_id} chưa được cấu hình giới hạn tần suất"
+        )
+
+
+class InvalidRateLimitPolicy(DomainError):
+    code = "INVALID_RATE_LIMIT_POLICY"
+
+
+class BurstPolicyNotFound(DomainError):
+    code = "BURST_POLICY_NOT_FOUND"
+
+    def __init__(self, tier_id: int):
+        super().__init__(
+            f"Gói dịch vụ #{tier_id} chưa được cấu hình giới hạn đột biến"
+        )
+
+
+class InvalidBurstPolicy(DomainError):
+    code = "INVALID_BURST_POLICY"

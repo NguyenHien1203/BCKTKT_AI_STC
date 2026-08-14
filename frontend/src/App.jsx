@@ -102,6 +102,7 @@ import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import ApiCatalogPage from "./pages/gateway/ApiCatalogPage.jsx";
 import ApiKeysPage from "./pages/gateway/ApiKeysPage.jsx";
+import RateLimitsPage from "./pages/gateway/RateLimitsPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -411,6 +412,13 @@ function HomePage() {
       description:
         "UC-059 — Tạo khoá API cho đơn vị khai thác (sinh khoá + phạm vi); thu hồi khoá; luân chuyển khoá (tự động/thủ công) kèm thời gian ân hạn; ghi nhật ký sử dụng khoá.",
       icon: KeyRound,
+    },
+    {
+      to: "/rate-limits",
+      title: "Giới hạn tần suất + gói dịch vụ",
+      description:
+        "UC-060 — Cấu hình gói (miễn phí/tiêu chuẩn/cao cấp); cấu hình giới hạn tần suất theo gói (req/giây, req/ngày) áp dụng tại Cổng API; cấu hình giới hạn đột biến + chính sách điều tiết.",
+      icon: Gauge,
     },
   ];
 
@@ -905,6 +913,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ApiKeysPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rate-limits"
+        element={
+          <ProtectedRoute>
+            <RateLimitsPage />
           </ProtectedRoute>
         }
       />
