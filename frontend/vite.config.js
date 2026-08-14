@@ -23,6 +23,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/reporting/, ""),
       },
+      // UC-058 (Quản lý danh mục API) -> api-gateway-service.
+      "/api/api-gateway": {
+        target: "http://localhost:8005",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/api-gateway/, ""),
+      },
     },
   },
 });

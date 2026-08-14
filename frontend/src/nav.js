@@ -129,7 +129,7 @@ export const NAV_SECTIONS = [
   {
     label: "Nền tảng",
     items: [
-      { to: "/integrations", label: "API & tích hợp", icon: Network, disabled: true },
+      { to: "/api-catalog", label: "Quản lý danh mục API", icon: Plug },
       { to: "/ai", label: "Trợ lý AI", icon: Sparkles, disabled: true },
       { to: "/ops", label: "Vận hành", icon: Wrench, disabled: true },
     ],
