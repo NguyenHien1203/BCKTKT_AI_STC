@@ -101,6 +101,7 @@ import SessionsPage from "./pages/SessionsPage.jsx";
 import SystemConfigPage from "./pages/SystemConfigPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import ApiCatalogPage from "./pages/gateway/ApiCatalogPage.jsx";
+import ApiKeysPage from "./pages/gateway/ApiKeysPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -403,6 +404,13 @@ function HomePage() {
       description:
         "UC-058 — Publish API mới (Search/QA/Data/Metadata) cập nhật danh mục; gỡ công bố API vô hiệu hoá điểm cuối; cấu hình quản lý phiên bản + ngày ngừng hỗ trợ.",
       icon: Plug,
+    },
+    {
+      to: "/api-keys",
+      title: "Quản lý API key",
+      description:
+        "UC-059 — Tạo khoá API cho đơn vị khai thác (sinh khoá + phạm vi); thu hồi khoá; luân chuyển khoá (tự động/thủ công) kèm thời gian ân hạn; ghi nhật ký sử dụng khoá.",
+      icon: KeyRound,
     },
   ];
 
@@ -889,6 +897,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ApiCatalogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/api-keys"
+        element={
+          <ProtectedRoute>
+            <ApiKeysPage />
           </ProtectedRoute>
         }
       />

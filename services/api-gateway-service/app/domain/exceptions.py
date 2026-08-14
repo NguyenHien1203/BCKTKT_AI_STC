@@ -38,3 +38,37 @@ class ApiCatalogEntryAlreadyPublished(DomainError):
 
 class InvalidApiCatalogVersionConfig(DomainError):
     code = "INVALID_API_CATALOG_VERSION_CONFIG"
+
+
+# ---------------------------------------------------------------------------
+# UC-059 — Quản lý API key.
+# ---------------------------------------------------------------------------
+class ApiKeyNotFound(DomainError):
+    code = "API_KEY_NOT_FOUND"
+
+    def __init__(self, key_id: int):
+        super().__init__(f"Không tìm thấy khoá API #{key_id}")
+
+
+class InvalidApiKey(DomainError):
+    code = "INVALID_API_KEY"
+
+
+class ApiKeyAlreadyRevoked(DomainError):
+    code = "API_KEY_ALREADY_REVOKED"
+
+    def __init__(self, key_id: int):
+        super().__init__(f"Khoá API #{key_id} đã bị thu hồi trước đó")
+
+
+class ApiKeyNotActive(DomainError):
+    code = "API_KEY_NOT_ACTIVE"
+
+    def __init__(self, key_id: int):
+        super().__init__(
+            f"Khoá API #{key_id} không ở trạng thái ACTIVE nên không thể luân chuyển"
+        )
+
+
+class InvalidApiKeyRotation(DomainError):
+    code = "INVALID_API_KEY_ROTATION"
