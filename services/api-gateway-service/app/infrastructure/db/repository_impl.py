@@ -8,18 +8,27 @@ from app.domain.entities import (
     ApiCatalogVersionHistory,
     ApiKey,
     ApiKeyUsageLog,
+    BurstPolicy,
+    RateLimitPolicy,
+    ServiceTier,
 )
 from app.domain.repositories import (
     ApiCatalogRepository,
     ApiCatalogVersionHistoryRepository,
     ApiKeyRepository,
     ApiKeyUsageLogRepository,
+    BurstPolicyRepository,
+    RateLimitPolicyRepository,
+    ServiceTierRepository,
 )
 from app.infrastructure.db.models import (
     ApiCatalogEntryModel,
     ApiCatalogVersionHistoryModel,
     ApiKeyModel,
     ApiKeyUsageLogModel,
+    BurstPolicyModel,
+    RateLimitPolicyModel,
+    ServiceTierModel,
 )
 
 
@@ -279,3 +288,167 @@ class SqlAlchemyApiKeyUsageLogRepository(ApiKeyUsageLogRepository):
             .limit(limit)
         )
         return [_usage_log_to_entity(m) for m in query.all()]
+
+def _tier_to_entity(model: ServiceTierModel) -> ServiceTier:
+    return ServiceTier(
+        id=model.id,
+        code=model.code,
+        name=model.name,
+        description=model.description,
+        is_active=model.is_active,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _rate_limit_to_entity(model: RateLimitPolicyModel) -> RateLimitPolicy:
+    return RateLimitPolicy(
+        id=model.id,
+        tier_id=model.tier_id,
+        requests_per_second=model.requests_per_second,
+        requests_per_day=model.requests_per_day,
+        applied_at=model.applied_at,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _burst_to_entity(model: BurstPolicyModel) -> BurstPolicy:
+    return BurstPolicy(
+        id=model.id,
+        tier_id=model.tier_id,
+        burst_limit=model.burst_limit,
+        window_seconds=model.window_seconds,
+        throttle_policy=model.throttle_policy,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+class SqlAlchemyServiceTierRepository(ServiceTierRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, tier: ServiceTier) -> ServiceTier:
+        model = ServiceTierModel(
+            code=tier.code,
+            name=tier.name,
+            description=tier.description,
+            is_active=tier.is_active,
+            created_at=tier.created_at,
+            updated_at=tier.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _tier_to_entity(model)
+
+    def update(self, tier: ServiceTier) -> ServiceTier:
+        model = self._db.get(ServiceTierModel, tier.id)
+        if model is None:
+            raise ValueError(f"ServiceTier #{tier.id} không tồn tại")
+        model.code = tier.code
+        model.name = tier.name
+        model.description = tier.description
+        model.is_active = tier.is_active
+        model.updated_at = tier.updated_at
+        self._db.commit()
+        self._db.refresh(model)
+        return _tier_to_entity(model)
+
+    def get_by_id(self, tier_id: int) -> Optional[ServiceTier]:
+        model = self._db.get(ServiceTierModel, tier_id)
+        return _tier_to_entity(model) if model else None
+
+    def get_by_code(self, code: str) -> Optional[ServiceTier]:
+        model = (
+            self._db.query(ServiceTierModel)
+            .filter(ServiceTierModel.code == code)
+            .first()
+        )
+        return _tier_to_entity(model) if model else None
+
+    def list(self, is_active: Optional[bool] = None) -> List[ServiceTier]:
+        query = self._db.query(ServiceTierModel)
+        if is_active is not None:
+            query = query.filter(ServiceTierModel.is_active == is_active)
+        query = query.order_by(ServiceTierModel.id.asc())
+        return [_tier_to_entity(m) for m in query.all()]
+
+
+class SqlAlchemyRateLimitPolicyRepository(RateLimitPolicyRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, policy: RateLimitPolicy) -> RateLimitPolicy:
+        model = RateLimitPolicyModel(
+            tier_id=policy.tier_id,
+            requests_per_second=policy.requests_per_second,
+            requests_per_day=policy.requests_per_day,
+            applied_at=policy.applied_at,
+            created_at=policy.created_at,
+            updated_at=policy.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _rate_limit_to_entity(model)
+
+    def update(self, policy: RateLimitPolicy) -> RateLimitPolicy:
+        model = self._db.get(RateLimitPolicyModel, policy.id)
+        if model is None:
+            raise ValueError(f"RateLimitPolicy #{policy.id} không tồn tại")
+        model.requests_per_second = policy.requests_per_second
+        model.requests_per_day = policy.requests_per_day
+        model.applied_at = policy.applied_at
+        model.updated_at = policy.updated_at
+        self._db.commit()
+        self._db.refresh(model)
+        return _rate_limit_to_entity(model)
+
+    def get_by_tier_id(self, tier_id: int) -> Optional[RateLimitPolicy]:
+        model = (
+            self._db.query(RateLimitPolicyModel)
+            .filter(RateLimitPolicyModel.tier_id == tier_id)
+            .first()
+        )
+        return _rate_limit_to_entity(model) if model else None
+
+
+class SqlAlchemyBurstPolicyRepository(BurstPolicyRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, policy: BurstPolicy) -> BurstPolicy:
+        model = BurstPolicyModel(
+            tier_id=policy.tier_id,
+            burst_limit=policy.burst_limit,
+            window_seconds=policy.window_seconds,
+            throttle_policy=policy.throttle_policy,
+            created_at=policy.created_at,
+            updated_at=policy.updated_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _burst_to_entity(model)
+
+    def update(self, policy: BurstPolicy) -> BurstPolicy:
+        model = self._db.get(BurstPolicyModel, policy.id)
+        if model is None:
+            raise ValueError(f"BurstPolicy #{policy.id} không tồn tại")
+        model.burst_limit = policy.burst_limit
+        model.window_seconds = policy.window_seconds
+        model.throttle_policy = policy.throttle_policy
+        model.updated_at = policy.updated_at
+        self._db.commit()
+        self._db.refresh(model)
+        return _burst_to_entity(model)
+
+    def get_by_tier_id(self, tier_id: int) -> Optional[BurstPolicy]:
+        model = (
+            self._db.query(BurstPolicyModel)
+            .filter(BurstPolicyModel.tier_id == tier_id)
+            .first()
+        )
+        return _burst_to_entity(model) if model else None

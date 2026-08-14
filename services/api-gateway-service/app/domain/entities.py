@@ -304,3 +304,139 @@ class ApiKeyUsageLog:
     consumer_ip: Optional[str] = None
     note: str = ""
     called_at: Optional[datetime] = None
+
+# ---------------------------------------------------------------------------
+# UC-060 — Quản lý giới hạn tần suất + gói dịch vụ.
+#
+# Flow:
+#   (1) Cấu hình gói (miễn phí / tiêu chuẩn / cao cấp) -> hệ thống lưu.
+#   (2) Cấu hình giới hạn tần suất / gói (req/giây, req/ngày) -> hệ thống
+#       áp dụng tại Cổng API.
+#   (3) Cấu hình giới hạn đột biến (burst) + chính sách điều tiết
+#       (throttling) -> hệ thống lưu.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ServiceTier:
+    """Bước 1 — 1 gói dịch vụ (service tier) do `api-gateway-service`
+    quản lý. `code` xác định loại gói theo đúng yêu cầu: FREE (miễn phí),
+    STANDARD (tiêu chuẩn), PREMIUM (cao cấp). `is_active` cho biết gói còn
+    được áp dụng cho đơn vị khai thác mới hay không (mặc định đang bật).
+    """
+
+    CODES = ("FREE", "STANDARD", "PREMIUM")
+
+    id: Optional[int]
+    code: str
+    name: str
+    description: str = ""
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate_code(self.code)
+        self._validate_name(self.name)
+
+    @classmethod
+    def _validate_code(cls, code: str) -> None:
+        if code not in cls.CODES:
+            raise ValueError(f"Mã gói '{code}' không hợp lệ, phải thuộc {cls.CODES}")
+
+    @staticmethod
+    def _validate_name(name: str) -> None:
+        if not name or not name.strip():
+            raise ValueError("Tên gói dịch vụ không được để trống")
+
+    def rename(self, name: str, description: str) -> None:
+        """Sửa lại tên/mô tả gói (giữ nguyên `code`, hỗ trợ sửa sai)."""
+        self._validate_name(name)
+        self.name = name
+        self.description = description
+
+    def set_active(self, is_active: bool) -> None:
+        self.is_active = is_active
+
+
+@dataclass
+class RateLimitPolicy:
+    """Bước 2 — Giới hạn tần suất áp dụng cho 1 gói dịch vụ.
+
+    `requests_per_second` (req/giây) và `requests_per_day` (req/ngày) là 2
+    ngưỡng bắt buộc theo đúng yêu cầu. Mỗi gói chỉ có DUY NHẤT 1 chính sách
+    giới hạn tần suất hiện hành (cấu hình lại sẽ ghi đè). `applied_at` đánh
+    dấu thời điểm hệ thống áp dụng cấu hình tại Cổng API (API Gateway).
+    """
+
+    id: Optional[int]
+    tier_id: int
+    requests_per_second: int
+    requests_per_day: int
+    applied_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate(self.requests_per_second, self.requests_per_day)
+
+    @staticmethod
+    def _validate(requests_per_second: int, requests_per_day: int) -> None:
+        if requests_per_second is None or requests_per_second <= 0:
+            raise ValueError("Giới hạn req/giây phải là số nguyên dương")
+        if requests_per_day is None or requests_per_day <= 0:
+            raise ValueError("Giới hạn req/ngày phải là số nguyên dương")
+        if requests_per_day < requests_per_second:
+            raise ValueError(
+                "Giới hạn req/ngày phải lớn hơn hoặc bằng giới hạn req/giây"
+            )
+
+    def reconfigure(self, requests_per_second: int, requests_per_day: int) -> None:
+        self._validate(requests_per_second, requests_per_day)
+        self.requests_per_second = requests_per_second
+        self.requests_per_day = requests_per_day
+
+    def apply(self, when: datetime) -> None:
+        """Hệ thống áp dụng cấu hình tại Cổng API."""
+        self.applied_at = when
+
+
+@dataclass
+class BurstPolicy:
+    """Bước 3 — Giới hạn đột biến (burst) + chính sách điều tiết
+    (throttling) áp dụng cho 1 gói dịch vụ. `burst_limit` là số lượng
+    request tối đa được phép vượt ngưỡng ổn định trong `window_seconds`
+    giây liền kề trước khi chính sách điều tiết `throttle_policy` được
+    kích hoạt.
+    """
+
+    THROTTLE_POLICIES = ("REJECT", "QUEUE", "DELAY")
+
+    id: Optional[int]
+    tier_id: int
+    burst_limit: int
+    window_seconds: int
+    throttle_policy: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate(self.burst_limit, self.window_seconds, self.throttle_policy)
+
+    @classmethod
+    def _validate(cls, burst_limit: int, window_seconds: int, throttle_policy: str) -> None:
+        if burst_limit is None or burst_limit <= 0:
+            raise ValueError("Giới hạn đột biến (burst) phải là số nguyên dương")
+        if window_seconds is None or window_seconds <= 0:
+            raise ValueError("Cửa sổ thời gian đột biến (giây) phải là số nguyên dương")
+        if throttle_policy not in cls.THROTTLE_POLICIES:
+            raise ValueError(
+                f"Chính sách điều tiết '{throttle_policy}' không hợp lệ, "
+                f"phải thuộc {cls.THROTTLE_POLICIES}"
+            )
+
+    def reconfigure(self, burst_limit: int, window_seconds: int, throttle_policy: str) -> None:
+        self._validate(burst_limit, window_seconds, throttle_policy)
+        self.burst_limit = burst_limit
+        self.window_seconds = window_seconds
+        self.throttle_policy = throttle_policy

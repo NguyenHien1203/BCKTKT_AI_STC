@@ -9,13 +9,19 @@ Phụ trách nhóm UC **V. API và tích hợp** (`UC-058 .. UC-068`) theo `docs
 - **UC-059 — Quản lý API key** (`/api-keys`): tạo khoá API cho đơn vị khai thác (sinh khoá +
   phạm vi), thu hồi khoá, luân chuyển khoá (thủ công/tự động) kèm thời gian ân hạn, ghi
   nhật ký sử dụng khoá.
+- **UC-060 — Quản lý giới hạn tần suất + gói dịch vụ** (`/service-tiers`): cấu hình gói dịch vụ
+  (miễn phí/tiêu chuẩn/cao cấp), cấu hình giới hạn tần suất theo gói (req/giây, req/ngày —
+  hệ thống đánh dấu thời điểm áp dụng tại Cổng API), cấu hình giới hạn đột biến (burst) +
+  chính sách điều tiết (REJECT/QUEUE/DELAY).
 
-Các UC còn lại (UC-060 .. UC-068) vẫn khung sẵn sàng — xem `PLAN.md` ở gốc project để biết
+Các UC còn lại (UC-061 .. UC-068) vẫn khung sẵn sàng — xem `PLAN.md` ở gốc project để biết
 UC nào cần làm tiếp theo cho service này, và `SKILL.md` mục B/A để biết cách thêm UC.
 
-Schema Postgres riêng: `gateway` (xem ARCHITECTURE.md mục 2). Đã có 2 migration Alembic:
-`0001_uc058_create_api_catalog` (tạo schema `gateway` + bảng danh mục API) và
-`0002_uc059_create_api_keys` (nối tiếp `0001`, tạo bảng `api_keys` + `api_key_usage_logs`).
+Schema Postgres riêng: `gateway` (xem ARCHITECTURE.md mục 2). Đã có 3 migration Alembic:
+`0001_uc058_create_api_catalog` (tạo schema `gateway` + bảng danh mục API),
+`0002_uc059_create_api_keys` (nối tiếp `0001`, tạo bảng `api_keys` + `api_key_usage_logs`) và
+`0003_uc60_create_rate_limit_tiers` (nối tiếp `0002`, tạo bảng `service_tiers` +
+`rate_limit_policies` + `burst_policies`).
 
 ⚠️ **Lưu ý bảo mật khoá API (UC-059)**: giá trị khoá thật (`raw_key`) KHÔNG được lưu ở bất kỳ
 đâu trong DB — chỉ lưu `key_hash` (SHA-256) để xác thực và `key_prefix` để định danh/hiển thị.

@@ -7,6 +7,9 @@ from app.domain.entities import (
     ApiCatalogVersionHistory,
     ApiKey,
     ApiKeyUsageLog,
+    BurstPolicy,
+    RateLimitPolicy,
+    ServiceTier,
 )
 
 
@@ -87,4 +90,62 @@ class ApiKeyUsageLogRepository(ABC):
 
     @abstractmethod
     def list_for_key(self, api_key_id: int, limit: int = 100) -> List[ApiKeyUsageLog]:
+        ...
+
+# ---------------------------------------------------------------------------
+# UC-060 — Quản lý giới hạn tần suất + gói dịch vụ.
+# ---------------------------------------------------------------------------
+class ServiceTierRepository(ABC):
+    """Repository cho UC-060 bước 1: gói dịch vụ."""
+
+    @abstractmethod
+    def add(self, tier: ServiceTier) -> ServiceTier:
+        ...
+
+    @abstractmethod
+    def update(self, tier: ServiceTier) -> ServiceTier:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, tier_id: int) -> Optional[ServiceTier]:
+        ...
+
+    @abstractmethod
+    def get_by_code(self, code: str) -> Optional[ServiceTier]:
+        ...
+
+    @abstractmethod
+    def list(self, is_active: Optional[bool] = None) -> List[ServiceTier]:
+        ...
+
+
+class RateLimitPolicyRepository(ABC):
+    """Repository cho UC-060 bước 2: giới hạn tần suất / gói."""
+
+    @abstractmethod
+    def add(self, policy: RateLimitPolicy) -> RateLimitPolicy:
+        ...
+
+    @abstractmethod
+    def update(self, policy: RateLimitPolicy) -> RateLimitPolicy:
+        ...
+
+    @abstractmethod
+    def get_by_tier_id(self, tier_id: int) -> Optional[RateLimitPolicy]:
+        ...
+
+
+class BurstPolicyRepository(ABC):
+    """Repository cho UC-060 bước 3: giới hạn đột biến + chính sách điều tiết."""
+
+    @abstractmethod
+    def add(self, policy: BurstPolicy) -> BurstPolicy:
+        ...
+
+    @abstractmethod
+    def update(self, policy: BurstPolicy) -> BurstPolicy:
+        ...
+
+    @abstractmethod
+    def get_by_tier_id(self, tier_id: int) -> Optional[BurstPolicy]:
         ...

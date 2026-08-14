@@ -1,7 +1,7 @@
 """SQLAlchemy models cho api-gateway-service."""
 from datetime import datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.session import SCHEMA, Base, engine
@@ -103,3 +103,45 @@ class ApiKeyUsageLogModel(Base):
     consumer_ip: Mapped[str] = mapped_column(String(64), nullable=True)
     note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     called_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+class ServiceTierModel(Base):
+    __tablename__ = "service_tiers"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+class RateLimitPolicyModel(Base):
+    __tablename__ = "rate_limit_policies"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tier_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("service_tiers.id")), nullable=False, unique=True, index=True
+    )
+    requests_per_second: Mapped[int] = mapped_column(Integer, nullable=False)
+    requests_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    applied_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+class BurstPolicyModel(Base):
+    __tablename__ = "burst_policies"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tier_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("service_tiers.id")), nullable=False, unique=True, index=True
+    )
+    burst_limit: Mapped[int] = mapped_column(Integer, nullable=False)
+    window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    throttle_policy: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)

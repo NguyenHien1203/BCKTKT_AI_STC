@@ -144,3 +144,73 @@ class ApiKeyUsageLogResponse(BaseModel):
     called_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# UC-060 — Quản lý giới hạn tần suất + gói dịch vụ.
+# ---------------------------------------------------------------------------
+
+
+class ServiceTierCreate(BaseModel):
+    """Bước 1 — Cấu hình gói (miễn phí / tiêu chuẩn / cao cấp)."""
+
+    code: str = Field(..., description="FREE | STANDARD | PREMIUM")
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+
+
+class ServiceTierUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+    is_active: Optional[bool] = None
+
+
+class ServiceTierResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+    description: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class RateLimitPolicyConfigure(BaseModel):
+    """Bước 2 — Cấu hình giới hạn tần suất / gói (req/giây, req/ngày)."""
+
+    requests_per_second: int = Field(..., gt=0, description="Giới hạn req/giây")
+    requests_per_day: int = Field(..., gt=0, description="Giới hạn req/ngày")
+
+
+class RateLimitPolicyResponse(BaseModel):
+    id: int
+    tier_id: int
+    requests_per_second: int
+    requests_per_day: int
+    applied_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class BurstPolicyConfigure(BaseModel):
+    """Bước 3 — Cấu hình giới hạn đột biến + chính sách điều tiết."""
+
+    burst_limit: int = Field(..., gt=0, description="Số request đột biến tối đa")
+    window_seconds: int = Field(..., gt=0, description="Cửa sổ thời gian đột biến (giây)")
+    throttle_policy: str = Field(..., description="REJECT | QUEUE | DELAY")
+
+
+class BurstPolicyResponse(BaseModel):
+    id: int
+    tier_id: int
+    burst_limit: int
+    window_seconds: int
+    throttle_policy: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
