@@ -53,3 +53,53 @@ class ApiCatalogVersionHistoryModel(Base):
     sunset_date: Mapped[Date] = mapped_column(Date, nullable=True)
     change_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+def _fk(table_col: str) -> str:
+    """FK phải trỏ đúng schema khi chạy Postgres, bỏ schema khi SQLite.
+
+    `table_col` có dạng "table.column" (không kèm schema).
+    """
+    if engine.url.get_backend_name() == "sqlite":
+        return table_col
+    return f"{SCHEMA}.{table_col}"
+
+
+class ApiKeyModel(Base):
+    __tablename__ = "api_keys"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    consumer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    consumer_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    scope: Mapped[str] = mapped_column(String(500), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    key_hash: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVE", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    rotated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    grace_expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    previous_key_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("api_keys.id")), nullable=True
+    )
+    rotated_to_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("api_keys.id")), nullable=True
+    )
+
+
+class ApiKeyUsageLogModel(Base):
+    __tablename__ = "api_key_usage_logs"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    api_key_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("api_keys.id")), nullable=False, index=True
+    )
+    endpoint_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False, default="GET")
+    status_code: Mapped[int] = mapped_column(Integer, nullable=True)
+    consumer_ip: Mapped[str] = mapped_column(String(64), nullable=True)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    called_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)

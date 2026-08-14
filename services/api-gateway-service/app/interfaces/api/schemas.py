@@ -58,3 +58,89 @@ class ApiCatalogVersionHistoryResponse(BaseModel):
 class ErrorResponse(BaseModel):
     code: str
     message: str
+
+
+# ---------------------------------------------------------------------------
+# UC-059 — Quản lý API key.
+# ---------------------------------------------------------------------------
+
+
+class ApiKeyCreate(BaseModel):
+    """Bước 1 — Tạo khoá API cho đơn vị khai thác."""
+
+    consumer_name: str = Field(..., min_length=1, max_length=255)
+    consumer_code: str = Field(..., min_length=1, max_length=100)
+    description: str = ""
+    scope: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Phạm vi truy cập, danh sách phân tách bởi dấu phẩy, vd 'SEARCH,QA'",
+    )
+
+
+class ApiKeyResponse(BaseModel):
+    """Response CHUẨN — KHÔNG chứa raw key/hash, chỉ `key_prefix` để định danh."""
+
+    id: int
+    consumer_name: str
+    consumer_code: str
+    description: str
+    scope: str
+    key_prefix: str
+    status: str
+    created_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+    rotated_at: Optional[datetime] = None
+    grace_expires_at: Optional[datetime] = None
+    previous_key_id: Optional[int] = None
+    rotated_to_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ApiKeyCreatedResponse(ApiKeyResponse):
+    """Response DUY NHẤT có kèm `raw_key` — chỉ trả về lúc tạo/luân chuyển."""
+
+    raw_key: str = Field(
+        ..., description="Giá trị khoá API thật — chỉ hiển thị 1 LẦN DUY NHẤT."
+    )
+
+
+class ApiKeyRotateRequest(BaseModel):
+    """Bước 3 — Luân chuyển khoá API (tự động / thủ công)."""
+
+    grace_period_days: Optional[int] = Field(
+        default=None, ge=0, le=365, description="Số ngày ân hạn cho khoá cũ"
+    )
+    rotation_mode: str = Field(
+        default="MANUAL", description="MANUAL (thủ công) | AUTO (tự động)"
+    )
+
+
+class ApiKeyRotateResponse(BaseModel):
+    old_key: ApiKeyResponse
+    new_key: ApiKeyCreatedResponse
+
+
+class ApiKeyUsageLogCreate(BaseModel):
+    """Bước 4 — Ghi nhật ký sử dụng khoá API."""
+
+    endpoint_path: str = Field(..., min_length=1, max_length=500)
+    method: str = Field(default="GET", max_length=10)
+    status_code: Optional[int] = None
+    consumer_ip: Optional[str] = Field(default=None, max_length=64)
+    note: str = ""
+
+
+class ApiKeyUsageLogResponse(BaseModel):
+    id: int
+    api_key_id: int
+    endpoint_path: str
+    method: str
+    status_code: Optional[int] = None
+    consumer_ip: Optional[str] = None
+    note: str
+    called_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
