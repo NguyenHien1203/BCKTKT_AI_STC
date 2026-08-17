@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class DomainError(Exception):
     """Base class cho lỗi nghiệp vụ."""
 
@@ -177,3 +180,53 @@ class MtlsCertificateAlreadyRevoked(DomainError):
 
     def __init__(self, certificate_id: int):
         super().__init__(f"Chứng thư #{certificate_id} đã bị thu hồi trước đó")
+
+# ---------------------------------------------------------------------------
+# UC-064 — Cung cấp Data API cho IOC.
+# ---------------------------------------------------------------------------
+class DataApiKeyMissing(DomainError):
+    code = "DATA_API_KEY_MISSING"
+
+    def __init__(self):
+        super().__init__("Thiếu khoá API (header X-API-Key) khi gọi Data API")
+
+
+class DataApiKeyInvalid(DomainError):
+    code = "DATA_API_KEY_INVALID"
+
+    def __init__(self):
+        super().__init__("Khoá API không hợp lệ, không tồn tại hoặc đã hết hiệu lực")
+
+
+class DataApiScopeDenied(DomainError):
+    code = "DATA_API_SCOPE_DENIED"
+
+    def __init__(
+        self,
+        required_scope: str,
+        api_key_id: Optional[int] = None,
+        consumer_code: Optional[str] = None,
+    ):
+        self.api_key_id = api_key_id
+        self.consumer_code = consumer_code
+        super().__init__(
+            f"Khoá API không có phạm vi (scope) '{required_scope}' để gọi Data API"
+        )
+
+
+class DataApiRateLimitExceeded(DomainError):
+    code = "DATA_API_RATE_LIMIT_EXCEEDED"
+
+    def __init__(self, detail: str = ""):
+        super().__init__(detail or "Đã vượt giới hạn tần suất gọi API")
+
+
+class InvalidDataApiQuery(DomainError):
+    code = "INVALID_DATA_API_QUERY"
+
+
+class SemanticLayerDataQueryFailed(DomainError):
+    code = "SEMANTIC_LAYER_DATA_QUERY_FAILED"
+
+    def __init__(self, detail: str = ""):
+        super().__init__(detail or "Truy vấn Lớp ngữ nghĩa thất bại")

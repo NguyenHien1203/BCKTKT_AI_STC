@@ -6,6 +6,8 @@ import { apiGatewayClient } from "./apiCatalog.js";
 // ---------- UC-059: Quản lý API key ----------
 
 // Bước 1 — Tạo khoá API cho đơn vị khai thác -> hệ thống sinh khoá + phạm vi.
+// `serviceTierCode` (UC-064, tuỳ chọn) — gói dịch vụ áp giới hạn tần suất khi
+// khoá gọi Data API; bỏ trống -> mặc định dùng gói FREE.
 // Response kèm `raw_key` — CHỈ hiển thị 1 LẦN DUY NHẤT, không lấy lại được.
 export async function createApiKey(payload) {
   const { data } = await apiGatewayClient.post("/api-keys", payload);

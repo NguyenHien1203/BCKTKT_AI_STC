@@ -62,6 +62,7 @@ def create_api_key(
             consumer_code=payload.consumer_code,
             description=payload.description,
             scope=payload.scope,
+            service_tier_code=payload.service_tier_code,
         )
     except DomainError as exc:
         raise _domain_error_to_http(exc) from exc

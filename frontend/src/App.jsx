@@ -108,6 +108,7 @@ import RateLimitsPage from "./pages/gateway/RateLimitsPage.jsx";
 import ApiUsagePage from "./pages/gateway/ApiUsagePage.jsx";
 import MtlsCertificatesPage from "./pages/gateway/MtlsCertificatesPage.jsx";
 import ApiDocsPage from "./pages/gateway/ApiDocsPage.jsx";
+import DataApiPage from "./pages/gateway/DataApiPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -445,6 +446,13 @@ function HomePage() {
       description:
         "UC-063 — Đơn vị khai thác (QLVBĐH, IOC, LGSP) truy cập cổng Swagger/Redoc; hệ thống hiển thị UI tài liệu các API đã công bố để xem.",
       icon: BookOpen,
+    },
+    {
+      to: "/data-api",
+      title: "Cung cấp Data API cho IOC",
+      description:
+        "UC-064 — IOC gọi Data API tổng hợp, hệ thống trả dữ liệu qua Lớp ngữ nghĩa; Cổng API kiểm tra khoá API + phạm vi + giới hạn tần suất; ghi nhật ký lời gọi API vào audit.audit_log.",
+      icon: Database,
     },
   ];
 
@@ -971,6 +979,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ApiDocsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/data-api"
+        element={
+          <ProtectedRoute>
+            <DataApiPage />
           </ProtectedRoute>
         }
       />

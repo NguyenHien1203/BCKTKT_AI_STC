@@ -180,6 +180,10 @@ class ApiKey:
     grace_expires_at: Optional[datetime] = None
     previous_key_id: Optional[int] = None
     rotated_to_id: Optional[int] = None
+    # UC-064 bổ sung: mã gói dịch vụ (`ServiceTier.code` của UC-060) áp dụng
+    # giới hạn tần suất cho khoá này khi gọi Data API tổng hợp. `None` ->
+    # Cổng API mặc định áp dụng chính sách của gói "FREE".
+    service_tier_code: Optional[str] = None
 
     def __post_init__(self) -> None:
         self._validate_consumer_name(self.consumer_name)
@@ -290,6 +294,13 @@ class ApiKey:
         self.rotated_at = when
         self.grace_expires_at = when + timedelta(days=grace_period_days)
         self.rotated_to_id = new_key_id
+
+    def has_scope(self, required_scope: str) -> bool:
+        """Phạm vi (scope) là chuỗi các mã cách nhau bởi dấu phẩy (vd
+        \"SEARCH,QA,DATA\") — dùng ở UC-064 bước \"Cổng API kiểm tra khoá
+        API + phạm vi\"."""
+        granted = {part.strip().upper() for part in self.scope.split(",") if part.strip()}
+        return required_scope.strip().upper() in granted
 
 
 @dataclass
@@ -731,3 +742,47 @@ class CertificateRevocationEntry:
     fingerprint_sha256: str
     reason: str = ""
     revoked_at: Optional[datetime] = None
+
+# ---------------------------------------------------------------------------
+# UC-064 — Cung cấp Data API cho IOC.
+#
+# Flow:
+#   (1) IOC gọi Data API tổng hợp -> Hệ thống trả dữ liệu qua Lớp ngữ nghĩa.
+#   (2) Cổng API kiểm tra khoá API + phạm vi + giới hạn tần suất -> Hệ
+#       thống thực thi.
+#   (3) Ghi nhật ký lời gọi API -> Hệ thống ghi vào `audit.audit_log`.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class AuditLogEntry:
+    """Bước 3 — 1 dòng nhật ký lời gọi API ghi vào `audit.audit_log`,
+    append-only. Bảng thuộc schema `audit` DÙNG CHUNG cho mọi loại API do
+    `api-gateway-service` cung cấp (Data/Search/QA/Metadata — UC-064/066/
+    067/068), khác với `api_key_usage_logs` (UC-059, gắn với 1 khoá API cụ
+    thể, phục vụ quản trị vòng đời khoá): `audit_log` là nhật ký AN TOÀN
+    THÔNG TIN cấp hệ thống, ghi lại CẢ những lượt gọi bị TỪ CHỐI (thiếu
+    khoá / sai phạm vi / vượt giới hạn tần suất) — điều `ApiKeyUsageLog`
+    không làm được vì nó luôn gắn với 1 `api_key_id` đã xác thực thành
+    công.
+
+    `status` ∈ SUCCESS (thực thi thành công) / DENIED (Cổng API từ chối
+    trước khi thực thi) / ERROR (thực thi lỗi hạ tầng, vd Lớp ngữ nghĩa
+    lỗi). `api_key_id` có thể `None` khi lượt gọi bị từ chối do KHÔNG có
+    khoá API hoặc khoá không xác định được (tránh trỏ tới 1 khoá không
+    tồn tại).
+    """
+
+    STATUSES = ("SUCCESS", "DENIED", "ERROR")
+
+    id: Optional[int]
+    api_type: str
+    endpoint_path: str
+    consumer_code: str
+    status: str
+    api_key_id: Optional[int] = None
+    reason: str = ""
+    request_params: str = ""
+    row_count: Optional[int] = None
+    consumer_ip: Optional[str] = None
+    called_at: Optional[datetime] = None

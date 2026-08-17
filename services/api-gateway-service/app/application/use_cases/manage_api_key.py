@@ -44,6 +44,7 @@ class ApiKeyService:
         consumer_code: str,
         description: str,
         scope: str,
+        service_tier_code: Optional[str] = None,
     ) -> Tuple[ApiKey, str]:
         try:
             entry, raw_key = ApiKey.create(
@@ -53,6 +54,7 @@ class ApiKeyService:
                 scope=scope,
                 when=_now(),
             )
+            entry.service_tier_code = service_tier_code
         except ValueError as exc:
             raise InvalidApiKey(str(exc)) from exc
 
@@ -101,6 +103,7 @@ class ApiKeyService:
                 when=now,
                 previous_key_id=old_key.id,
             )
+            new_entry.service_tier_code = old_key.service_tier_code
         except ValueError as exc:
             raise InvalidApiKeyRotation(str(exc)) from exc
         new_key = self._key_repo.add(new_entry)
