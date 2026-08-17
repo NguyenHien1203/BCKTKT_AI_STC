@@ -440,3 +440,107 @@ class BurstPolicy:
         self.burst_limit = burst_limit
         self.window_seconds = window_seconds
         self.throttle_policy = throttle_policy
+
+
+# ---------------------------------------------------------------------------
+# UC-061 — Theo dõi mức sử dụng API + chỉ số.
+#
+# Flow:
+#   (1) Xem bảng điều khiển mức sử dụng API (req/giây, độ trễ, tỉ lệ lỗi)
+#       -> hệ thống hiển thị từ Prometheus.
+#   (2) Xem chi tiết theo đơn vị khai thác -> hệ thống hiển thị.
+#   (3) Cảnh báo khi API có bất thường -> Alertmanager gửi cảnh báo.
+#
+# Bước 1-2 KHÔNG lưu bảng riêng — dữ liệu chỉ số được TRUY VẤN TRỰC TIẾP
+# từ Prometheus qua cổng `PrometheusQueryClient` mỗi lần gọi API (đúng
+# đúng nghĩa "bảng điều khiển" thời gian thực, không phải báo cáo tĩnh).
+# Bước 3 CẦN lưu lại — hệ thống phải giữ lịch sử cảnh báo mà Alertmanager
+# đã gửi (qua webhook) để "hiển thị" lại được sau này, nên có entity
+# `ApiAnomalyAlert` + bảng CSDL tương ứng.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ApiAnomalyAlert:
+    """Bước 3 — 1 cảnh báo bất thường mà Alertmanager đã gửi tới hệ thống
+    qua webhook nhận cảnh báo (`POST /alerts/webhook`, mô phỏng đúng cấu
+    trúc payload webhook thật của Alertmanager).
+
+    `fingerprint` là mã định danh DUY NHẤT do Alertmanager sinh cho 1
+    chuỗi cảnh báo (cùng 1 alert có thể được gửi lại nhiều lần khi
+    trạng thái đổi FIRING->RESOLVED) — dùng làm khoá để ghi đè
+    (upsert) thay vì tạo bản ghi trùng lặp mỗi lần Alertmanager gửi lại.
+    """
+
+    SEVERITIES = ("INFO", "WARNING", "CRITICAL")
+    STATUSES = ("FIRING", "RESOLVED")
+
+    id: Optional[int]
+    fingerprint: str
+    alert_name: str
+    severity: str
+    status: str
+    summary: str = ""
+    description: str = ""
+    consumer_code: Optional[str] = None
+    endpoint_path: Optional[str] = None
+    labels_json: str = "{}"
+    annotations_json: str = "{}"
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    received_at: Optional[datetime] = None
+
+    def __post_init__(self) -> None:
+        self._validate_fingerprint(self.fingerprint)
+        self._validate_alert_name(self.alert_name)
+        self._validate_severity(self.severity)
+        self._validate_status(self.status)
+
+    @staticmethod
+    def _validate_fingerprint(fingerprint: str) -> None:
+        if not fingerprint or not fingerprint.strip():
+            raise ValueError("Mã định danh cảnh báo (fingerprint) không được để trống")
+
+    @staticmethod
+    def _validate_alert_name(alert_name: str) -> None:
+        if not alert_name or not alert_name.strip():
+            raise ValueError("Tên cảnh báo (alertname) không được để trống")
+
+    @classmethod
+    def _validate_severity(cls, severity: str) -> None:
+        if severity not in cls.SEVERITIES:
+            raise ValueError(
+                f"Mức độ nghiêm trọng '{severity}' không hợp lệ, phải thuộc {cls.SEVERITIES}"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(f"Trạng thái '{status}' không hợp lệ, phải thuộc {cls.STATUSES}")
+
+    def apply_update(
+        self,
+        status: str,
+        summary: str,
+        description: str,
+        consumer_code: Optional[str],
+        endpoint_path: Optional[str],
+        labels_json: str,
+        annotations_json: str,
+        starts_at: Optional[datetime],
+        ends_at: Optional[datetime],
+        received_at: datetime,
+    ) -> None:
+        """Ghi đè (upsert) khi Alertmanager gửi lại cùng 1 `fingerprint`
+        với trạng thái mới (vd FIRING -> RESOLVED)."""
+        self._validate_status(status)
+        self.status = status
+        self.summary = summary
+        self.description = description
+        self.consumer_code = consumer_code
+        self.endpoint_path = endpoint_path
+        self.labels_json = labels_json
+        self.annotations_json = annotations_json
+        self.starts_at = starts_at
+        self.ends_at = ends_at
+        self.received_at = received_at

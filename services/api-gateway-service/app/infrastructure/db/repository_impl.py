@@ -4,6 +4,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.domain.entities import (
+    ApiAnomalyAlert,
     ApiCatalogEntry,
     ApiCatalogVersionHistory,
     ApiKey,
@@ -13,6 +14,7 @@ from app.domain.entities import (
     ServiceTier,
 )
 from app.domain.repositories import (
+    ApiAnomalyAlertRepository,
     ApiCatalogRepository,
     ApiCatalogVersionHistoryRepository,
     ApiKeyRepository,
@@ -22,6 +24,7 @@ from app.domain.repositories import (
     ServiceTierRepository,
 )
 from app.infrastructure.db.models import (
+    ApiAnomalyAlertModel,
     ApiCatalogEntryModel,
     ApiCatalogVersionHistoryModel,
     ApiKeyModel,
@@ -452,3 +455,99 @@ class SqlAlchemyBurstPolicyRepository(BurstPolicyRepository):
             .first()
         )
         return _burst_to_entity(model) if model else None
+
+def _alert_to_entity(model: ApiAnomalyAlertModel) -> ApiAnomalyAlert:
+    return ApiAnomalyAlert(
+        id=model.id,
+        fingerprint=model.fingerprint,
+        alert_name=model.alert_name,
+        severity=model.severity,
+        status=model.status,
+        summary=model.summary,
+        description=model.description,
+        consumer_code=model.consumer_code,
+        endpoint_path=model.endpoint_path,
+        labels_json=model.labels_json,
+        annotations_json=model.annotations_json,
+        starts_at=model.starts_at,
+        ends_at=model.ends_at,
+        received_at=model.received_at,
+    )
+
+
+class SqlAlchemyApiAnomalyAlertRepository(ApiAnomalyAlertRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, alert: ApiAnomalyAlert) -> ApiAnomalyAlert:
+        model = ApiAnomalyAlertModel(
+            fingerprint=alert.fingerprint,
+            alert_name=alert.alert_name,
+            severity=alert.severity,
+            status=alert.status,
+            summary=alert.summary,
+            description=alert.description,
+            consumer_code=alert.consumer_code,
+            endpoint_path=alert.endpoint_path,
+            labels_json=alert.labels_json,
+            annotations_json=alert.annotations_json,
+            starts_at=alert.starts_at,
+            ends_at=alert.ends_at,
+            received_at=alert.received_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _alert_to_entity(model)
+
+    def upsert_by_fingerprint(self, alert: ApiAnomalyAlert) -> ApiAnomalyAlert:
+        model = (
+            self._db.query(ApiAnomalyAlertModel)
+            .filter(ApiAnomalyAlertModel.fingerprint == alert.fingerprint)
+            .first()
+        )
+        if model is None:
+            return self.add(alert)
+        model.alert_name = alert.alert_name
+        model.severity = alert.severity
+        model.status = alert.status
+        model.summary = alert.summary
+        model.description = alert.description
+        model.consumer_code = alert.consumer_code
+        model.endpoint_path = alert.endpoint_path
+        model.labels_json = alert.labels_json
+        model.annotations_json = alert.annotations_json
+        model.starts_at = alert.starts_at
+        model.ends_at = alert.ends_at
+        model.received_at = alert.received_at
+        self._db.commit()
+        self._db.refresh(model)
+        return _alert_to_entity(model)
+
+    def get_by_id(self, alert_id: int) -> Optional[ApiAnomalyAlert]:
+        model = self._db.get(ApiAnomalyAlertModel, alert_id)
+        return _alert_to_entity(model) if model else None
+
+    def get_by_fingerprint(self, fingerprint: str) -> Optional[ApiAnomalyAlert]:
+        model = (
+            self._db.query(ApiAnomalyAlertModel)
+            .filter(ApiAnomalyAlertModel.fingerprint == fingerprint)
+            .first()
+        )
+        return _alert_to_entity(model) if model else None
+
+    def list(
+        self,
+        status: Optional[str] = None,
+        severity: Optional[str] = None,
+        consumer_code: Optional[str] = None,
+    ) -> List[ApiAnomalyAlert]:
+        query = self._db.query(ApiAnomalyAlertModel)
+        if status is not None:
+            query = query.filter(ApiAnomalyAlertModel.status == status)
+        if severity is not None:
+            query = query.filter(ApiAnomalyAlertModel.severity == severity)
+        if consumer_code is not None:
+            query = query.filter(ApiAnomalyAlertModel.consumer_code == consumer_code)
+        query = query.order_by(ApiAnomalyAlertModel.received_at.desc())
+        return [_alert_to_entity(m) for m in query.all()]

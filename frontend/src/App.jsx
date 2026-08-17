@@ -103,6 +103,7 @@ import UsersPage from "./pages/UsersPage.jsx";
 import ApiCatalogPage from "./pages/gateway/ApiCatalogPage.jsx";
 import ApiKeysPage from "./pages/gateway/ApiKeysPage.jsx";
 import RateLimitsPage from "./pages/gateway/RateLimitsPage.jsx";
+import ApiUsagePage from "./pages/gateway/ApiUsagePage.jsx";
 
 function HomePage() {
   const modules = [
@@ -419,6 +420,13 @@ function HomePage() {
       description:
         "UC-060 — Cấu hình gói (miễn phí/tiêu chuẩn/cao cấp); cấu hình giới hạn tần suất theo gói (req/giây, req/ngày) áp dụng tại Cổng API; cấu hình giới hạn đột biến + chính sách điều tiết.",
       icon: Gauge,
+    },
+    {
+      to: "/api-usage",
+      title: "Theo dõi mức sử dụng API + chỉ số",
+      description:
+        "UC-061 — Xem bảng điều khiển mức sử dụng API (req/giây, độ trễ, tỉ lệ lỗi) hiển thị từ Prometheus; xem chi tiết theo đơn vị khai thác; cảnh báo khi API có bất thường (Alertmanager gửi cảnh báo).",
+      icon: LineChart,
     },
   ];
 
@@ -921,6 +929,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <RateLimitsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/api-usage"
+        element={
+          <ProtectedRoute>
+            <ApiUsagePage />
           </ProtectedRoute>
         }
       />

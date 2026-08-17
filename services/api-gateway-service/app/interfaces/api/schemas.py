@@ -1,6 +1,6 @@
 """Pydantic schemas cho UC-058 — Quản lý danh mục API."""
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -212,5 +212,74 @@ class BurstPolicyResponse(BaseModel):
     throttle_policy: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+# ---------------------------------------------------------------------------
+# UC-061 — Theo dõi mức sử dụng API + chỉ số.
+# ---------------------------------------------------------------------------
+
+
+class ApiUsageSummaryResponse(BaseModel):
+    """Bước 1 — tổng quan hiện hành đọc từ Prometheus."""
+
+    requests_per_second: float
+    avg_latency_ms: float
+    error_rate_percent: float
+    total_requests: int
+
+
+class ApiUsageSeriesPointResponse(BaseModel):
+    timestamp: str
+    requests_per_second: float
+    avg_latency_ms: float
+    error_rate_percent: float
+
+
+class ApiUsageDashboardResponse(BaseModel):
+    """Bước 1 — Xem bảng điều khiển mức sử dụng API."""
+
+    window_minutes: int
+    step_minutes: int
+    summary: ApiUsageSummaryResponse
+    series: List[ApiUsageSeriesPointResponse]
+
+
+class ApiConsumerUsageResponse(BaseModel):
+    """Bước 2 — Xem chi tiết theo đơn vị khai thác."""
+
+    consumer_code: str
+    requests_per_second: float
+    avg_latency_ms: float
+    error_rate_percent: float
+    total_requests: int
+
+
+class AlertmanagerWebhookPayload(BaseModel):
+    """Bước 3 — cấu trúc payload webhook thật của Alertmanager
+    (https://prometheus.io/docs/alerting/latest/configuration/#webhook_config).
+    Chỉ khai báo các trường hệ thống thật sự dùng, cho phép các trường
+    khác (`version`/`groupKey`/`groupLabels`/...) đi kèm mà không lỗi."""
+
+    receiver: Optional[str] = None
+    status: Optional[str] = None
+    alerts: List[Dict[str, Any]] = Field(..., min_length=1)
+
+    model_config = {"extra": "allow"}
+
+
+class ApiAnomalyAlertResponse(BaseModel):
+    id: int
+    fingerprint: str
+    alert_name: str
+    severity: str
+    status: str
+    summary: str
+    description: str
+    consumer_code: Optional[str] = None
+    endpoint_path: Optional[str] = None
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    received_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

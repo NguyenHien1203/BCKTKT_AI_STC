@@ -145,3 +145,23 @@ class BurstPolicyModel(Base):
     throttle_policy: Mapped[str] = mapped_column(String(20), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+class ApiAnomalyAlertModel(Base):
+    __tablename__ = "api_anomaly_alerts"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    fingerprint: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    alert_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    consumer_code: Mapped[str] = mapped_column(String(100), nullable=True, index=True)
+    endpoint_path: Mapped[str] = mapped_column(String(500), nullable=True)
+    labels_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    annotations_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)

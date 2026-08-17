@@ -118,3 +118,25 @@ class BurstPolicyNotFound(DomainError):
 
 class InvalidBurstPolicy(DomainError):
     code = "INVALID_BURST_POLICY"
+
+
+# ---------------------------------------------------------------------------
+# UC-061 — Theo dõi mức sử dụng API + chỉ số.
+# ---------------------------------------------------------------------------
+class ApiAnomalyAlertNotFound(DomainError):
+    code = "API_ANOMALY_ALERT_NOT_FOUND"
+
+    def __init__(self, alert_id: int):
+        super().__init__(f"Không tìm thấy cảnh báo bất thường #{alert_id}")
+
+
+class InvalidApiAnomalyAlert(DomainError):
+    code = "INVALID_API_ANOMALY_ALERT"
+
+
+class InvalidAlertmanagerWebhookPayload(DomainError):
+    code = "INVALID_ALERTMANAGER_WEBHOOK_PAYLOAD"
+
+
+class InvalidApiUsageQuery(DomainError):
+    code = "INVALID_API_USAGE_QUERY"
