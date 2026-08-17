@@ -544,3 +544,190 @@ class ApiAnomalyAlert:
         self.starts_at = starts_at
         self.ends_at = ends_at
         self.received_at = received_at
+
+
+# ---------------------------------------------------------------------------
+# UC-062 — Quản lý chứng thư / mTLS cho đơn vị khai thác.
+#
+# Flow:
+#   (1) Đăng ký chứng thư của đơn vị khai thác -> hệ thống lưu vào kho
+#       tin cậy (trust store).
+#   (2) Luân chuyển chứng thư -> hệ thống cập nhật (tạo chứng thư mới,
+#       đánh dấu chứng thư cũ ROTATED).
+#   (3) Thu hồi chứng thư -> hệ thống thêm vào CRL (Certificate
+#       Revocation List).
+#
+# Chứng thư (PEM) do người quản trị nhập vào cùng các trường metadata đã
+# trích xuất sẵn (common_name/serial_number/not_before/not_after) — cùng
+# tinh thần các UC khác của service này (vd UC-059 API key): domain
+# KHÔNG tự phân tích cú pháp X.509 nhị phân (không thêm phụ thuộc nặng
+# như `cryptography` khi metadata có thể nhập trực tiếp qua form quản
+# trị), chỉ băm SHA-256 nội dung PEM để tính `fingerprint_sha256` dùng
+# định danh + so khớp CRL.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class MtlsCertificate:
+    """1 chứng thư mTLS của 1 đơn vị khai thác (consumer), lưu trong kho
+    tin cậy (trust store) của Cổng API.
+
+    `status`: ACTIVE = đang hiệu lực, dùng để xác thực mTLS; ROTATED =
+    đã được luân chuyển sang chứng thư mới (bước 2) — không còn dùng để
+    xác thực mới, giữ lại để tra cứu lịch sử; REVOKED = đã bị thu hồi
+    (bước 3, vĩnh viễn) và đã được thêm vào CRL.
+
+    `fingerprint_sha256` băm từ `pem_certificate`, dùng làm định danh
+    kỹ thuật (không nhạy cảm, có thể hiển thị) độc lập với `serial_number`
+    do CA cấp.
+    """
+
+    STATUSES = ("ACTIVE", "ROTATED", "REVOKED")
+
+    id: Optional[int]
+    consumer_code: str
+    consumer_name: str
+    common_name: str
+    serial_number: str
+    pem_certificate: str
+    fingerprint_sha256: str
+    not_before: datetime
+    not_after: datetime
+    status: str = "ACTIVE"
+    registered_at: Optional[datetime] = None
+    rotated_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+    revocation_reason: str = ""
+    previous_certificate_id: Optional[int] = None
+    rotated_to_id: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        self._validate_consumer_code(self.consumer_code)
+        self._validate_consumer_name(self.consumer_name)
+        self._validate_common_name(self.common_name)
+        self._validate_serial_number(self.serial_number)
+        self._validate_pem(self.pem_certificate)
+        self._validate_status(self.status)
+        self._validate_validity_period(self.not_before, self.not_after)
+
+    @staticmethod
+    def _validate_consumer_code(consumer_code: str) -> None:
+        if not consumer_code or not consumer_code.strip():
+            raise ValueError("Mã đơn vị khai thác không được để trống")
+
+    @staticmethod
+    def _validate_consumer_name(consumer_name: str) -> None:
+        if not consumer_name or not consumer_name.strip():
+            raise ValueError("Tên đơn vị khai thác không được để trống")
+
+    @staticmethod
+    def _validate_common_name(common_name: str) -> None:
+        if not common_name or not common_name.strip():
+            raise ValueError("Common Name (CN) của chứng thư không được để trống")
+
+    @staticmethod
+    def _validate_serial_number(serial_number: str) -> None:
+        if not serial_number or not serial_number.strip():
+            raise ValueError("Số hiệu (serial number) của chứng thư không được để trống")
+
+    @staticmethod
+    def _validate_pem(pem_certificate: str) -> None:
+        if not pem_certificate or not pem_certificate.strip():
+            raise ValueError("Nội dung chứng thư (PEM) không được để trống")
+        if "BEGIN CERTIFICATE" not in pem_certificate:
+            raise ValueError(
+                "Nội dung chứng thư không đúng định dạng PEM "
+                "(thiếu '-----BEGIN CERTIFICATE-----')"
+            )
+
+    @classmethod
+    def _validate_status(cls, status: str) -> None:
+        if status not in cls.STATUSES:
+            raise ValueError(
+                f"Trạng thái '{status}' không hợp lệ, phải thuộc {cls.STATUSES}"
+            )
+
+    @staticmethod
+    def _validate_validity_period(not_before: datetime, not_after: datetime) -> None:
+        if not_before is None or not_after is None:
+            raise ValueError("Phải khai báo đủ thời hạn hiệu lực (not_before/not_after)")
+        if not_after <= not_before:
+            raise ValueError("Ngày hết hạn (not_after) phải sau ngày bắt đầu hiệu lực (not_before)")
+
+    @staticmethod
+    def compute_fingerprint(pem_certificate: str) -> str:
+        return hashlib.sha256(pem_certificate.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def register(
+        cls,
+        consumer_code: str,
+        consumer_name: str,
+        common_name: str,
+        serial_number: str,
+        pem_certificate: str,
+        not_before: datetime,
+        not_after: datetime,
+        when: datetime,
+        previous_certificate_id: Optional[int] = None,
+    ) -> "MtlsCertificate":
+        """Bước 1 (hoặc chứng thư mới sinh ra ở bước 2 luân chuyển) —
+        Đăng ký chứng thư của đơn vị khai thác -> hệ thống lưu vào kho
+        tin cậy."""
+        return cls(
+            id=None,
+            consumer_code=consumer_code,
+            consumer_name=consumer_name,
+            common_name=common_name,
+            serial_number=serial_number,
+            pem_certificate=pem_certificate,
+            fingerprint_sha256=cls.compute_fingerprint(pem_certificate),
+            not_before=not_before,
+            not_after=not_after,
+            status="ACTIVE",
+            registered_at=when,
+            previous_certificate_id=previous_certificate_id,
+        )
+
+    def mark_rotated(self, when: datetime, new_certificate_id: int) -> None:
+        """Bước 2 — được gọi trên chứng thư CŨ khi luân chuyển sang chứng
+        thư mới -> hệ thống cập nhật."""
+        if self.status != "ACTIVE":
+            raise ValueError(
+                f"Chứng thư #{self.id} không ở trạng thái ACTIVE nên không thể luân chuyển"
+            )
+        self.status = "ROTATED"
+        self.rotated_at = when
+        self.rotated_to_id = new_certificate_id
+
+    def revoke(self, when: datetime, reason: str = "") -> None:
+        """Bước 3 — Thu hồi chứng thư -> hệ thống thêm vào CRL."""
+        if self.status == "REVOKED":
+            raise ValueError(f"Chứng thư #{self.id} đã bị thu hồi trước đó")
+        self.status = "REVOKED"
+        self.revoked_at = when
+        self.revocation_reason = reason or ""
+
+    def is_valid_at(self, now: datetime) -> bool:
+        """Chứng thư còn hiệu lực xác thực mTLS tại thời điểm `now`:
+        đang ACTIVE và nằm trong khoảng not_before..not_after."""
+        return self.status == "ACTIVE" and self.not_before <= now <= self.not_after
+
+
+@dataclass
+class CertificateRevocationEntry:
+    """Bước 3 — 1 dòng trong CRL (Certificate Revocation List), append-only.
+
+    Mỗi lần thu hồi 1 chứng thư (`MtlsCertificate.revoke()`) hệ thống ghi
+    thêm đúng 1 bản ghi vào đây — CRL dùng để Cổng API tra cứu nhanh
+    "chứng thư này đã bị thu hồi hay chưa" theo `serial_number` hoặc
+    `fingerprint_sha256` khi xác thực mTLS runtime.
+    """
+
+    id: Optional[int]
+    certificate_id: int
+    consumer_code: str
+    serial_number: str
+    fingerprint_sha256: str
+    reason: str = ""
+    revoked_at: Optional[datetime] = None

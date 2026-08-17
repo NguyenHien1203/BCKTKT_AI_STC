@@ -165,3 +165,44 @@ class ApiAnomalyAlertModel(Base):
     starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+class MtlsCertificateModel(Base):
+    __tablename__ = "mtls_certificates"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    consumer_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    consumer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    common_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    serial_number: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    pem_certificate: Mapped[str] = mapped_column(Text, nullable=False)
+    fingerprint_sha256: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    not_before: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    not_after: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVE", index=True)
+    registered_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    rotated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    revocation_reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    previous_certificate_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("mtls_certificates.id")), nullable=True
+    )
+    rotated_to_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("mtls_certificates.id")), nullable=True
+    )
+
+
+class CertificateRevocationEntryModel(Base):
+    __tablename__ = "certificate_revocation_entries"
+    __table_args__ = _schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    certificate_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey(_fk("mtls_certificates.id")), nullable=False, index=True
+    )
+    consumer_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    serial_number: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    fingerprint_sha256: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    revoked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)

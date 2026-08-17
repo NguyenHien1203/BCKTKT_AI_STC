@@ -140,3 +140,40 @@ class InvalidAlertmanagerWebhookPayload(DomainError):
 
 class InvalidApiUsageQuery(DomainError):
     code = "INVALID_API_USAGE_QUERY"
+
+
+# ---------------------------------------------------------------------------
+# UC-062 — Quản lý chứng thư / mTLS cho đơn vị khai thác.
+# ---------------------------------------------------------------------------
+class MtlsCertificateNotFound(DomainError):
+    code = "MTLS_CERTIFICATE_NOT_FOUND"
+
+    def __init__(self, certificate_id: int):
+        super().__init__(f"Không tìm thấy chứng thư #{certificate_id}")
+
+
+class MtlsCertificateSerialAlreadyExists(DomainError):
+    code = "MTLS_CERTIFICATE_SERIAL_ALREADY_EXISTS"
+
+    def __init__(self, serial_number: str):
+        super().__init__(f"Số hiệu chứng thư '{serial_number}' đã tồn tại trong kho tin cậy")
+
+
+class InvalidMtlsCertificate(DomainError):
+    code = "INVALID_MTLS_CERTIFICATE"
+
+
+class MtlsCertificateNotActive(DomainError):
+    code = "MTLS_CERTIFICATE_NOT_ACTIVE"
+
+    def __init__(self, certificate_id: int):
+        super().__init__(
+            f"Chứng thư #{certificate_id} không ở trạng thái ACTIVE nên không thể luân chuyển"
+        )
+
+
+class MtlsCertificateAlreadyRevoked(DomainError):
+    code = "MTLS_CERTIFICATE_ALREADY_REVOKED"
+
+    def __init__(self, certificate_id: int):
+        super().__init__(f"Chứng thư #{certificate_id} đã bị thu hồi trước đó")

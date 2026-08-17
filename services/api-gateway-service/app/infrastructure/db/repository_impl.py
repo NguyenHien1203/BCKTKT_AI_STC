@@ -10,6 +10,8 @@ from app.domain.entities import (
     ApiKey,
     ApiKeyUsageLog,
     BurstPolicy,
+    CertificateRevocationEntry,
+    MtlsCertificate,
     RateLimitPolicy,
     ServiceTier,
 )
@@ -20,6 +22,8 @@ from app.domain.repositories import (
     ApiKeyRepository,
     ApiKeyUsageLogRepository,
     BurstPolicyRepository,
+    CertificateRevocationEntryRepository,
+    MtlsCertificateRepository,
     RateLimitPolicyRepository,
     ServiceTierRepository,
 )
@@ -30,6 +34,8 @@ from app.infrastructure.db.models import (
     ApiKeyModel,
     ApiKeyUsageLogModel,
     BurstPolicyModel,
+    CertificateRevocationEntryModel,
+    MtlsCertificateModel,
     RateLimitPolicyModel,
     ServiceTierModel,
 )
@@ -551,3 +557,153 @@ class SqlAlchemyApiAnomalyAlertRepository(ApiAnomalyAlertRepository):
             query = query.filter(ApiAnomalyAlertModel.consumer_code == consumer_code)
         query = query.order_by(ApiAnomalyAlertModel.received_at.desc())
         return [_alert_to_entity(m) for m in query.all()]
+
+def _certificate_to_entity(model: MtlsCertificateModel) -> MtlsCertificate:
+    return MtlsCertificate(
+        id=model.id,
+        consumer_code=model.consumer_code,
+        consumer_name=model.consumer_name,
+        common_name=model.common_name,
+        serial_number=model.serial_number,
+        pem_certificate=model.pem_certificate,
+        fingerprint_sha256=model.fingerprint_sha256,
+        not_before=model.not_before,
+        not_after=model.not_after,
+        status=model.status,
+        registered_at=model.registered_at,
+        rotated_at=model.rotated_at,
+        revoked_at=model.revoked_at,
+        revocation_reason=model.revocation_reason,
+        previous_certificate_id=model.previous_certificate_id,
+        rotated_to_id=model.rotated_to_id,
+    )
+
+
+class SqlAlchemyMtlsCertificateRepository(MtlsCertificateRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, certificate: MtlsCertificate) -> MtlsCertificate:
+        model = MtlsCertificateModel(
+            consumer_code=certificate.consumer_code,
+            consumer_name=certificate.consumer_name,
+            common_name=certificate.common_name,
+            serial_number=certificate.serial_number,
+            pem_certificate=certificate.pem_certificate,
+            fingerprint_sha256=certificate.fingerprint_sha256,
+            not_before=certificate.not_before,
+            not_after=certificate.not_after,
+            status=certificate.status,
+            registered_at=certificate.registered_at,
+            rotated_at=certificate.rotated_at,
+            revoked_at=certificate.revoked_at,
+            revocation_reason=certificate.revocation_reason,
+            previous_certificate_id=certificate.previous_certificate_id,
+            rotated_to_id=certificate.rotated_to_id,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _certificate_to_entity(model)
+
+    def update(self, certificate: MtlsCertificate) -> MtlsCertificate:
+        model = self._db.get(MtlsCertificateModel, certificate.id)
+        if model is None:
+            raise ValueError(f"MtlsCertificate #{certificate.id} không tồn tại")
+        model.consumer_code = certificate.consumer_code
+        model.consumer_name = certificate.consumer_name
+        model.common_name = certificate.common_name
+        model.serial_number = certificate.serial_number
+        model.pem_certificate = certificate.pem_certificate
+        model.fingerprint_sha256 = certificate.fingerprint_sha256
+        model.not_before = certificate.not_before
+        model.not_after = certificate.not_after
+        model.status = certificate.status
+        model.registered_at = certificate.registered_at
+        model.rotated_at = certificate.rotated_at
+        model.revoked_at = certificate.revoked_at
+        model.revocation_reason = certificate.revocation_reason
+        model.previous_certificate_id = certificate.previous_certificate_id
+        model.rotated_to_id = certificate.rotated_to_id
+        self._db.commit()
+        self._db.refresh(model)
+        return _certificate_to_entity(model)
+
+    def get_by_id(self, certificate_id: int) -> Optional[MtlsCertificate]:
+        model = self._db.get(MtlsCertificateModel, certificate_id)
+        return _certificate_to_entity(model) if model else None
+
+    def get_by_serial_number(self, serial_number: str) -> Optional[MtlsCertificate]:
+        model = (
+            self._db.query(MtlsCertificateModel)
+            .filter(MtlsCertificateModel.serial_number == serial_number)
+            .first()
+        )
+        return _certificate_to_entity(model) if model else None
+
+    def get_by_fingerprint(self, fingerprint_sha256: str) -> Optional[MtlsCertificate]:
+        model = (
+            self._db.query(MtlsCertificateModel)
+            .filter(MtlsCertificateModel.fingerprint_sha256 == fingerprint_sha256)
+            .first()
+        )
+        return _certificate_to_entity(model) if model else None
+
+    def list(
+        self,
+        consumer_code: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[MtlsCertificate]:
+        query = self._db.query(MtlsCertificateModel)
+        if consumer_code is not None:
+            query = query.filter(MtlsCertificateModel.consumer_code == consumer_code)
+        if status is not None:
+            query = query.filter(MtlsCertificateModel.status == status)
+        query = query.order_by(MtlsCertificateModel.id.desc())
+        return [_certificate_to_entity(m) for m in query.all()]
+
+
+def _crl_entry_to_entity(model: CertificateRevocationEntryModel) -> CertificateRevocationEntry:
+    return CertificateRevocationEntry(
+        id=model.id,
+        certificate_id=model.certificate_id,
+        consumer_code=model.consumer_code,
+        serial_number=model.serial_number,
+        fingerprint_sha256=model.fingerprint_sha256,
+        reason=model.reason,
+        revoked_at=model.revoked_at,
+    )
+
+
+class SqlAlchemyCertificateRevocationEntryRepository(CertificateRevocationEntryRepository):
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, entry: CertificateRevocationEntry) -> CertificateRevocationEntry:
+        model = CertificateRevocationEntryModel(
+            certificate_id=entry.certificate_id,
+            consumer_code=entry.consumer_code,
+            serial_number=entry.serial_number,
+            fingerprint_sha256=entry.fingerprint_sha256,
+            reason=entry.reason,
+            revoked_at=entry.revoked_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _crl_entry_to_entity(model)
+
+    def list(self, consumer_code: Optional[str] = None) -> List[CertificateRevocationEntry]:
+        query = self._db.query(CertificateRevocationEntryModel)
+        if consumer_code is not None:
+            query = query.filter(CertificateRevocationEntryModel.consumer_code == consumer_code)
+        query = query.order_by(CertificateRevocationEntryModel.revoked_at.desc())
+        return [_crl_entry_to_entity(m) for m in query.all()]
+
+    def get_by_serial_number(self, serial_number: str) -> Optional[CertificateRevocationEntry]:
+        model = (
+            self._db.query(CertificateRevocationEntryModel)
+            .filter(CertificateRevocationEntryModel.serial_number == serial_number)
+            .first()
+        )
+        return _crl_entry_to_entity(model) if model else None
