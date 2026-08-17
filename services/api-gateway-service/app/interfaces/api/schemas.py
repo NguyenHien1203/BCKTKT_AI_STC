@@ -283,3 +283,79 @@ class ApiAnomalyAlertResponse(BaseModel):
     received_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+# ---------------------------------------------------------------------------
+# UC-062 — Quản lý chứng thư / mTLS cho đơn vị khai thác.
+# ---------------------------------------------------------------------------
+
+
+class MtlsCertificateRegister(BaseModel):
+    """Bước 1 — Đăng ký chứng thư của đơn vị khai thác."""
+
+    consumer_code: str = Field(..., min_length=1, max_length=100)
+    consumer_name: str = Field(..., min_length=1, max_length=255)
+    common_name: str = Field(..., min_length=1, max_length=255)
+    serial_number: str = Field(..., min_length=1, max_length=128)
+    pem_certificate: str = Field(..., min_length=1)
+    not_before: datetime
+    not_after: datetime
+
+
+class MtlsCertificateResponse(BaseModel):
+    id: int
+    consumer_code: str
+    consumer_name: str
+    common_name: str
+    serial_number: str
+    fingerprint_sha256: str
+    not_before: datetime
+    not_after: datetime
+    status: str
+    registered_at: Optional[datetime] = None
+    rotated_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+    revocation_reason: str = ""
+    previous_certificate_id: Optional[int] = None
+    rotated_to_id: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+class MtlsCertificateRotateRequest(BaseModel):
+    """Bước 2 — Luân chuyển chứng thư (chứng thư mới thay thế)."""
+
+    common_name: str = Field(..., min_length=1, max_length=255)
+    serial_number: str = Field(..., min_length=1, max_length=128)
+    pem_certificate: str = Field(..., min_length=1)
+    not_before: datetime
+    not_after: datetime
+
+
+class MtlsCertificateRotateResponse(BaseModel):
+    old_certificate: MtlsCertificateResponse
+    new_certificate: MtlsCertificateResponse
+
+
+class MtlsCertificateRevokeRequest(BaseModel):
+    """Bước 3 — Thu hồi chứng thư."""
+
+    reason: str = ""
+
+
+class CertificateRevocationEntryResponse(BaseModel):
+    """Bước 3 — 1 dòng trong CRL."""
+
+    id: int
+    certificate_id: int
+    consumer_code: str
+    serial_number: str
+    fingerprint_sha256: str
+    reason: str = ""
+    revoked_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class CertificateRevocationCheckResponse(BaseModel):
+    serial_number: str
+    is_revoked: bool

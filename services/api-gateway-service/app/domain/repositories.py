@@ -9,6 +9,8 @@ from app.domain.entities import (
     ApiKey,
     ApiKeyUsageLog,
     BurstPolicy,
+    CertificateRevocationEntry,
+    MtlsCertificate,
     RateLimitPolicy,
     ServiceTier,
 )
@@ -215,4 +217,54 @@ class PrometheusQueryClient(ABC):
     ) -> List[Dict[str, Any]]:
         """Bước 2 — chi tiết theo từng đơn vị khai thác (consumer_code
         của UC-059), lọc theo 1 đơn vị cụ thể nếu truyền vào."""
+        ...
+
+# ---------------------------------------------------------------------------
+# UC-062 — Quản lý chứng thư / mTLS cho đơn vị khai thác.
+# ---------------------------------------------------------------------------
+class MtlsCertificateRepository(ABC):
+    """Repository cho UC-062: kho tin cậy chứng thư mTLS."""
+
+    @abstractmethod
+    def add(self, certificate: MtlsCertificate) -> MtlsCertificate:
+        ...
+
+    @abstractmethod
+    def update(self, certificate: MtlsCertificate) -> MtlsCertificate:
+        ...
+
+    @abstractmethod
+    def get_by_id(self, certificate_id: int) -> Optional[MtlsCertificate]:
+        ...
+
+    @abstractmethod
+    def get_by_serial_number(self, serial_number: str) -> Optional[MtlsCertificate]:
+        ...
+
+    @abstractmethod
+    def get_by_fingerprint(self, fingerprint_sha256: str) -> Optional[MtlsCertificate]:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        consumer_code: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[MtlsCertificate]:
+        ...
+
+
+class CertificateRevocationEntryRepository(ABC):
+    """Repository cho UC-062 bước 3: CRL (Certificate Revocation List)."""
+
+    @abstractmethod
+    def add(self, entry: CertificateRevocationEntry) -> CertificateRevocationEntry:
+        ...
+
+    @abstractmethod
+    def list(self, consumer_code: Optional[str] = None) -> List[CertificateRevocationEntry]:
+        ...
+
+    @abstractmethod
+    def get_by_serial_number(self, serial_number: str) -> Optional[CertificateRevocationEntry]:
         ...

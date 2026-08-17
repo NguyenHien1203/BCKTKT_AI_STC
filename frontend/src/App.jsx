@@ -36,6 +36,7 @@ import {
   ScanSearch,
   Settings,
   ShieldAlert,
+  ShieldCheck,
   Tag,
   Ticket,
   UploadCloud,
@@ -104,6 +105,7 @@ import ApiCatalogPage from "./pages/gateway/ApiCatalogPage.jsx";
 import ApiKeysPage from "./pages/gateway/ApiKeysPage.jsx";
 import RateLimitsPage from "./pages/gateway/RateLimitsPage.jsx";
 import ApiUsagePage from "./pages/gateway/ApiUsagePage.jsx";
+import MtlsCertificatesPage from "./pages/gateway/MtlsCertificatesPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -427,6 +429,13 @@ function HomePage() {
       description:
         "UC-061 — Xem bảng điều khiển mức sử dụng API (req/giây, độ trễ, tỉ lệ lỗi) hiển thị từ Prometheus; xem chi tiết theo đơn vị khai thác; cảnh báo khi API có bất thường (Alertmanager gửi cảnh báo).",
       icon: LineChart,
+    },
+    {
+      to: "/mtls-certificates",
+      title: "Quản lý chứng thư / mTLS cho đơn vị khai thác",
+      description:
+        "UC-062 — Đăng ký chứng thư của đơn vị khai thác lưu vào kho tin cậy; luân chuyển chứng thư (hệ thống cập nhật); thu hồi chứng thư (hệ thống thêm vào CRL).",
+      icon: ShieldCheck,
     },
   ];
 
@@ -937,6 +946,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ApiUsagePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mtls-certificates"
+        element={
+          <ProtectedRoute>
+            <MtlsCertificatesPage />
           </ProtectedRoute>
         }
       />
