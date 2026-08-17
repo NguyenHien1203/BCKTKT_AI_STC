@@ -136,6 +136,7 @@ export const NAV_SECTIONS = [
       { to: "/api-usage", label: "Theo dõi mức sử dụng API + chỉ số", icon: LineChart },
       { to: "/mtls-certificates", label: "Quản lý chứng thư / mTLS", icon: ShieldCheck },
       { to: "/api-docs", label: "Cổng tài liệu API", icon: BookOpen },
+      { to: "/data-api", label: "Cung cấp Data API cho IOC", icon: Database },
       { to: "/ai", label: "Trợ lý AI", icon: Sparkles, disabled: true },
       { to: "/ops", label: "Vận hành", icon: Wrench, disabled: true },
     ],

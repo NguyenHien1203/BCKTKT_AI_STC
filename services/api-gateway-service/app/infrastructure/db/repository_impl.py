@@ -1,4 +1,5 @@
 """Cài đặt repository (SQLAlchemy) cho api-gateway-service."""
+from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from app.domain.entities import (
     ApiCatalogVersionHistory,
     ApiKey,
     ApiKeyUsageLog,
+    AuditLogEntry,
     BurstPolicy,
     CertificateRevocationEntry,
     MtlsCertificate,
@@ -21,6 +23,7 @@ from app.domain.repositories import (
     ApiCatalogVersionHistoryRepository,
     ApiKeyRepository,
     ApiKeyUsageLogRepository,
+    AuditLogRepository,
     BurstPolicyRepository,
     CertificateRevocationEntryRepository,
     MtlsCertificateRepository,
@@ -33,6 +36,7 @@ from app.infrastructure.db.models import (
     ApiCatalogVersionHistoryModel,
     ApiKeyModel,
     ApiKeyUsageLogModel,
+    AuditLogModel,
     BurstPolicyModel,
     CertificateRevocationEntryModel,
     MtlsCertificateModel,
@@ -183,6 +187,7 @@ def _api_key_to_entity(model: ApiKeyModel) -> ApiKey:
         grace_expires_at=model.grace_expires_at,
         previous_key_id=model.previous_key_id,
         rotated_to_id=model.rotated_to_id,
+        service_tier_code=model.service_tier_code,
     )
 
 
@@ -218,6 +223,7 @@ class SqlAlchemyApiKeyRepository(ApiKeyRepository):
             grace_expires_at=api_key.grace_expires_at,
             previous_key_id=api_key.previous_key_id,
             rotated_to_id=api_key.rotated_to_id,
+            service_tier_code=api_key.service_tier_code,
         )
         self._db.add(model)
         self._db.commit()
@@ -240,6 +246,7 @@ class SqlAlchemyApiKeyRepository(ApiKeyRepository):
         model.grace_expires_at = api_key.grace_expires_at
         model.previous_key_id = api_key.previous_key_id
         model.rotated_to_id = api_key.rotated_to_id
+        model.service_tier_code = api_key.service_tier_code
         self._db.commit()
         self._db.refresh(model)
         return _api_key_to_entity(model)
@@ -297,6 +304,14 @@ class SqlAlchemyApiKeyUsageLogRepository(ApiKeyUsageLogRepository):
             .limit(limit)
         )
         return [_usage_log_to_entity(m) for m in query.all()]
+
+    def count_since(self, api_key_id: int, since: datetime) -> int:
+        return (
+            self._db.query(ApiKeyUsageLogModel)
+            .filter(ApiKeyUsageLogModel.api_key_id == api_key_id)
+            .filter(ApiKeyUsageLogModel.called_at >= since)
+            .count()
+        )
 
 def _tier_to_entity(model: ServiceTierModel) -> ServiceTier:
     return ServiceTier(
@@ -707,3 +722,60 @@ class SqlAlchemyCertificateRevocationEntryRepository(CertificateRevocationEntryR
             .first()
         )
         return _crl_entry_to_entity(model) if model else None
+
+def _audit_log_to_entity(model: AuditLogModel) -> AuditLogEntry:
+    return AuditLogEntry(
+        id=model.id,
+        api_type=model.api_type,
+        endpoint_path=model.endpoint_path,
+        consumer_code=model.consumer_code,
+        status=model.status,
+        api_key_id=model.api_key_id,
+        reason=model.reason,
+        request_params=model.request_params,
+        row_count=model.row_count,
+        consumer_ip=model.consumer_ip,
+        called_at=model.called_at,
+    )
+
+
+class SqlAlchemyAuditLogRepository(AuditLogRepository):
+    """UC-064 bước 3: `audit.audit_log`."""
+
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def add(self, entry: AuditLogEntry) -> AuditLogEntry:
+        model = AuditLogModel(
+            api_type=entry.api_type,
+            endpoint_path=entry.endpoint_path,
+            consumer_code=entry.consumer_code,
+            status=entry.status,
+            api_key_id=entry.api_key_id,
+            reason=entry.reason,
+            request_params=entry.request_params,
+            row_count=entry.row_count,
+            consumer_ip=entry.consumer_ip,
+            called_at=entry.called_at,
+        )
+        self._db.add(model)
+        self._db.commit()
+        self._db.refresh(model)
+        return _audit_log_to_entity(model)
+
+    def list(
+        self,
+        api_type: Optional[str] = None,
+        consumer_code: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 200,
+    ) -> List[AuditLogEntry]:
+        query = self._db.query(AuditLogModel)
+        if api_type:
+            query = query.filter(AuditLogModel.api_type == api_type)
+        if consumer_code:
+            query = query.filter(AuditLogModel.consumer_code == consumer_code)
+        if status:
+            query = query.filter(AuditLogModel.status == status)
+        query = query.order_by(AuditLogModel.id.desc()).limit(limit)
+        return [_audit_log_to_entity(m) for m in query.all()]

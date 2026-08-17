@@ -2,12 +2,15 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+from datetime import datetime
+
 from app.domain.entities import (
     ApiAnomalyAlert,
     ApiCatalogEntry,
     ApiCatalogVersionHistory,
     ApiKey,
     ApiKeyUsageLog,
+    AuditLogEntry,
     BurstPolicy,
     CertificateRevocationEntry,
     MtlsCertificate,
@@ -93,6 +96,14 @@ class ApiKeyUsageLogRepository(ABC):
 
     @abstractmethod
     def list_for_key(self, api_key_id: int, limit: int = 100) -> List[ApiKeyUsageLog]:
+        ...
+
+    @abstractmethod
+    def count_since(self, api_key_id: int, since: datetime) -> int:
+        """Số lượt gọi của khoá `api_key_id` kể từ thời điểm `since` — dùng
+        ở UC-064 bước \"Cổng API kiểm tra ... giới hạn tần suất\" để so
+        sánh với `RateLimitPolicy.requests_per_second`/`requests_per_day`
+        của UC-060."""
         ...
 
 # ---------------------------------------------------------------------------
@@ -267,4 +278,40 @@ class CertificateRevocationEntryRepository(ABC):
 
     @abstractmethod
     def get_by_serial_number(self, serial_number: str) -> Optional[CertificateRevocationEntry]:
+        ...
+
+# ---------------------------------------------------------------------------
+# UC-064 — Cung cấp Data API cho IOC.
+# ---------------------------------------------------------------------------
+class AuditLogRepository(ABC):
+    """Repository cho UC-064 bước 3: `audit.audit_log` — nhật ký lời gọi
+    API cấp hệ thống, append-only, dùng chung cho mọi loại API (Data/
+    Search/QA/Metadata)."""
+
+    @abstractmethod
+    def add(self, entry: AuditLogEntry) -> AuditLogEntry:
+        ...
+
+    @abstractmethod
+    def list(
+        self,
+        api_type: Optional[str] = None,
+        consumer_code: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 200,
+    ) -> List[AuditLogEntry]:
+        ...
+
+
+class DataApiSemanticLayerClient(ABC):
+    """Cổng (port) truy vấn dữ liệu tổng hợp qua Lớp ngữ nghĩa — UC-064
+    bước 1 \"IOC gọi Data API tổng hợp -> Hệ thống trả dữ liệu qua Lớp
+    ngữ nghĩa\". Implementation thật gọi `SemanticIndicatorService`
+    (UC-043, `data-quality-service`); implementation NoOp dùng cho dev/
+    test sinh dữ liệu xác định (deterministic)."""
+
+    @abstractmethod
+    def query_aggregated_data(
+        self, dataset_code: str, filters: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         ...

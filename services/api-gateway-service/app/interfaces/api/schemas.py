@@ -77,6 +77,13 @@ class ApiKeyCreate(BaseModel):
         max_length=500,
         description="Phạm vi truy cập, danh sách phân tách bởi dấu phẩy, vd 'SEARCH,QA'",
     )
+    service_tier_code: Optional[str] = Field(
+        default=None,
+        description=(
+            "UC-064: mã gói dịch vụ (FREE/STANDARD/PREMIUM, UC-060) áp giới hạn "
+            "tần suất khi gọi Data API. Bỏ trống -> mặc định dùng gói FREE."
+        ),
+    )
 
 
 class ApiKeyResponse(BaseModel):
@@ -95,6 +102,7 @@ class ApiKeyResponse(BaseModel):
     grace_expires_at: Optional[datetime] = None
     previous_key_id: Optional[int] = None
     rotated_to_id: Optional[int] = None
+    service_tier_code: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -359,3 +367,39 @@ class CertificateRevocationEntryResponse(BaseModel):
 class CertificateRevocationCheckResponse(BaseModel):
     serial_number: str
     is_revoked: bool
+
+# ---------------------------------------------------------------------------
+# UC-064 — Cung cấp Data API cho IOC.
+# ---------------------------------------------------------------------------
+
+
+class DataApiQueryRequest(BaseModel):
+    """Bước 1 — IOC gọi Data API tổng hợp. Khoá API truyền qua header
+    `X-API-Key` (KHÔNG nằm trong body)."""
+
+    dataset_code: str = Field(..., min_length=1, max_length=100)
+    filters: Dict[str, Any] = Field(default_factory=dict)
+
+
+class DataApiQueryResponse(BaseModel):
+    dataset_code: str
+    row_count: int
+    rows: List[Dict[str, Any]]
+
+
+class AuditLogResponse(BaseModel):
+    """Bước 3 — 1 dòng nhật ký trong `audit.audit_log`."""
+
+    id: int
+    api_type: str
+    endpoint_path: str
+    consumer_code: str
+    status: str
+    api_key_id: Optional[int] = None
+    reason: str = ""
+    request_params: str = ""
+    row_count: Optional[int] = None
+    consumer_ip: Optional[str] = None
+    called_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

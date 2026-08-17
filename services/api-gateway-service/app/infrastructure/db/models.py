@@ -87,6 +87,9 @@ class ApiKeyModel(Base):
     rotated_to_id: Mapped[int] = mapped_column(
         Integer, ForeignKey(_fk("api_keys.id")), nullable=True
     )
+    # UC-064: mã gói dịch vụ (ServiceTier.code, UC-060) áp giới hạn tần
+    # suất khi gọi Data API — NULL nghĩa là mặc định dùng gói "FREE".
+    service_tier_code: Mapped[str] = mapped_column(String(20), nullable=True)
 
 
 class ApiKeyUsageLogModel(Base):
@@ -206,3 +209,28 @@ class CertificateRevocationEntryModel(Base):
     fingerprint_sha256: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
     revoked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+# UC-064 — schema "audit" (KHÁC schema "gateway" của các bảng trên, giống
+# cách reporting-service tự tạo + sở hữu bảng ở schema "curated" cho
+# UC-055/056/057) — bảng audit_log dùng chung cho mọi loại API.
+def _audit_schema_kwargs() -> dict:
+    if engine.url.get_backend_name() == "sqlite":
+        return {}
+    return {"schema": "audit"}
+
+
+class AuditLogModel(Base):
+    __tablename__ = "audit_log"
+    __table_args__ = _audit_schema_kwargs()
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    api_type: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    endpoint_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    consumer_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    api_key_id: Mapped[int] = mapped_column(Integer, nullable=True, index=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    request_params: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    row_count: Mapped[int] = mapped_column(Integer, nullable=True)
+    consumer_ip: Mapped[str] = mapped_column(String(64), nullable=True)
+    called_at: Mapped[datetime] = mapped_column(DateTime, nullable=True, index=True)

@@ -5,6 +5,7 @@ from app.interfaces.api.api_docs_router import router as api_docs_router
 from app.interfaces.api.api_key_router import router as api_key_router
 from app.interfaces.api.api_usage_router import alert_router as api_alert_router
 from app.interfaces.api.api_usage_router import usage_router as api_usage_router
+from app.interfaces.api.data_api_router import router as data_api_router
 from app.interfaces.api.mtls_certificate_router import router as mtls_certificate_router
 from app.interfaces.api.rate_limit_router import router as rate_limit_router
 
@@ -27,6 +28,7 @@ app.include_router(api_usage_router)
 app.include_router(api_alert_router)
 app.include_router(mtls_certificate_router)
 app.include_router(api_docs_router)
+app.include_router(data_api_router)
 
 # TODO: khi bắt đầu UC tiếp theo của service này (xem PLAN.md),
 # thêm router theo mẫu auth-identity-service/app/interfaces/api/*
