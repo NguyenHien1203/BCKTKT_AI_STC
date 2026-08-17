@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import {
   ArrowRight,
   BadgeCheck,
+  BookOpen,
   Building2,
   CalendarClock,
   ClipboardCheck,
@@ -106,6 +107,7 @@ import ApiKeysPage from "./pages/gateway/ApiKeysPage.jsx";
 import RateLimitsPage from "./pages/gateway/RateLimitsPage.jsx";
 import ApiUsagePage from "./pages/gateway/ApiUsagePage.jsx";
 import MtlsCertificatesPage from "./pages/gateway/MtlsCertificatesPage.jsx";
+import ApiDocsPage from "./pages/gateway/ApiDocsPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -436,6 +438,13 @@ function HomePage() {
       description:
         "UC-062 — Đăng ký chứng thư của đơn vị khai thác lưu vào kho tin cậy; luân chuyển chứng thư (hệ thống cập nhật); thu hồi chứng thư (hệ thống thêm vào CRL).",
       icon: ShieldCheck,
+    },
+    {
+      to: "/api-docs",
+      title: "Cổng tài liệu API",
+      description:
+        "UC-063 — Đơn vị khai thác (QLVBĐH, IOC, LGSP) truy cập cổng Swagger/Redoc; hệ thống hiển thị UI tài liệu các API đã công bố để xem.",
+      icon: BookOpen,
     },
   ];
 
@@ -954,6 +963,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <MtlsCertificatesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/api-docs"
+        element={
+          <ProtectedRoute>
+            <ApiDocsPage />
           </ProtectedRoute>
         }
       />
