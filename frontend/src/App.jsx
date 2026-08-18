@@ -36,6 +36,7 @@ import {
   RefreshCw,
   ScanSearch,
   Settings,
+  Server,
   ShieldAlert,
   ShieldCheck,
   Tag,
@@ -109,6 +110,7 @@ import ApiUsagePage from "./pages/gateway/ApiUsagePage.jsx";
 import MtlsCertificatesPage from "./pages/gateway/MtlsCertificatesPage.jsx";
 import ApiDocsPage from "./pages/gateway/ApiDocsPage.jsx";
 import DataApiPage from "./pages/gateway/DataApiPage.jsx";
+import LgspApiPage from "./pages/gateway/LgspApiPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -453,6 +455,13 @@ function HomePage() {
       description:
         "UC-064 — IOC gọi Data API tổng hợp, hệ thống trả dữ liệu qua Lớp ngữ nghĩa; Cổng API kiểm tra khoá API + phạm vi + giới hạn tần suất; ghi nhật ký lời gọi API vào audit.audit_log.",
       icon: Database,
+    },
+    {
+      to: "/lgsp",
+      title: "Cung cấp API qua LGSP",
+      description:
+        "UC-065 — Cổng LGSP chuyển tiếp yêu cầu, hệ thống nhận; Cổng API kiểm tra chứng thư mTLS rồi thực thi; hệ thống luôn trả phản hồi theo chuẩn LGSP.",
+      icon: Server,
     },
   ];
 
@@ -987,6 +996,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DataApiPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lgsp"
+        element={
+          <ProtectedRoute>
+            <LgspApiPage />
           </ProtectedRoute>
         }
       />
