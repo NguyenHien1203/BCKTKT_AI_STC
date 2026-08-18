@@ -230,3 +230,56 @@ class SemanticLayerDataQueryFailed(DomainError):
 
     def __init__(self, detail: str = ""):
         super().__init__(detail or "Truy vấn Lớp ngữ nghĩa thất bại")
+
+# ---------------------------------------------------------------------------
+# UC-065 — Cung cấp API qua LGSP.
+#
+# Flow: Cổng LGSP chuyển tiếp yêu cầu -> Hệ thống nhận. Cổng API kiểm tra
+# chứng thư mTLS -> Hệ thống thực thi. Trả phản hồi theo chuẩn LGSP -> Hệ
+# thống response.
+#
+# Mỗi lỗi bên dưới có thêm thuộc tính `lgsp_code` — mã lỗi dùng để đóng gói
+# vào PHONG BÌ (envelope) phản hồi chuẩn LGSP (`LgspGatewayService` bắt các
+# lỗi này NỘI BỘ, KHÔNG để lộ ra ngoài dưới dạng lỗi HTTP, vì bản chất tích
+# hợp LGSP luôn phải "trả phản hồi theo chuẩn LGSP" — tức luôn có 1 phong
+# bì JSON với `response_code`, kể cả khi bị từ chối/lỗi).
+# ---------------------------------------------------------------------------
+class LgspCertificateMissing(DomainError):
+    code = "LGSP_CERTIFICATE_MISSING"
+    lgsp_code = "E01"
+
+    def __init__(self):
+        super().__init__(
+            "Thiếu số hiệu chứng thư mTLS (header X-Client-Cert-Serial) do Cổng LGSP chuyển tiếp"
+        )
+
+
+class LgspCertificateInvalid(DomainError):
+    code = "LGSP_CERTIFICATE_INVALID"
+    lgsp_code = "E02"
+
+    def __init__(self, detail: str = "", consumer_code: Optional[str] = None):
+        self.consumer_code = consumer_code
+        super().__init__(detail or "Chứng thư mTLS không hợp lệ, không tồn tại hoặc đã hết hiệu lực")
+
+
+class LgspCertificateRevoked(DomainError):
+    code = "LGSP_CERTIFICATE_REVOKED"
+    lgsp_code = "E03"
+
+    def __init__(self, serial_number: str = "", consumer_code: Optional[str] = None):
+        self.consumer_code = consumer_code
+        super().__init__(f"Chứng thư mTLS '{serial_number}' đã bị thu hồi (có trong CRL)")
+
+
+class InvalidLgspRequest(DomainError):
+    code = "INVALID_LGSP_REQUEST"
+    lgsp_code = "E04"
+
+
+class LgspRequestExecutionFailed(DomainError):
+    code = "LGSP_REQUEST_EXECUTION_FAILED"
+    lgsp_code = "E05"
+
+    def __init__(self, detail: str = ""):
+        super().__init__(detail or "Hệ thống thực thi yêu cầu LGSP thất bại")

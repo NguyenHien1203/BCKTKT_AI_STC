@@ -403,3 +403,26 @@ class AuditLogResponse(BaseModel):
     called_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# UC-065 — Cung cấp API qua LGSP.
+# ---------------------------------------------------------------------------
+class LgspRequestPayload(BaseModel):
+    """Bước 1 — Cổng LGSP chuyển tiếp yêu cầu. Chứng thư mTLS truyền qua
+    header `X-Client-Cert-Serial` (KHÔNG nằm trong body)."""
+
+    request_id: str = Field(..., min_length=1, max_length=100, description="Mã giao dịch do Cổng LGSP sinh")
+    service_code: str = Field(..., min_length=1, max_length=100, description="Mã dịch vụ/bộ dữ liệu cần lấy")
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class LgspResponseEnvelope(BaseModel):
+    """Bước 3 — Phong bì phản hồi theo chuẩn LGSP, LUÔN trả về (thành
+    công lẫn bị từ chối/lỗi) — không dùng mã lỗi HTTP rời rạc."""
+
+    request_id: str
+    response_code: str
+    response_message: str
+    processed_at: datetime
+    data: Optional[Dict[str, Any]] = None
