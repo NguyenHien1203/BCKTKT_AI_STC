@@ -9,6 +9,7 @@ from app.interfaces.api.data_api_router import router as data_api_router
 from app.interfaces.api.lgsp_router import router as lgsp_router
 from app.interfaces.api.mtls_certificate_router import router as mtls_certificate_router
 from app.interfaces.api.rate_limit_router import router as rate_limit_router
+from app.interfaces.api.search_api_router import router as search_api_router
 
 app = FastAPI(
     title="api-gateway-service",
@@ -31,6 +32,7 @@ app.include_router(mtls_certificate_router)
 app.include_router(api_docs_router)
 app.include_router(data_api_router)
 app.include_router(lgsp_router)
+app.include_router(search_api_router)
 
 # TODO: khi bắt đầu UC tiếp theo của service này (xem PLAN.md),
 # thêm router theo mẫu auth-identity-service/app/interfaces/api/*

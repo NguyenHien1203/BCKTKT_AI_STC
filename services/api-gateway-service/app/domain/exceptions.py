@@ -283,3 +283,51 @@ class LgspRequestExecutionFailed(DomainError):
 
     def __init__(self, detail: str = ""):
         super().__init__(detail or "Hệ thống thực thi yêu cầu LGSP thất bại")
+# ---------------------------------------------------------------------------
+# UC-066 — Cung cấp Search API cho QLVBĐH/cổng nội bộ.
+#
+# Flow: (1) QLVBĐH gọi Search API -> Hệ thống tìm kiếm vector + BM25.
+# (2) Lọc theo quyền (Cổng API kiểm tra khoá API + phạm vi/mức bảo mật
+# được khoá cấp) -> Hệ thống lọc theo phạm vi của người dùng đến từ
+# QLVBĐH (đơn vị + mức bảo mật của NGƯỜI DÙNG CUỐI, khác phạm vi của bản
+# thân khoá API). (3) Trả kết quả + dẫn nguồn -> Hệ thống phản hồi JSON.
+# ---------------------------------------------------------------------------
+class SearchApiKeyMissing(DomainError):
+    code = "SEARCH_API_KEY_MISSING"
+
+    def __init__(self):
+        super().__init__("Thiếu khoá API (header X-API-Key) khi gọi Search API")
+
+
+class SearchApiKeyInvalid(DomainError):
+    code = "SEARCH_API_KEY_INVALID"
+
+    def __init__(self):
+        super().__init__("Khoá API không hợp lệ, không tồn tại hoặc đã hết hiệu lực")
+
+
+class SearchApiScopeDenied(DomainError):
+    code = "SEARCH_API_SCOPE_DENIED"
+
+    def __init__(
+        self,
+        required_scope: str,
+        api_key_id=None,
+        consumer_code=None,
+    ):
+        self.api_key_id = api_key_id
+        self.consumer_code = consumer_code
+        super().__init__(
+            f"Khoá API không có phạm vi (scope) '{required_scope}' để gọi Search API"
+        )
+
+
+class InvalidSearchApiQuery(DomainError):
+    code = "INVALID_SEARCH_API_QUERY"
+
+
+class SearchIndexQueryFailed(DomainError):
+    code = "SEARCH_INDEX_QUERY_FAILED"
+
+    def __init__(self, detail: str = ""):
+        super().__init__(detail or "Truy vấn hệ thống tìm kiếm (vector + BM25) thất bại")

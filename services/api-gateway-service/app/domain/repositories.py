@@ -315,3 +315,27 @@ class DataApiSemanticLayerClient(ABC):
         self, dataset_code: str, filters: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         ...
+
+# ---------------------------------------------------------------------------
+# UC-066 — Cung cấp Search API cho QLVBĐH/cổng nội bộ.
+# ---------------------------------------------------------------------------
+class SearchIndexClient(ABC):
+    """Cổng (port) tìm kiếm hỗn hợp (hybrid) VECTOR + BM25 trên kho văn bản
+    đã được index — UC-066 bước 1 \"QLVBĐH gọi Search API -> Hệ thống tìm
+    kiếm vector + BM25\". Mỗi kết quả trả về PHẢI có đủ siêu dữ liệu để lớp
+    application thực hiện 2 bước lọc kế tiếp (theo quyền của khoá API +
+    theo phạm vi người dùng QLVBĐH) và để trả \"dẫn nguồn\" (bước 3):
+    `security_level` (PUBLIC/NOI_BO/MAT) và `don_vi_code` (đơn vị sở hữu
+    văn bản, `None`/rỗng nghĩa là văn bản dùng chung toàn tỉnh) cho lọc
+    phạm vi; `source` (dict mô tả dẫn nguồn: hệ thống nguồn, số hiệu văn
+    bản, URL) cho bước trả dẫn nguồn.
+
+    Implementation thật gọi tới chỉ mục pgvector/OpenSearch của
+    `ai-service` (schema `ai`, UC-069..89, theo `ARCHITECTURE.md`);
+    implementation NoOp dùng cho dev/test sinh dữ liệu xác định
+    (deterministic), cùng khuôn mẫu `DataApiSemanticLayerClient` UC-064.
+    """
+
+    @abstractmethod
+    def hybrid_search(self, query: str, top_k: int) -> List[Dict[str, Any]]:
+        ...

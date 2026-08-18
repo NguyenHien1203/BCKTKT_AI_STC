@@ -35,6 +35,7 @@ import {
   PlugZap,
   RefreshCw,
   ScanSearch,
+  Search,
   Settings,
   Server,
   ShieldAlert,
@@ -111,6 +112,7 @@ import MtlsCertificatesPage from "./pages/gateway/MtlsCertificatesPage.jsx";
 import ApiDocsPage from "./pages/gateway/ApiDocsPage.jsx";
 import DataApiPage from "./pages/gateway/DataApiPage.jsx";
 import LgspApiPage from "./pages/gateway/LgspApiPage.jsx";
+import SearchApiPage from "./pages/gateway/SearchApiPage.jsx";
 
 function HomePage() {
   const modules = [
@@ -462,6 +464,13 @@ function HomePage() {
       description:
         "UC-065 — Cổng LGSP chuyển tiếp yêu cầu, hệ thống nhận; Cổng API kiểm tra chứng thư mTLS rồi thực thi; hệ thống luôn trả phản hồi theo chuẩn LGSP.",
       icon: Server,
+    },
+    {
+      to: "/search-api",
+      title: "Cung cấp Search API cho QLVBĐH/cổng nội bộ",
+      description:
+        "UC-066 — QLVBĐH gọi Search API, hệ thống tìm kiếm vector + BM25; lọc theo quyền của khoá API rồi lọc tiếp theo phạm vi của người dùng đến từ QLVBĐH; trả kết quả kèm dẫn nguồn, hệ thống phản hồi JSON.",
+      icon: Search,
     },
   ];
 
@@ -1004,6 +1013,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <LgspApiPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search-api"
+        element={
+          <ProtectedRoute>
+            <SearchApiPage />
           </ProtectedRoute>
         }
       />

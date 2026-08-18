@@ -406,6 +406,48 @@ class AuditLogResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# UC-066 — Cung cấp Search API cho QLVBĐH/cổng nội bộ.
+# ---------------------------------------------------------------------------
+class SearchApiQueryRequest(BaseModel):
+    """Bước 1 — QLVBĐH gọi Search API. Khoá API truyền qua header
+    `X-API-Key` (KHÔNG nằm trong body). `user_don_vi_code`/
+    `user_security_level` là PHẠM VI CỦA NGƯỜI DÙNG CUỐI mà QLVBĐH gọi
+    thay (khác phạm vi/scope của bản thân khoá API) — dùng ở bước "Hệ
+    thống lọc theo phạm vi của người dùng đến từ QLVBĐH"."""
+
+    query: str = Field(..., min_length=1, max_length=500)
+    top_k: int = Field(default=10, ge=1, le=50)
+    user_don_vi_code: Optional[str] = Field(default=None, max_length=200)
+    user_security_level: str = Field(default="PUBLIC", max_length=20)
+
+
+class SearchResultSourceResponse(BaseModel):
+    """Dẫn nguồn của 1 kết quả tìm kiếm."""
+
+    source_system: str
+    doc_code: str
+    source_url: str
+
+
+class SearchResultItemResponse(BaseModel):
+    doc_code: str
+    title: str
+    snippet: str
+    score: float
+    vector_score: float
+    bm25_score: float
+    don_vi_code: Optional[str] = None
+    security_level: str
+    source: SearchResultSourceResponse
+
+
+class SearchApiQueryResponse(BaseModel):
+    query: str
+    result_count: int
+    results: List[SearchResultItemResponse]
+
+
+# ---------------------------------------------------------------------------
 # UC-065 — Cung cấp API qua LGSP.
 # ---------------------------------------------------------------------------
 class LgspRequestPayload(BaseModel):
